@@ -1,3 +1,5 @@
 walkers 1000
-iterations 10000
-1 0 0 0
+iterations 100000
+timestep 0.01
+use_permutations 0
+2 0 0 0

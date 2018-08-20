@@ -1,4 +1,5 @@
 import sys
+import math
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -15,8 +16,16 @@ for n in range(2,len(lines)):
 			dat.append(float(d))
 	except:
 		continue
+
 	if len(dat) > 1:
-		data.append(dat)
+
+		bad_data = False
+		for d in dat:
+			if math.isnan(d):
+				bad_data = True
+				break
+		if not bad_data:
+			data.append(dat)
 
 cols = zip(*data)
 
