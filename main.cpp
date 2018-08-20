@@ -5,15 +5,25 @@
 #include <fstream>
 #include <sstream>
 
+// Forward declerations
+class walker;
+struct iter_result;
+
 const double PI = 3.14159265358979323846; // Ratio of circumfrence of circle to diameter
 const double H_TO_EV = 27.2114;		  // Conversion factor from Hartree to eV
 const double EPS_X = 0.001;		  // Distance used for real-space finite differences
 
+std::vector<walker> walkers; 		// The DMC walkers
+std::vector<iter_result> iter_results;	// The results of DMC iterations accumulated so far
+
 double tau = 0.01;		// DMC timestep
-int electrons = 1;		// Number of electrons in the system
 int target_population = 1000;	// Number of DMC walkers in the simulation
-int dmc_iterations = 10000;	// Number of DMC iterations to carry out
+int dmc_iterations = 1000;	// Number of DMC iterations to carry out
 double trial_energy = 0;	// Energy used to control population
+int electrons = 1;		// Number of electrons in the system
+int nuclei    = 1;		// The number of nuclei in the system
+double* nuclear_coords;		// The coordinates of nucleii
+double* nuclear_charge;		// The nuclear charges
 
 // Returns a uniform random number in [0,1)
 double rand_uniform()
@@ -24,6 +34,7 @@ double rand_uniform()
 
 // Returns a normally distributed random
 // number with mean 0 and variance var
+// uses a box-muller transform
 double rand_normal(double var)
 {
 	double u1 = rand_uniform();
@@ -67,18 +78,33 @@ public:
 	{
 		double pot = 0;
 
-		// Evaluate nuclear potential
+		// Electron-nuclear interactions
 		for (int i=0; i<electrons; ++i)
-		{
-			double r = 0;
-			for (int d=0; d<3; ++d)
+			for (int j=0; j<nuclei; ++j)
 			{
-				double xd = coords[i*3+d];
-				r += xd*xd;
+				double r = 0;
+				for (int d=0; d<3; ++d)
+				{
+					double xd = coords[i*3+d] - nuclear_coords[j*3+d];
+					r += xd*xd;
+				}
+				r = sqrt(r);
+				pot -= nuclear_charge[j]/r;
 			}
-			r = sqrt(r);
-			pot -= 1/r;
-		}
+
+		// Electron-electron interactions
+		for (int i=0; i<electrons; ++i)
+			for (int j=0; j<i; ++j)
+			{
+				double r = 0;
+				for (int d=0; d<3; ++d)
+				{
+					double xd = coords[i*3+d] - coords[j*3+d];
+					r += xd*xd;
+				}
+				r = sqrt(r);
+				pot += 1/r;
+			}
 
 		return pot;
 	}
@@ -152,8 +178,6 @@ struct iter_result
 	}
 };
 
-std::vector<walker> walkers(target_population); // The DMC walkers
-std::vector<iter_result> iter_results;		// The results of DMC iterations accumulated so far
 
 // Returns the number of walkers that survive after a walker
 // moves from a configuration with potential pot_before
@@ -225,9 +249,6 @@ void iterDMC()
 	// Set the trial energy to the average potential
 	// so that the population changes as little as possible
 	trial_energy = ir.av_potential;
-
-	// Print the results of the iteration
-	ir.print();
 }
 
 // Output the results of the DMC calculation to disk 
@@ -249,11 +270,100 @@ void outputDMC()
 	output.write(to_write.str().c_str(),to_write.str().size());
 }
 
+// Read the input file
+int read_input(char* filename)
+{
+	std::ifstream file(filename);
+	if (file.fail())
+	{
+		std::cout << "Could not open input file!\n";
+		return -2;
+	}
+
+	std::cout << "Input file:" << "\n";
+	std::string line;
+	std::vector<double> input_doubles;
+	while(std::getline(file, line))
+	{
+		std::cout << "    " << line << "\n";
+		std::stringstream ss(line);
+		std::string word;
+		while(std::getline(ss,word,' '))
+		{
+			if (word == "walkers")
+			{
+				std::getline(ss,word,' ');
+				target_population = std::stoi(word);
+			}
+			else if (word == "iterations")
+			{
+				std::getline(ss,word,' ');
+				dmc_iterations = std::stoi(word);
+			}
+			else if (word == "timestep")
+			{
+				std::getline(ss,word,' ');
+				tau = std::stod(word);
+			}
+			else input_doubles.push_back(std::stod(word));	
+		}
+	}
+	std::cout << "End input file\n\n";
+	
+	nuclei = input_doubles.size()/4;
+	nuclear_coords = new double[nuclei*3];
+	nuclear_charge = new double[nuclei];
+	double total_charge = 0;
+
+	for (int i=0; i<nuclei; ++i)
+	{
+		nuclear_charge[i] = input_doubles[i*4];
+		total_charge += nuclear_charge[i];
+		for (int d=0; d<3; ++d)
+			nuclear_coords[i+d] = input_doubles[i*4+d+1];
+	}
+	electrons = (int)total_charge;
+
+	for (int i=0; i<target_population; ++i)
+	{
+		walker w;
+		walkers.push_back(w);
+	}
+
+	int rand_seed = clock();
+	srand(rand_seed);
+	
+	std::cout << "Input parameters:\n";
+	std::cout << "    Nuclei       : " << nuclei << "\n";
+	std::cout << "    Total charge : " << total_charge << "\n"; 
+	std::cout << "    Electrons    : " << electrons << "\n";
+	std::cout << "    Walkers      : " << target_population << "\n";
+	std::cout << "    Iterations   : " << dmc_iterations << "\n";
+	std::cout << "    Random seed  : " << rand_seed << "\n";
+	std::cout << "End input parmeters\n\n";
+
+	return 0;
+}
+
 // Program entrypoint
 int main(int argc, char** argv)
 {
-	srand(clock());
+	if (argc < 1)
+	{
+		std::cout << "No input file given!\n";
+		return -1;
+	}
+
+	if (read_input(argv[1]) < 0) return -2;
+
 	for (int n=0; n<dmc_iterations; ++n)
+	{
 		iterDMC();
+		std::cout << "\rRunning dmc, progress: " << n+1 <<"/" << dmc_iterations;
+		std::cout << " (" << 100*double(n+1)/double(dmc_iterations) << "%)";
+		iter_result last = iter_results[iter_results.size()-1];
+		std::cout << ". Last energy: " << last.av_potential + last.av_kinetic;
+		std::cout << "               ";
+	}
 	outputDMC();
 }
