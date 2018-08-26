@@ -14,7 +14,7 @@ const double PI = 3.14159265358979323846; // Ratio of circumfrence of circle to 
 const double H_TO_EV = 27.2114;		  // Conversion factor from Hartree to eV
 const double EPS_X = 0.001;		  // Distance used for real-space finite differences
 
-std::vector<walker> walkers; 		// The DMC walkers
+std::vector<walker> walkers;	// The DMC walkers
 
 double tau = 0.01;		// DMC timestep
 int target_population = 1000;	// Number of DMC walkers in the simulation
@@ -459,14 +459,9 @@ int main(int argc, char** argv)
 }
 
 /*
-	H tau = 0.00001, 1 000 000 iter. 2nd half av: -0.246986072
-	He (same params, no perm)                   : -1.431367079
-
-	He w/o perm: -1.5408475288 (3.0816950576, 83.86 eV)
-	       perm: -1.3667974194 (2.7335948388, 74.38 eV) 
-
-	correct ~ -1.4515 x 2
-	https://doi.org/10.1103/PhysRev.115.366       : -2.9037237
-	http://www.qcri.or.jp/pdfs/JCP.127.224104.PDF : -2.903 724 377 034 119 598 311 	
+	Non - relatavistic ground state energies:
+	He:
+		https://doi.org/10.1103/PhysRev.115.366       : -2.9037237
+		http://www.qcri.or.jp/pdfs/JCP.127.224104.PDF : -2.903 724 377 034 119 598 311 	
 
 */
