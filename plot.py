@@ -3,9 +3,13 @@ import math
 import numpy as np
 import matplotlib.pyplot as plt
 
+def title(n):
+	titles = ["Population","Population change","Total energy","Potential energy","Kinetic energy"]
+	if n < len(titles):
+		return titles[n]
+	return "No title"
+
 lines = open(sys.argv[1]).read().split("\n")
-titles = lines[0].split(',')
-equils = lines[1].split(',')
 
 data = []
 for n in range(2,len(lines)):
@@ -35,22 +39,8 @@ plots_y = plots_x
 for i in range(1,len(cols)):
 
 	plt.subplot(plots_x,plots_y,i)
-
-	if equils[i-1] == "1":
-		second_half = cols[i][len(cols[i])/2:]
-		av = np.mean(second_half)
-		sd = np.std(second_half)
-
-		av_arr = []
-		for j in range(0,len(cols[0])):
-			av_arr.append(av)
-		av_arr = np.array(av_arr)
-
-		plt.plot(cols[0],av_arr,label="Equilibrated average = " + str(av))
-		plt.legend(loc="best")
-
 	plt.plot(cols[0],cols[i])
-	plt.ylabel(titles[i-1])
 	plt.xlabel("Iteration")
+	plt.ylabel(title(i-1))
 
 plt.show()

@@ -15,11 +15,11 @@ const double H_TO_EV = 27.2114;		  // Conversion factor from Hartree to eV
 const double EPS_X = 0.001;		  // Distance used for real-space finite differences
 
 std::vector<walker> walkers; 		// The DMC walkers
-std::vector<iter_result> iter_results;	// The results of DMC iterations accumulated so far
 
 double tau = 0.01;		// DMC timestep
 int target_population = 1000;	// Number of DMC walkers in the simulation
 int dmc_iterations = 1000;	// Number of DMC iterations to carry out
+int current_iter = 0;           // The current DMC iteration
 double trial_energy = 0;	// Energy used to control population
 int electrons = 1;		// Number of electrons in the system
 int nuclei    = 1;		// The number of nuclei in the system
@@ -27,6 +27,7 @@ double* nuclear_coords;		// The coordinates of nucleii
 double* nuclear_charge;		// The nuclear charges
 permutor* permutations;		// Will store permutations of 1,...,electrons
 bool use_permutations = true;   // Use electron coordinate permutations?
+std::ofstream output("out");    // The output file
 
 // Returns a uniform random number in [0,1)
 double rand_uniform()
@@ -142,7 +143,7 @@ public:
 	walker()
 	{
 		coords = new double[electrons*3]; // Initialize the coordinates of the electrons
-		diffuse(1.0); 			  // Diffuse the electrons to avoid singularities
+		diffuse(10.0); 			  // Diffuse the electrons to avoid singularities
 	}
 
 	// Returns an exact copy of this walker
@@ -213,7 +214,7 @@ public:
 					pot_conf += 1/r;
 				}
 
-			if (use_permutations) pot += pot_conf * permutations->signs[p];
+			if (use_permutations) pot += pot_conf;
 			else pot += pot_conf;
 		}
 
@@ -252,43 +253,17 @@ struct iter_result
 	int pop_change;      // The population change after this iteration
 	int iter_number;     // The iteration number
 
-	// The column titles for the output
-	static std::string out_titles()
+	// Ouput the results of this iteration to the output file
+	void write_output()
 	{
-		std::stringstream ret;
-		ret << "Population,Population change,Total energy,Potential energy,Kinetic energy";
-		return ret.str();
-	}
-
-	// If the column contains data that equilibriates
-	static std::string out_equil()
-	{
-		std::stringstream ret;
-		ret << "0,0,1,1,1";
-		return ret.str();
-		
-	}
-
-	// The results of this iteration as a raw string
-	std::string out()
-	{
-		std::stringstream ret;
-		ret << population << "," << pop_change << ",";
-		ret << av_potential+av_kinetic << "," << av_potential << "," << av_kinetic;
-		return ret.str();
-	}
-
-	// Print the results of this iteration nicely formatted
-	void print()
-	{
-		std::cout << "\nIteration " << iter_number + 1 << "/" << dmc_iterations << "\n";
-		std::cout << "Population   : " << population << "\n";
-		std::cout << "Energy       : " << av_potential + av_kinetic << "\n";
-		std::cout << "    Potential: " << av_potential << "\n";
-		std::cout << "    Kinetic  : " << av_kinetic << "\n";
+		std::stringstream to_write;
+		to_write << population << "," << pop_change << ",";
+		to_write << av_potential + av_kinetic << ",";
+		to_write << av_potential << "," << av_kinetic;
+		to_write << "\n";
+		output.write(to_write.str().c_str(),to_write.str().size());
 	}
 };
-
 
 // Returns the number of walkers that survive after a walker
 // moves from a configuration with potential pot_before
@@ -353,9 +328,9 @@ void iterDMC()
 	// Evaluate averages
 	ir.av_potential /= ir.population; 
 	ir.av_kinetic   /= ir.population;
-	ir.iter_number   = iter_results.size();
+	ir.iter_number   = ++current_iter;
 	ir.pop_change    = walkers.size() - ir.population;
-	iter_results.push_back(ir);
+	ir.write_output();
 
 	// Set the trial energy to the average potential
 	// so that the population changes as little as possible
@@ -363,24 +338,6 @@ void iterDMC()
 	trial_energy = ir.av_potential + log_pop_ratio;
 }
 
-// Output the results of the DMC calculation to disk 
-void outputDMC()
-{
-	// Accumulate the iteraion results
-	std::stringstream to_write;
-	for (int n=0,ntest=iter_results.size(); n<ntest; ++n)
-		to_write << iter_results[n].out() << "\n";
- 
-	// Write them to disk
-	std::ofstream output("out");
-	std::string titles = iter_result::out_titles();
-	std::string equils = iter_result::out_equil();
-	titles.append("\n");
-	equils.append("\n");
-	output.write(titles.c_str(),titles.size());
-	output.write(equils.c_str(),equils.size());
-	output.write(to_write.str().c_str(),to_write.str().size());
-}
 
 // Read the input file, returns true if successful
 bool read_input(char* filename)
@@ -498,10 +455,18 @@ int main(int argc, char** argv)
 		iterDMC();
 		std::cout << "\rRunning dmc, progress: " << n+1 <<"/" << dmc_iterations;
 		std::cout << " (" << 100*double(n+1)/double(dmc_iterations) << "%)";
-		iter_result last = iter_results[iter_results.size()-1];
-		std::cout << ". Last energy: " << last.av_potential + last.av_kinetic;
-		std::cout << " Last population: " << last.population;
-		std::cout << "               ";
 	}
-	outputDMC();
 }
+
+/*
+	H tau = 0.00001, 1 000 000 iter. 2nd half av: -0.246986072
+	He (same params, no perm)                   : -1.431367079
+
+	He w/o perm: -1.5408475288 (3.0816950576, 83.86 eV)
+	       perm: -1.3667974194 (2.7335948388, 74.38 eV) 
+
+	correct ~ -1.4515 x 2
+	https://doi.org/10.1103/PhysRev.115.366       : -2.9037237
+	http://www.qcri.or.jp/pdfs/JCP.127.224104.PDF : -2.903 724 377 034 119 598 311 	
+
+*/
