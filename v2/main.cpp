@@ -9,7 +9,7 @@ const double PI = 3.141592653589793;
 
 // Program parameters
 int target_population = 1000;
-int dmc_itterations   = 10000;
+int dmc_iterations   = 10000;
 double tau            = 0.01;
 double trial_energy   = 0;
 
@@ -28,7 +28,9 @@ double rand_normal(double var)
 	return sqrt(-2*var*log(u1)) * sin(2*PI*u2);
 }
 
-// An abstract particle
+// An abstract particle, which can interact with
+// other particles (by default using the coulomb
+// interaction)
 class particle
 {
 public:
@@ -79,6 +81,7 @@ class electron : public quantum_particle
 
 	virtual particle* copy()
 	{
+		// Copy this electron
 		electron* ret = new electron();
 		ret->x = x;
 		ret->y = y;
@@ -101,6 +104,7 @@ public:
 
 	virtual particle* copy()
 	{
+		// Copy this nucleus
 		nucleus* ret = new nucleus(atomic_number, mass_number);
 		ret->x = x;
 		ret->y = y;
@@ -112,48 +116,49 @@ private:
 	double mass_number;
 };
 
-// A snapshot of a system used to describe
-// it via diffusion monte carlo
+// The object used by the diffusion monte carlo algorithm
+// to represent a snapshot of the system.
 class walker
 {
 public:
 	walker(std::vector<particle*> particles)
 	{	
+		// Setup the walker with the particles
+		// that describe the system.
 		this->particles = particles;
 	}
 
 	~walker()
 	{
+		// Clear up memory (delete all the particles).
 		for (int i=0; i<particles.size(); ++i)
 			delete(particles[i]);
 	}
 
 	double potential()
 	{
+		// Evaluate the potential of the system
+		// in the configuration described by this
+		// walker; this is a sum of particle-particle
+		// interactions, avoiding double counting.
 		double ret = 0;
 		for (int i = 0; i < particles.size(); ++i)
-		{
-			particle* p1 = particles[i];
-			for (int j=0; j<i; ++j)
-			{
-				particle* p2 = particles[j];
-				ret += p1->interaction(p2);
-			}
-		}
+			for (int j=0; j<i; ++j) // Note j<i => no double counting
+				ret += particles[i]->interaction(particles[j]);
 		return ret;
 	}
 
 	void diffuse(double tau)
 	{
+		// Diffuse all of the particles (classical
+		// particles will automatically not diffuse)
 		for (int i=0; i<particles.size(); ++i)
-		{
-			particle* p = particles[i];
-			p->diffuse(tau);
-		}
+			particles[i]->diffuse(tau);
 	}
 
 	walker* copy()
 	{
+		// Return a copy of this walker (copy each of the particles)
 		std::vector<particle*> copied_particles;
 		for (int i=0; i<particles.size(); ++i)
 			copied_particles.push_back(particles[i]->copy());
@@ -161,19 +166,21 @@ public:
 	}
 
 private:
+	
+	// The particles in this system snapshot
 	std::vector<particle*> particles;
 };
 
-// Returns a set of particles describing our system
+// Returns the set of particles in our system
 std::vector<particle*> get_system()
 {
 	std::vector<particle*> ret;
+
+	// For now, a hard coded hydrogen atom
 	ret.push_back(new electron());
 	nucleus* n = new nucleus(1,1);
-	n->x = 0;
-	n->y = 0;
-	n->z = 0;
 	ret.push_back(n);
+
 	return ret;
 }
 
@@ -184,74 +191,90 @@ std::vector<particle*> get_system()
 int walkers_surviving(double pot_before, double pot_after)
 {
 	double p = exp(-tau*(pot_before + pot_after - 2*trial_energy)/2);
-	int ret = 0;
-	while(p>1)
-	{
-		++ret;
-		--p;
-	}
+	int ret = int(floor(p));
+	p -= ret;
 	if (rand_uniform() < p)
 		++ret;
 	return ret;
 }
 
-// Contains the results of a DMC iteration
+// Contains the results of a single DMC iteration
 struct iter_result
 {
 	int population;
 	double average_potential;
 
+	// Directly print the results 
 	void print()
 	{
 		std::cout << population << ", " << average_potential << "\n";
 	}
-
-	static std::ofstream file;
+	
+	// Write the resuls to the "out" file
 	void write()
 	{
+		static std::ofstream file("out");
 		file << population << "," << average_potential << "\n";
 	}
 };
-std::ofstream iter_result::file("out");
 
 // The main DMC algorithm
 int main(int argc, char** argv)
 {
+	// Our DMC walkers
 	std::vector<walker*> walkers;
+
+	// Initialize the walkers
 	for (int i=0; i<target_population; ++i)
 	{
 		walker* w = new walker(get_system());
-		w->diffuse(1.0);
 		walkers.push_back(w);
+
+		// Carry out an initial large diffusion
+		// to avoid unneccasary equilibriation
+		// and exact particle overlap at the origin
+		w->diffuse(1.0);
 	}
 	
-	for (int iter = 1; iter<dmc_itterations+1; ++iter)
+	// Run our DMC iterations
+	for (int iter = 1; iter <= dmc_iterations; ++iter)
 	{
 		iter_result ir;
 
+		// The new walkers that appear after the iteration
 		std::vector<walker*> new_walkers;
 		for (int n=0; n<walkers.size(); ++n)
 		{
 			walker* w = walkers[n];
+
+			// Diffuse the walker and evaluate potential change
 			double pot_before = w->potential();
 			w->diffuse(tau);
 			double pot_after  = w->potential();
+
+			// Work out how many survivded the move
 			int surviving = walkers_surviving(pot_before, pot_after);
 
-			ir.average_potential += surviving*(pot_before+pot_after)/2;
+			if (surviving == 0) delete(w); // Delete this walker if it died
+			else new_walkers.push_back(w); // Otherwise it survives
 
-			for (int s=0; s<surviving; ++s)
+			// Spawn new walkers
+			for (int s=0; s < surviving-1; ++s) 
 				new_walkers.push_back(w->copy());
-			delete(w);
+
+			// Accumulate the average potential
+			ir.average_potential += surviving*(pot_before+pot_after)/2;
 		}
 
+		// Set our walkers to the newly generated ones
 		walkers = new_walkers;
 
+		// Record the resuts of the iteration
 		ir.population = walkers.size();
 		ir.average_potential /= ir.population;
-
-		trial_energy = ir.average_potential;
-		
 		ir.write();
+
+		// E_T = <potential> to avoid population explosion/collapse
+		trial_energy = ir.average_potential; 
 	}
 }
