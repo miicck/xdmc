@@ -3,13 +3,14 @@
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
+#include <mpi.h>
 
 // Constants
 const double PI = 3.141592653589793;
 
 // Program parameters
-int target_population = 1000;
-int dmc_iterations   = 10000;
+int target_population = 500;
+int dmc_iterations    = 10000;
 double tau            = 0.01;
 double trial_energy   = 0;
 
@@ -67,6 +68,9 @@ class quantum_particle : public particle
 public:
 	virtual void diffuse(double tau)
 	{
+		// Diffuse the particle by moving each
+		// coordinate by an amount sampled from
+		// a normal distribution with variance tau
 		x += rand_normal(tau);
 		y += rand_normal(tau);
 		z += rand_normal(tau);
@@ -216,11 +220,44 @@ struct iter_result
 		static std::ofstream file("out");
 		file << population << "," << average_potential << "\n";
 	}
+
+	// Reduce the results of an iteration across processes
+	void mpi_reduce(int np, int pid)
+	{
+		double av_pot = 0;
+		int pop_sum = 0;
+		int ierr    = 0;
+
+		ierr = MPI_Reduce(&population, &pop_sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+		ierr = MPI_Reduce(&average_potential, &av_pot, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
+		if (pid == 0)
+		{
+			population = pop_sum;
+			average_potential = av_pot / double(np);
+		}
+	}
 };
 
 // The main DMC algorithm
 int main(int argc, char** argv)
 {
+	// Initialize mpi
+	int ierr = MPI_Init(&argc, &argv);
+	if (ierr != 0)
+	{
+		std::cout << "Fatal error, could not initialize MPI.";
+		exit(1);
+	}
+
+	// Get the number of processes and my id within them
+	int np = 1;
+	int pid = 0;
+	ierr = MPI_Comm_size(MPI_COMM_WORLD, &np);
+	ierr = MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+	srand(pid*clock());
+	std::cout << "Process " << (pid+1) << "/" << np << " reporting for duty.\n";
+
 	// Our DMC walkers
 	std::vector<walker*> walkers;
 
@@ -272,9 +309,13 @@ int main(int argc, char** argv)
 		// Record the resuts of the iteration
 		ir.population = walkers.size();
 		ir.average_potential /= ir.population;
-		ir.write();
+		ir.mpi_reduce(np, pid);
+		if (pid == 0) ir.write();
 
 		// E_T = <potential> to avoid population explosion/collapse
 		trial_energy = ir.average_potential; 
 	}
+
+	// End mpi safely
+	MPI_Finalize();
 }

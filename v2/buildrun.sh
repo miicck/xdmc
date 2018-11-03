@@ -1,3 +1,3 @@
-g++ main.cpp
-./a.out
-python plot.py out
+mpiCC main.cpp
+mpirun ./a.out
+python plot.py
