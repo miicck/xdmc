@@ -7,6 +7,7 @@
 
 // Constants
 const double PI = 3.141592653589793;
+const int MPI_ERROR = 1;
 
 // Program parameters
 int target_population = 500;
@@ -77,7 +78,8 @@ public:
 	}
 };
 
-// e-
+// I read about these in a physics textbook once, thought
+// they might be important
 class electron : public quantum_particle
 {
 	virtual double charge() { return -1; }
@@ -125,11 +127,11 @@ private:
 class walker
 {
 public:
-	walker(std::vector<particle*> particles)
+	walker()
 	{	
 		// Setup the walker with the particles
 		// that describe the system.
-		this->particles = particles;
+		this->particles = create_system_particles();
 	}
 
 	~walker()
@@ -173,20 +175,26 @@ private:
 	
 	// The particles in this system snapshot
 	std::vector<particle*> particles;
+
+	// Create a walker from a given particle set 
+	walker(std::vector<particle*> particles)
+	{
+		this->particles = particles;
+	}
+
+	// Returns the set of particles in our system
+	static std::vector<particle*> create_system_particles()
+	{
+		std::vector<particle*> ret;
+
+		// For now, a hard coded hydrogen atom
+		ret.push_back(new electron());
+		nucleus* n = new nucleus(1,1);
+		ret.push_back(n);
+
+		return ret;
+	}
 };
-
-// Returns the set of particles in our system
-std::vector<particle*> get_system()
-{
-	std::vector<particle*> ret;
-
-	// For now, a hard coded hydrogen atom
-	ret.push_back(new electron());
-	nucleus* n = new nucleus(1,1);
-	ret.push_back(n);
-
-	return ret;
-}
 
 // Returns the number of walkers that should survive after a 
 // walker moves from potential pot_before to pot_after. i.e returns
@@ -207,12 +215,6 @@ struct iter_result
 {
 	int population;
 	double average_potential;
-
-	// Directly print the results 
-	void print()
-	{
-		std::cout << population << ", " << average_potential << "\n";
-	}
 	
 	// Write the resuls to the "out" file
 	void write()
@@ -228,9 +230,15 @@ struct iter_result
 		int pop_sum = 0;
 		int ierr    = 0;
 
+		// Sum population over processes
 		ierr = MPI_Reduce(&population, &pop_sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-		ierr = MPI_Reduce(&average_potential, &av_pot, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+		if (ierr != 0) exit(MPI_ERROR);
 
+		// Average average_potential over processes
+		ierr = MPI_Reduce(&average_potential, &av_pot, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+		if (ierr != 0) exit(MPI_ERROR);
+
+		// Record results on root process
 		if (pid == 0)
 		{
 			population = pop_sum;
@@ -242,21 +250,24 @@ struct iter_result
 // The main DMC algorithm
 int main(int argc, char** argv)
 {
+	// For basic timing
+	int start_clock = clock();
+
 	// Initialize mpi
 	int ierr = MPI_Init(&argc, &argv);
-	if (ierr != 0)
-	{
-		std::cout << "Fatal error, could not initialize MPI.";
-		exit(1);
-	}
+	if (ierr != 0) exit(MPI_ERROR);
 
 	// Get the number of processes and my id within them
 	int np = 1;
 	int pid = 0;
 	ierr = MPI_Comm_size(MPI_COMM_WORLD, &np);
+	if (ierr != 0) exit(MPI_ERROR);
 	ierr = MPI_Comm_rank(MPI_COMM_WORLD, &pid);
+	if (ierr != 0) exit(MPI_ERROR);
+	std::cout << "Process " << pid+1 << "/" << np << " reporting for duty.\n";
+
+	// Seed random number generator
 	srand(pid*clock());
-	std::cout << "Process " << (pid+1) << "/" << np << " reporting for duty.\n";
 
 	// Our DMC walkers
 	std::vector<walker*> walkers;
@@ -264,7 +275,7 @@ int main(int argc, char** argv)
 	// Initialize the walkers
 	for (int i=0; i<target_population; ++i)
 	{
-		walker* w = new walker(get_system());
+		walker* w = new walker();
 		walkers.push_back(w);
 
 		// Carry out an initial large diffusion
@@ -300,7 +311,7 @@ int main(int argc, char** argv)
 				new_walkers.push_back(w->copy());
 
 			// Accumulate the average potential
-			ir.average_potential += surviving*(pot_before+pot_after)/2;
+			ir.average_potential += surviving*pot_after;
 		}
 
 		// Set our walkers to the newly generated ones
@@ -309,13 +320,16 @@ int main(int argc, char** argv)
 		// Record the resuts of the iteration
 		ir.population = walkers.size();
 		ir.average_potential /= ir.population;
-		ir.mpi_reduce(np, pid);
+		ir.mpi_reduce(np, pid); // Accumulate results from all processes
 		if (pid == 0) ir.write();
 
 		// E_T = <potential> to avoid population explosion/collapse
-		trial_energy = ir.average_potential; 
+		double pop_mod = log(walkers.size()/double(target_population))/tau;
+		trial_energy = ir.average_potential - pop_mod; 
 	}
 
 	// End mpi safely
 	MPI_Finalize();
+	double time = (clock() - start_clock)/double(CLOCKS_PER_SEC);
+	std::cout << "Process " << pid+1 << " exited, total time: " << time << "s.\n";
 }
