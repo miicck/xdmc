@@ -3,26 +3,35 @@
 #include <cmath>
 #include <cstdlib>
 #include <fstream>
+#include <sstream>
+#include <iterator>
 #include <mpi.h>
 
 // Constants
-const double PI = 3.141592653589793;
-const int MPI_ERROR = 1;
+const double PI = 3.141592653589793; // You should know this one
+const double AMU = 1822.88486193;    // Unified atomic mass unit / electron mass
+const int MPI_ERROR = 1;	     // Thrown when an MPI call fails
+
+// Forward declerations
+class particle;
 
 // Program parameters
-int target_population = 500;
-int dmc_iterations    = 10000;
-double tau            = 0.01;
-double trial_energy   = 0;
+int target_population = 500;	// The number of DMC walkers per process
+int dmc_iterations    = 1000;   // The number of DMC iterations to carry out
+double tau            = 0.01;   // The DMC timestep
+double trial_energy   = 0;      // Energy used to control the DMC population
 
-// Generate a uniform random number \in [0,1]
+// The system which will be copied to generate walkers
+std::vector<particle*> template_system;
+
+// Generate a uniform random number \in [0,1].
 double rand_uniform()
 {
 	return (rand()%RAND_MAX)/double(RAND_MAX);
 }
 
 // Generate a normal random number with variance var
-// using a box-muller transformation
+// using a box-muller transformation.
 double rand_normal(double var)
 {
 	double u1 = rand_uniform();
@@ -31,13 +40,14 @@ double rand_normal(double var)
 }
 
 // An abstract particle, which can interact with
-// other particles (by default using the coulomb
-// interaction)
+// other particles (by default via the coulomb
+// interaction).
 class particle
 {
 public:
 	virtual double interaction(particle* other)
 	{
+		// Coulomb
 		double dx = this->x - other->x;
 		double dy = this->y - other->y;
 		double dz = this->z - other->z;
@@ -45,20 +55,23 @@ public:
 		return (this->charge()*other->charge())/r;
 	}
 
-	virtual void diffuse(double tau)=0;
-	virtual particle* copy()=0;
-	virtual double charge()=0;
-	virtual double mass()=0;
+	virtual void diffuse(double tau)=0; // Called when a config diffuses in DMC
+	virtual particle* copy()=0;	    // Should return a (deep) copy of this particle
+	virtual double charge()=0;	    // The charge of this particle (electron charge = -1)
+	virtual double mass()=0;	    // The mass of this particle (electron mass = 1)
+
+	// The location of this particle
 	double x;
 	double y;
 	double z;
 };
 
 // A particle that is described as point-like
-// and static within the DMC algorithm
+// and static within the DMC algorithm.
 class classical_particle : public particle
 {
 public:
+	// Classical particles don't diffuse
 	virtual void diffuse(double tau) { }
 };
 
@@ -71,7 +84,7 @@ public:
 	{
 		// Diffuse the particle by moving each
 		// coordinate by an amount sampled from
-		// a normal distribution with variance tau
+		// a normal distribution with variance tau.
 		x += rand_normal(tau);
 		y += rand_normal(tau);
 		z += rand_normal(tau);
@@ -79,7 +92,7 @@ public:
 };
 
 // I read about these in a physics textbook once, thought
-// they might be important
+// they might be important.
 class electron : public quantum_particle
 {
 	virtual double charge() { return -1; }
@@ -87,7 +100,7 @@ class electron : public quantum_particle
 
 	virtual particle* copy()
 	{
-		// Copy this electron
+		// Copy this electron.
 		electron* ret = new electron();
 		ret->x = x;
 		ret->y = y;
@@ -96,17 +109,18 @@ class electron : public quantum_particle
 	}
 };
 
-// An atomic nucleus
+// An atomic nucleus, as described by an atomic
+// number and a mass number. 
 class nucleus : public classical_particle
 {
 public:
-	nucleus(double charge, double mass)
+	nucleus(double atomic_number, double mass_number)
 	{
-		atomic_number = charge;
-		mass_number   = mass;
+		this->atomic_number = atomic_number;
+		this->mass_number   = mass_number;
 	}
 	virtual double charge() { return atomic_number; }
-	virtual double mass()   { return mass_number;   }
+	virtual double mass()   { return mass_number * AMU; } // Convert mass to atomic units
 
 	virtual particle* copy()
 	{
@@ -185,16 +199,82 @@ private:
 	// Returns the set of particles in our system
 	static std::vector<particle*> create_system_particles()
 	{
+		// Copy the template system
 		std::vector<particle*> ret;
-
-		// For now, a hard coded hydrogen atom
-		ret.push_back(new electron());
-		nucleus* n = new nucleus(1,1);
-		ret.push_back(n);
-
+		for (int i=0; i<template_system.size(); ++i)
+			ret.push_back(template_system[i]->copy());
 		return ret;
 	}
 };
+
+// Split a string on whitespace
+std::vector<std::string> split_whitespace(std::string to_split)
+{
+	// Iterator magic
+	std::istringstream buffer(to_split);
+	std::vector<std::string> split;
+	std::copy(std::istream_iterator<std::string>(buffer),
+		  std::istream_iterator<std::string>(),
+		  std::back_inserter(split));
+	return split;
+}
+
+// Parse an atom from the input file. Creates a
+// nucleus and the appropriate number of electrons
+// in the template system.
+void parse_atom(std::vector<std::string> split)
+{
+	double charge = std::stod(split[1]);
+	double mass   = std::stod(split[2]);
+	double x      = std::stod(split[3]);
+	double y      = std::stod(split[4]);
+	double z      = std::stod(split[5]);
+
+	// Create the nucleus
+	auto n = new nucleus(charge, mass);
+	n->x = x;
+	n->y = y;
+	n->z = z;
+	template_system.push_back(n);
+
+	// Neutralize the atom with electrons
+	for (int i=0; i<charge; ++i)
+	{
+		auto e = new electron();
+		e->x = x;
+		e->y = y;
+		e->z = z;
+		template_system.push_back(e);
+	}
+}
+
+// Parse the input file.
+void read_input(int np, int pid)
+{
+	std::ifstream input("input");
+	for (std::string line; getline(input, line); )
+	{
+		auto split = split_whitespace(line);
+		std::string tag = split[0];
+
+		// Read in the number of DMC walkers and convert
+		// to walkers-per-process
+		if (tag == "walkers") 
+			target_population = std::stoi(split[1])/np;
+
+		// Read in the number of DMC iterations
+		else if (tag == "iterations")
+			dmc_iterations = std::stoi(split[1]);
+
+		// Read in the DMC timestep
+		else if (tag == "tau")
+			tau = std::stod(split[1]);
+
+		// Read in an atom
+		else if (tag == "atom")
+			parse_atom(split);
+	}
+}
 
 // Returns the number of walkers that should survive after a 
 // walker moves from potential pot_before to pot_after. i.e returns
@@ -254,20 +334,20 @@ int main(int argc, char** argv)
 	int start_clock = clock();
 
 	// Initialize mpi
-	int ierr = MPI_Init(&argc, &argv);
-	if (ierr != 0) exit(MPI_ERROR);
+	if (MPI_Init(&argc, &argv) != 0) exit(MPI_ERROR);
 
 	// Get the number of processes and my id within them
 	int np = 1;
 	int pid = 0;
-	ierr = MPI_Comm_size(MPI_COMM_WORLD, &np);
-	if (ierr != 0) exit(MPI_ERROR);
-	ierr = MPI_Comm_rank(MPI_COMM_WORLD, &pid);
-	if (ierr != 0) exit(MPI_ERROR);
-	std::cout << "Process " << pid+1 << "/" << np << " reporting for duty.\n";
+	if (MPI_Comm_size(MPI_COMM_WORLD, &np)  != 0) exit(MPI_ERROR);
+	if (MPI_Comm_rank(MPI_COMM_WORLD, &pid) != 0) exit(MPI_ERROR);
+	if (pid == 0) std::cout << np << " processes reporting for duty.\n";
 
 	// Seed random number generator
 	srand(pid*clock());
+
+	// Read our input and setup parameters accordingly 
+	read_input(np, pid);
 
 	// Our DMC walkers
 	std::vector<walker*> walkers;
@@ -281,12 +361,13 @@ int main(int argc, char** argv)
 		// Carry out an initial large diffusion
 		// to avoid unneccasary equilibriation
 		// and exact particle overlap at the origin
-		w->diffuse(1.0);
+		w->diffuse(10.0);
 	}
 	
 	// Run our DMC iterations
 	for (int iter = 1; iter <= dmc_iterations; ++iter)
 	{
+		if (pid == 0) std::cout << "\rIteration: " << iter << "/" << dmc_iterations << "     ";
 		iter_result ir;
 
 		// The new walkers that appear after the iteration
@@ -320,16 +401,19 @@ int main(int argc, char** argv)
 		// Record the resuts of the iteration
 		ir.population = walkers.size();
 		ir.average_potential /= ir.population;
-		ir.mpi_reduce(np, pid); // Accumulate results from all processes
-		if (pid == 0) ir.write();
+		ir.mpi_reduce(np, pid);   // Accumulate results from all processes
+		if (pid == 0) ir.write(); // Output on root process
 
-		// E_T = <potential> to avoid population explosion/collapse
-		double pop_mod = log(walkers.size()/double(target_population))/tau;
-		trial_energy = ir.average_potential - pop_mod; 
+		// Set trial energy to control population, but allow some fluctuation
+		double log_pop_ratio = log(walkers.size()/double(target_population));
+		trial_energy = ir.average_potential - log_pop_ratio; 
 	}
 
 	// End mpi safely
 	MPI_Finalize();
-	double time = (clock() - start_clock)/double(CLOCKS_PER_SEC);
-	std::cout << "Process " << pid+1 << " exited, total time: " << time << "s.\n";
+	if (pid == 0)
+	{
+		double time = (clock() - start_clock)/double(CLOCKS_PER_SEC);
+		std::cout << "\nDone, total time: " << time << "s.\n";
+	}
 }
