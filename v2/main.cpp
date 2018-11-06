@@ -225,10 +225,11 @@ std::vector<std::string> split_whitespace(std::string to_split)
 void parse_atom(std::vector<std::string> split)
 {
 	double charge = std::stod(split[1]);
-	double mass   = std::stod(split[2]);
-	double x      = std::stod(split[3]);
-	double y      = std::stod(split[4]);
-	double z      = std::stod(split[5]);
+	int electrons = std::stoi(split[2]);
+	double mass   = std::stod(split[3]);
+	double x      = std::stod(split[4]);
+	double y      = std::stod(split[5]);
+	double z      = std::stod(split[6]);
 
 	// Create the nucleus
 	auto n = new nucleus(charge, mass);
@@ -238,7 +239,7 @@ void parse_atom(std::vector<std::string> split)
 	template_system.push_back(n);
 
 	// Neutralize the atom with electrons
-	for (int i=0; i<charge; ++i)
+	for (int i=0; i<electrons; ++i)
 	{
 		auto e = new electron();
 		e->x = x;
