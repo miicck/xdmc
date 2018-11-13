@@ -1,4 +1,4 @@
-This program is a simple DMC implementation that reads a list of atoms and DMC parameters from the "input"file and outputs the potential energy at each timestep to the "out" file. The positions of the electrons are also sampled to the "electrons" file.
+This program is a simple DMC implementation that reads a list of atoms and DMC parameters from the "input" file and outputs the potential energy at each timestep to the "out" file. The positions of the electrons are also sampled to the "electrons" file.
 
 # Scripts
 ## build.sh
