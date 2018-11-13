@@ -55,10 +55,11 @@ public:
 		return (this->charge()*other->charge())/r;
 	}
 
-	virtual void diffuse(double tau)=0; // Called when a config diffuses in DMC
-	virtual particle* copy()=0;	    // Should return a (deep) copy of this particle
-	virtual double charge()=0;	    // The charge of this particle (electron charge = -1)
-	virtual double mass()=0;	    // The mass of this particle (electron mass = 1)
+	virtual void diffuse(double tau)=0;   // Called when a config diffuses in DMC
+	virtual particle* copy()=0;	      // Should return a (deep) copy of this particle
+	virtual double charge()=0;	      // The charge of this particle (electron charge = -1)
+	virtual double mass()=0;	      // The mass of this particle (electron mass = 1)
+	virtual void sample_wavefunction()=0; // Called when a request is sent to sample a walker wvfn.
 
 	// The location of this particle
 	double x;
@@ -73,6 +74,7 @@ class classical_particle : public particle
 public:
 	// Classical particles don't diffuse
 	virtual void diffuse(double tau) { }
+	virtual void sample_wavefunction() { }
 };
 
 // A particle who is described by an ensemble of
@@ -106,6 +108,12 @@ class electron : public quantum_particle
 		ret->y = y;
 		ret->z = z;
 		return ret;
+	}
+
+	virtual void sample_wavefunction()
+	{
+		static std::ofstream file("electrons");
+		file << x << "," << y << "," << z << "\n";
 	}
 };
 
@@ -141,20 +149,6 @@ private:
 class walker
 {
 public:
-	walker()
-	{	
-		// Setup the walker with the particles
-		// that describe the system.
-		this->particles = create_system_particles();
-	}
-
-	~walker()
-	{
-		// Clear up memory (delete all the particles).
-		for (int i=0; i<particles.size(); ++i)
-			delete(particles[i]);
-	}
-
 	double potential()
 	{
 		// Evaluate the potential of the system
@@ -176,6 +170,20 @@ public:
 			particles[i]->diffuse(tau);
 	}
 
+	walker()
+	{	
+		// Setup the walker with the particles
+		// that describe the system.
+		this->particles = create_system_particles();
+	}
+
+	~walker()
+	{
+		// Clear up memory (delete all the particles).
+		for (int i=0; i<particles.size(); ++i)
+			delete(particles[i]);
+	}
+
 	walker* copy()
 	{
 		// Return a copy of this walker (copy each of the particles)
@@ -183,6 +191,12 @@ public:
 		for (int i=0; i<particles.size(); ++i)
 			copied_particles.push_back(particles[i]->copy());
 		return new walker(copied_particles);
+	}
+
+	void sample_wavefunction()
+	{
+		for (int i=0; i<particles.size(); ++i)
+			particles[i]->sample_wavefunction();
 	}
 
 private:
@@ -362,7 +376,7 @@ int main(int argc, char** argv)
 		// Carry out an initial large diffusion
 		// to avoid unneccasary equilibriation
 		// and exact particle overlap at the origin
-		w->diffuse(10.0);
+		w->diffuse(2.0);
 	}
 	
 	// Run our DMC iterations
@@ -376,6 +390,7 @@ int main(int argc, char** argv)
 		for (int n=0; n<walkers.size(); ++n)
 		{
 			walker* w = walkers[n];
+			if (pid == 0) w->sample_wavefunction();
 
 			// Diffuse the walker and evaluate potential change
 			double pot_before = w->potential();
