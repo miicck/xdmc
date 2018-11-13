@@ -2,7 +2,7 @@ This program is a simple DMC implementation that reads a list of atoms and DMC p
 
 # Scripts
 ## build.sh
-Builds the main.cpp into the dmc executable
+Builds the main.cpp into the dmc executable.
 ## run.sh
 Runs the dmc executable using mpirun then calls plot.py on the results.
 ## plot.py
