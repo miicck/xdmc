@@ -1,6 +1,7 @@
 This program is a simple DMC implementation that reads a list of atoms and DMC parameters from the "input" file and outputs the potential energy at each timestep to the "out" file. The positions of the electrons are also sampled to the "electrons" file.
 
 # Scripts
+None of these scripts require any arguments.
 ## build.sh
 Builds the main.cpp into the dmc executable. Only tested with v7.3.0 of the mpiCC compiler (an mpi wrapper of the gcc compiler).
 ## run.sh
