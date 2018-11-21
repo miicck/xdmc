@@ -298,11 +298,7 @@ void read_input(int np, int pid)
 int walkers_surviving(double pot_before, double pot_after)
 {
 	double p = exp(-tau*(pot_before + pot_after - 2*trial_energy)/2);
-	int ret = int(floor(p));
-	p -= ret;
-	if (rand_uniform() < p)
-		++ret;
-	return ret;
+	return int(floor(p+rand_uniform()));
 }
 
 // Contains the results of a single DMC iteration
@@ -376,7 +372,7 @@ int main(int argc, char** argv)
 		// Carry out an initial large diffusion
 		// to avoid unneccasary equilibriation
 		// and exact particle overlap at the origin
-		w->diffuse(2.0);
+		w->diffuse(10.0);
 	}
 	
 	// Run our DMC iterations

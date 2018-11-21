@@ -24,9 +24,8 @@ for line in open("out").read().split("\n"):
 
 # Plot each dataseries on it's own subplot
 data = zip(*data)
-plot_size = np.ceil(np.sqrt(len(data)))
 for i, d in enumerate(data):
-	plt.subplot(plot_size,plot_size,i+1)
+	plt.subplot(len(data),1,i+1)
 	plt.plot(d)
 	plt.plot(rolling_av(d,len(d)/100))
 	plt.xlabel("Iteration")
