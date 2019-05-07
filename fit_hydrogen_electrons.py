@@ -23,7 +23,7 @@ for line in [l for l in open("electrons").read().split("\n") if len(l) > 0]:
 		rs.append(r)
 
 # Histogram the radii
-y,x,_ = plt.hist(rs, bins=1000)
+y,x,_ = plt.hist(rs, bins=100)
 for i in range(0,len(x)-1):
 	x[i] = (x[i] + x[i+1])/2
 x = x[0:-1]

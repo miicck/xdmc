@@ -1,3 +1,3 @@
-mpirun ./dmc       # Run the program
-python plot.py &    # Plot the results
-python plot_r_dist.py &
+mpirun ./dmc  
+python plot.py &
+python fit_hydrogen_electrons.py &
