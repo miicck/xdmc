@@ -30,8 +30,8 @@ double rand_uniform()
 	return (rand()%RAND_MAX)/double(RAND_MAX);
 }
 
-// Generate a normal random number with variance var
-// using a box-muller transformation.
+// Generate a zero-mean noramlly distributed number
+// with the specified variance
 double rand_normal(double var)
 {
 	double u1 = rand_uniform();
@@ -306,18 +306,20 @@ struct iter_result
 {
 	int population;
 	double average_potential;
+	double trial_energy;
 	
 	// Write the resuls to the "out" file
 	void write()
 	{
 		static std::ofstream file("out");
-		file << population << "," << average_potential << "\n";
+		file << population << "," << average_potential << "," << trial_energy << "\n";
 	}
 
 	// Reduce the results of an iteration across processes
 	void mpi_reduce(int np, int pid)
 	{
 		double av_pot = 0;
+		double av_trial_e = 0;
 		int pop_sum = 0;
 		int ierr    = 0;
 
@@ -329,11 +331,16 @@ struct iter_result
 		ierr = MPI_Reduce(&average_potential, &av_pot, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 		if (ierr != 0) exit(MPI_ERROR);
 
+		// Average trial_energy over processes
+		ierr = MPI_Reduce(&trial_energy, &av_trial_e, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+		if (ierr != 0) exit(MPI_ERROR);
+
 		// Record results on root process
 		if (pid == 0)
 		{
-			population = pop_sum;
-			average_potential = av_pot / double(np);
+			population        = pop_sum;
+			average_potential = av_pot     / double(np);
+			trial_energy      = av_trial_e / double(np);
 		}
 	}
 };
@@ -386,7 +393,6 @@ int main(int argc, char** argv)
 		for (int n=0; n<walkers.size(); ++n)
 		{
 			walker* w = walkers[n];
-			if (pid == 0) w->sample_wavefunction();
 
 			// Diffuse the walker and evaluate potential change
 			double pot_before = w->potential();
@@ -413,6 +419,8 @@ int main(int argc, char** argv)
 		// Record the resuts of the iteration
 		ir.population = walkers.size();
 		ir.average_potential /= ir.population;
+		ir.trial_energy = trial_energy;
+
 		ir.mpi_reduce(np, pid);   // Accumulate results from all processes
 		if (pid == 0) ir.write(); // Output on root process
 
@@ -420,6 +428,11 @@ int main(int argc, char** argv)
 		double log_pop_ratio = log(walkers.size()/double(target_population));
 		trial_energy = ir.average_potential - log_pop_ratio; 
 	}
+
+	// Sample the final wavefunction to file
+	if (pid == 0)
+		for (int n=0; n<walkers.size(); ++n)
+			walkers[n]->sample_wavefunction();
 
 	// End mpi safely
 	MPI_Finalize();
