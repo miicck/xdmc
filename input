@@ -1,4 +1,4 @@
-walkers    10000   # The number of DMC walkers
+walkers    100000  # The number of DMC walkers
 iterations 10000   # The number of DMC iterations to carry out 
 tau        0.01    # The DMC timestep
 atom 1 1 1 0 0 0   # Create an atom (charge electrons mass x y z)
