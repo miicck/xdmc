@@ -4,7 +4,7 @@ import sys
 import os
 
 # Labels for the plots
-y_axes = ["Population", "Potential energy (Hartree)", "Trial energy (Hartree)"]
+y_axes = ["Population", "Trial energy (Hartree)"]
 
 # Take a rolling average with a window of sample_length
 def rolling_av(data, sample_length):

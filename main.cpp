@@ -312,14 +312,14 @@ struct iter_result
 	void write()
 	{
 		static std::ofstream file("out");
-		file << population << "," << average_potential << "," << trial_energy << "\n";
+		file << population << "," << trial_energy << "\n";
 	}
 
 	// Reduce the results of an iteration across processes
 	void mpi_reduce(int np, int pid)
 	{
-		double av_pot = 0;
 		double av_trial_e = 0;
+		double av_pot     = 0;
 		int pop_sum = 0;
 		int ierr    = 0;
 
