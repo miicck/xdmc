@@ -1,4 +1,4 @@
 CORES=$(nproc --all)
 mpirun -np $CORES ./dmc  
-python plot.py &
-python fit_hydrogen_electrons.py &
+python scripts/plot_evolution.py &
+python scripts/plot_wavefunction.py &

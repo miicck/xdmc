@@ -15,6 +15,7 @@ const int MPI_ERROR = 1;	     // Thrown when an MPI call fails
 
 // Forward declerations
 class particle;
+class external_potential;
 
 // Program parameters
 int dimensions        = 3;      // The dimensionality of our system
@@ -25,9 +26,10 @@ double trial_energy   = 0;      // Energy used to control the DMC population
 
 // The system which will be copied to generate walkers
 std::vector<particle*> template_system;
+std::vector<external_potential*> potentials;
 
 // Output files
-std::ofstream electron_file;
+std::ofstream wavefunction_file;
 std::ofstream out_file;
 
 // Generate a uniform random number \in [0,1].
@@ -88,6 +90,29 @@ public:
 };
 int particle::count = 0;
 
+class external_potential
+{
+public:
+	virtual double potential(particle* p)=0;
+};
+
+class harmonic_well : public external_potential
+{
+public:
+	harmonic_well(double omega) { this->omega = omega; }
+
+	virtual double potential(particle* p)
+	{
+		double r2 = 0;
+		for (int i=0; i<dimensions; ++i)
+			r2 += p->coords[i]*p->coords[i];
+		return 0.5*r2*omega*omega;
+	}
+
+private:
+	double omega = 1;
+};
+
 // A particle that is described as point-like
 // and static within the DMC algorithm.
 class classical_particle : public particle
@@ -111,6 +136,13 @@ public:
 		for (int i=0; i<dimensions; ++i)
 			this->coords[i] += rand_normal(tau);
 	}
+
+	virtual void sample_wavefunction()
+	{
+		for (int  i=0; i<dimensions-1; ++i)
+			wavefunction_file << this->coords[i] << ",";
+		wavefunction_file << this->coords[dimensions-1];
+	}
 };
 
 // I read about these in a physics textbook once, thought
@@ -128,12 +160,22 @@ class electron : public quantum_particle
 			ret->coords[i] = this->coords[i];
 		return ret;
 	}
+};
 
-	virtual void sample_wavefunction()
+// A fermion with no interactions
+class non_interacting_fermion : public quantum_particle
+{
+public:
+	virtual double interaction(particle* other) { return 0; }
+	virtual double mass()   { return 1; }
+	virtual double charge() { return 0; }
+
+	particle* copy()
 	{
-		for (int  i=0; i<dimensions-1; ++i)
-			electron_file << this->coords[i] << ",";
-		electron_file << this->coords[dimensions-1] << "\n";
+		particle* ret = new non_interacting_fermion();
+		for (int i=0; i<dimensions; ++i)
+			ret->coords[i] = this->coords[i];
+		return ret;
 	}
 };
 
@@ -173,13 +215,19 @@ public:
 	double potential()
 	{
 		// Evaluate the potential of the system
-		// in the configuration described by this
-		// walker; this is a sum of particle-particle
-		// interactions, avoiding double counting.
+		// in the configuration described by this walker
 		double ret = 0;
 		for (int i = 0; i < particles.size(); ++i)
-			for (int j=0; j<i; ++j) // Note j<i => no double counting
+		{
+			// Sum up external potential contributions
+			for (int j=0; j<potentials.size(); ++j)
+				ret += potentials[j]->potential(particles[i]);
+
+			// Particle-particle interactions
+			// note j<i => no double counting
+			for (int j=0; j<i; ++j)
 				ret += particles[i]->interaction(particles[j]);
+		}
 		return ret;
 	}
 
@@ -219,7 +267,12 @@ public:
 	void sample_wavefunction()
 	{
 		for (int i=0; i<particles.size(); ++i)
+		{
 			particles[i]->sample_wavefunction();
+			if (i < particles.size() - 1)
+				wavefunction_file << ";";
+		}
+		wavefunction_file << "\n";
 	}
 
 private:
@@ -293,9 +346,18 @@ void read_input(int np, int pid)
 		auto split = split_whitespace(line);
 		std::string tag = split[0];
 
+		// Ignore comments
+		if (tag.rfind("!" , 0) == 0) continue;
+		if (tag.rfind("#" , 0) == 0) continue;
+		if (tag.rfind("//", 0) == 0) continue;
+
+		// Read in the dimensionality
+		if (tag == "dimensions")
+			dimensions = std::stoi(split[1]);
+
 		// Read in the number of DMC walkers and convert
 		// to walkers-per-process
-		if (tag == "walkers") 
+		else if (tag == "walkers") 
 			target_population = std::stoi(split[1])/np;
 
 		// Read in the number of DMC iterations
@@ -309,9 +371,26 @@ void read_input(int np, int pid)
 		// Read in an atom
 		else if (tag == "atom")
 			parse_atom(split);
+
+		// Read in an electron
+		else if (tag == "electron")
+			template_system.push_back(new electron());
+
+		// Adds a noninteracting fermion into the system
+		else if (tag == "nif")
+			template_system.push_back(new non_interacting_fermion());
+
+		// Add a harmonic well to the system
+		else if (tag == "harmonic_well")
+			potentials.push_back(new harmonic_well(std::stod(split[1])));
 	}
 
-	std::cout << "  PID: " << pid << " Target population: " << target_population << "\n";
+	std::cout <<   "  PID: " << pid 
+		  << "\n    Dimensionallity   : " << dimensions
+		  << "\n    Iterations        : " << dmc_iterations
+	          << "\n    Target population : " << target_population
+		  << "\n    Particles         : " << template_system.size()
+		  << "\n    Potentials        : " << potentials.size() << "\n";
 	input.close();
 }
 
@@ -412,7 +491,7 @@ int main(int argc, char** argv)
 		// Carry out an initial large diffusion
 		// to avoid unneccasary equilibriation
 		// and exact particle overlap at the origin
-		w->diffuse(10.0);
+		w->diffuse(1.0);
 	}
 	
 	// Run our DMC iterations
@@ -465,15 +544,16 @@ int main(int argc, char** argv)
 	}
 
 	// Sample the final wavefunction to file
-	if (pid == 0) remove("electrons");  // Remove the old electrons file
+	if (pid == 0) remove("wavefunction");  // Remove the old wavefunction file
 	for (int pid_sample = 0; pid_sample < np; ++ pid_sample)
 	{
 		if (pid == pid_sample)
 		{
-			electron_file.open("electrons", std::ofstream::out | std::ofstream::app);
+			wavefunction_file.open("wavefunction",
+				std::ofstream::out | std::ofstream::app);
 			for (int n=0; n<walkers.size(); ++n)
 				walkers[n]->sample_wavefunction();
-			electron_file.close();
+			wavefunction_file.close();
 		}
 
 		// One process at a time, to avoid access conflicts
@@ -484,9 +564,11 @@ int main(int argc, char** argv)
 	// Clean up memory
 	for (int i=0; i<walkers.size(); ++i) delete walkers[i];
 	for (int i=0; i<template_system.size(); ++i) delete template_system[i];
+	for (int i=0; i<potentials.size(); ++i) delete potentials[i];
 	if  (pid == 0) out_file.close();
 
 	// Output info on objects that werent deconstructed properly
+	if (walker::count != 0 || particle::count != 0)
 	std::cout << "PID: " << pid << " un-deleted objects:\n"
 		  << "  Walkers   : " << walker::count   << "\n"
 		  << "  Particles : " << particle::count << "\n";
