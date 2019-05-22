@@ -344,6 +344,7 @@ void read_input(int np, int pid)
 	for (std::string line; getline(input, line); )
 	{
 		auto split = split_whitespace(line);
+		if (split.size() == 0) continue;
 		std::string tag = split[0];
 
 		// Ignore comments
