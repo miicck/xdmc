@@ -22,7 +22,7 @@ to_open = "electrons"
 if len(sys.argv) > 1: to_open = sys.argv[1]
 rs = []
 for line in [l for l in open(to_open).read().split("\n") if len(l) > 0]:
-	x = np.array([float(i) for i in line.split(",")])
+        x = np.array([float(i) for i in line.split(",")])
 	r = np.linalg.norm(x)
 	if r < MAX_R:
 		rs.append(r)

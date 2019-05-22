@@ -6,6 +6,7 @@
 #include <sstream>
 #include <iterator>
 #include <mpi.h>
+#include <unistd.h>
 
 // Constants
 const double PI = 3.141592653589793; // You should know this one
@@ -16,6 +17,7 @@ const int MPI_ERROR = 1;	     // Thrown when an MPI call fails
 class particle;
 
 // Program parameters
+int dimensions        = 3;      // The dimensionality of our system
 int target_population = 500;	// The number of DMC walkers per process
 int dmc_iterations    = 1000;   // The number of DMC iterations to carry out
 double tau            = 0.01;   // The DMC timestep
@@ -23,7 +25,10 @@ double trial_energy   = 0;      // Energy used to control the DMC population
 
 // The system which will be copied to generate walkers
 std::vector<particle*> template_system;
+
+// Output files
 std::ofstream electron_file;
+std::ofstream out_file;
 
 // Generate a uniform random number \in [0,1].
 double rand_uniform()
@@ -46,13 +51,29 @@ double rand_normal(double var)
 class particle
 {
 public:
+	static int count;
+	particle()
+	{
+		++ count;
+		coords = new double[dimensions];
+	}
+
+	~particle()
+	{
+		-- count;
+		delete[] coords;
+	}
+
 	virtual double interaction(particle* other)
 	{
 		// Coulomb
-		double dx = this->x - other->x;
-		double dy = this->y - other->y;
-		double dz = this->z - other->z;
-		double r = sqrt(dx*dx+dy*dy+dz*dz);
+		double r = 0;
+		for (int i=0; i<dimensions; ++i)
+		{
+			double dxi = this->coords[i] - other->coords[i];
+			r += dxi * dxi;
+		}
+		r = sqrt(r);
 		return (this->charge()*other->charge())/r;
 	}
 
@@ -63,10 +84,9 @@ public:
 	virtual void sample_wavefunction()=0; // Called when a request is sent to sample a walker wvfn.
 
 	// The location of this particle
-	double x;
-	double y;
-	double z;
+	double* coords;
 };
+int particle::count = 0;
 
 // A particle that is described as point-like
 // and static within the DMC algorithm.
@@ -88,9 +108,8 @@ public:
 		// Diffuse the particle by moving each
 		// coordinate by an amount sampled from
 		// a normal distribution with variance tau.
-		x += rand_normal(tau);
-		y += rand_normal(tau);
-		z += rand_normal(tau);
+		for (int i=0; i<dimensions; ++i)
+			this->coords[i] += rand_normal(tau);
 	}
 };
 
@@ -105,15 +124,16 @@ class electron : public quantum_particle
 	{
 		// Copy this electron.
 		electron* ret = new electron();
-		ret->x = x;
-		ret->y = y;
-		ret->z = z;
+		for (int i=0; i<dimensions; ++i)
+			ret->coords[i] = this->coords[i];
 		return ret;
 	}
 
 	virtual void sample_wavefunction()
 	{
-		electron_file << x << "," << y << "," << z << "\n";
+		for (int  i=0; i<dimensions-1; ++i)
+			electron_file << this->coords[i] << ",";
+		electron_file << this->coords[dimensions-1] << "\n";
 	}
 };
 
@@ -134,9 +154,8 @@ public:
 	{
 		// Copy this nucleus
 		nucleus* ret = new nucleus(atomic_number, mass_number);
-		ret->x = x;
-		ret->y = y;
-		ret->z = z;
+		for (int i=0; i<dimensions; ++i)
+			ret->coords[i] = this->coords[i];
 		return ret;
 	}
 private:
@@ -149,6 +168,8 @@ private:
 class walker
 {
 public:
+	static int count;
+
 	double potential()
 	{
 		// Evaluate the potential of the system
@@ -174,12 +195,14 @@ public:
 	{	
 		// Setup the walker with the particles
 		// that describe the system.
+		++ count;
 		this->particles = create_system_particles();
 	}
 
 	~walker()
 	{
 		// Clear up memory (delete all the particles).
+		-- count;
 		for (int i=0; i<particles.size(); ++i)
 			delete(particles[i]);
 	}
@@ -207,6 +230,7 @@ private:
 	// Create a walker from a given particle set 
 	walker(std::vector<particle*> particles)
 	{
+		++ count;
 		this->particles = particles;
 	}
 
@@ -220,6 +244,7 @@ private:
 		return ret;
 	}
 };
+int walker::count = 0;
 
 // Split a string on whitespace
 std::vector<std::string> split_whitespace(std::string to_split)
@@ -241,24 +266,20 @@ void parse_atom(std::vector<std::string> split)
 	double charge = std::stod(split[1]);
 	int electrons = std::stoi(split[2]);
 	double mass   = std::stod(split[3]);
-	double x      = std::stod(split[4]);
-	double y      = std::stod(split[5]);
-	double z      = std::stod(split[6]);
 
 	// Create the nucleus
 	auto n = new nucleus(charge, mass);
-	n->x = x;
-	n->y = y;
-	n->z = z;
+	for (int i=4; i<4+dimensions; ++i)
+		n->coords[i] = std::stod(split[i]);
+
 	template_system.push_back(n);
 
-	// Neutralize the atom with electrons
+	// Add the specified number of electrons
 	for (int i=0; i<electrons; ++i)
 	{
 		auto e = new electron();
-		e->x = x;
-		e->y = y;
-		e->z = z;
+		for (int i=0; i<dimensions; ++i)
+			e->coords[i] = n->coords[i];
 		template_system.push_back(e);
 	}
 }
@@ -314,8 +335,7 @@ struct iter_result
 	// Write the resuls to the "out" file
 	void write()
 	{
-		static std::ofstream file("out");
-		file << population << "," << trial_energy << "\n";
+		out_file << population << "," << trial_energy << "\n";
 	}
 
 	// Reduce the results of an iteration across processes
@@ -351,18 +371,23 @@ struct iter_result
 // The main DMC algorithm
 int main(int argc, char** argv)
 {
-	// For basic timing
-	int start_clock = clock();
-
 	// Initialize mpi
 	if (MPI_Init(&argc, &argv) != 0) exit(MPI_ERROR);
+
+	// For basic timing
+	int start_clock = clock();
 
 	// Get the number of processes and my id within them
 	int np = 1;
 	int pid = 0;
 	if (MPI_Comm_size(MPI_COMM_WORLD, &np)  != 0) exit(MPI_ERROR);
 	if (MPI_Comm_rank(MPI_COMM_WORLD, &pid) != 0) exit(MPI_ERROR);
-	if (pid == 0) std::cout << np << " processes reporting for duty:\n";
+
+	if (pid == 0) 
+	{
+		std::cout << np << " processes reporting for duty:\n";
+		out_file.open("out");
+	}
 
 	// Seed random number generator
 	srand(pid*clock());
@@ -454,12 +479,26 @@ int main(int argc, char** argv)
 		// One process at a time, to avoid access conflicts
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
+	if (pid == 0) std::cout << "\n";
 
-	// End mpi safely
-	MPI_Finalize();
+	// Clean up memory
+	for (int i=0; i<walkers.size(); ++i) delete walkers[i];
+	for (int i=0; i<template_system.size(); ++i) delete template_system[i];
+	if  (pid == 0) out_file.close();
+
+	// Output info on objects that werent deconstructed properly
+	std::cout << "PID: " << pid << " un-deleted objects:\n"
+		  << "  Walkers   : " << walker::count   << "\n"
+		  << "  Particles : " << particle::count << "\n";
+
+	// Output success message
 	if (pid == 0)
 	{
 		double time = (clock() - start_clock)/double(CLOCKS_PER_SEC);
-		std::cout << "\nDone, total time: " << time << "s.\n";
+		std::cout << "Done, total time: " << time << "s.\n";
 	}
+
+	// End mpi safely
+	MPI_Barrier(MPI_COMM_WORLD);
+	MPI_Finalize();
 }
