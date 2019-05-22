@@ -23,6 +23,7 @@ double trial_energy   = 0;      // Energy used to control the DMC population
 
 // The system which will be copied to generate walkers
 std::vector<particle*> template_system;
+std::ofstream electron_file;
 
 // Generate a uniform random number \in [0,1].
 double rand_uniform()
@@ -112,8 +113,7 @@ class electron : public quantum_particle
 
 	virtual void sample_wavefunction()
 	{
-		static std::ofstream file("electrons");
-		file << x << "," << y << "," << z << "\n";
+		electron_file << x << "," << y << "," << z << "\n";
 	}
 };
 
@@ -289,6 +289,9 @@ void read_input(int np, int pid)
 		else if (tag == "atom")
 			parse_atom(split);
 	}
+
+	std::cout << "  PID: " << pid << " Target population: " << target_population << "\n";
+	input.close();
 }
 
 // Returns the number of walkers that should survive after a 
@@ -298,7 +301,7 @@ void read_input(int np, int pid)
 int walkers_surviving(double pot_before, double pot_after)
 {
 	double p = exp(-tau*(pot_before + pot_after - 2*trial_energy)/2);
-	return int(floor(p+rand_uniform()));
+	return std::min(int(floor(p+rand_uniform())), 3);
 }
 
 // Contains the results of a single DMC iteration
@@ -359,13 +362,18 @@ int main(int argc, char** argv)
 	int pid = 0;
 	if (MPI_Comm_size(MPI_COMM_WORLD, &np)  != 0) exit(MPI_ERROR);
 	if (MPI_Comm_rank(MPI_COMM_WORLD, &pid) != 0) exit(MPI_ERROR);
-	if (pid == 0) std::cout << np << " processes reporting for duty.\n";
+	if (pid == 0) std::cout << np << " processes reporting for duty:\n";
 
 	// Seed random number generator
 	srand(pid*clock());
 
 	// Read our input and setup parameters accordingly 
-	read_input(np, pid);
+	// do for each process sequentially to avoid access issues
+	for (int pid_read = 0; pid_read < np; ++ pid_read)
+	{
+		if (pid == pid_read) read_input(np, pid);
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
 
 	// Our DMC walkers
 	std::vector<walker*> walkers;
@@ -385,6 +393,7 @@ int main(int argc, char** argv)
 	// Run our DMC iterations
 	for (int iter = 1; iter <= dmc_iterations; ++iter)
 	{
+		// Output progress on root node
 		if (pid == 0) std::cout << "\rIteration: " << iter << "/" << dmc_iterations << "     ";
 		iter_result ir;
 
@@ -421,8 +430,9 @@ int main(int argc, char** argv)
 		ir.average_potential /= ir.population;
 		ir.trial_energy = trial_energy;
 
-		ir.mpi_reduce(np, pid);   // Accumulate results from all processes
-		if (pid == 0) ir.write(); // Output on root process
+		MPI_Barrier(MPI_COMM_WORLD); // Make sure processes are all on the same iteration
+		ir.mpi_reduce(np, pid);      // Accumulate results from all processes
+		if (pid == 0) ir.write();    // Output on root process
 
 		// Set trial energy to control population, but allow some fluctuation
 		double log_pop_ratio = log(walkers.size()/double(target_population));
@@ -430,9 +440,20 @@ int main(int argc, char** argv)
 	}
 
 	// Sample the final wavefunction to file
-	if (pid == 0)
-		for (int n=0; n<walkers.size(); ++n)
-			walkers[n]->sample_wavefunction();
+	if (pid == 0) remove("electrons");  // Remove the old electrons file
+	for (int pid_sample = 0; pid_sample < np; ++ pid_sample)
+	{
+		if (pid == pid_sample)
+		{
+			electron_file.open("electrons", std::ofstream::out | std::ofstream::app);
+			for (int n=0; n<walkers.size(); ++n)
+				walkers[n]->sample_wavefunction();
+			electron_file.close();
+		}
+
+		// One process at a time, to avoid access conflicts
+		MPI_Barrier(MPI_COMM_WORLD);
+	}
 
 	// End mpi safely
 	MPI_Finalize();
