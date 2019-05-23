@@ -4,13 +4,13 @@ simulation_spec simulation;
 
 void simulation_spec::open_output_files()
 {
-	out_file.open("out_"+std::to_string(pid));
-	wavefunction_file.open("wavefunction_"+std::to_string(pid));
+	iterations_file.open(  "iterations_"   + std::to_string(pid));
+	wavefunction_file.open("wavefunction_" + std::to_string(pid));
 }
 
 void simulation_spec::free_memory()
 {
-	out_file.close();
+	iterations_file.close();
 	wavefunction_file.close();
 
 	for (int i=0; i<template_system.size(); ++i)

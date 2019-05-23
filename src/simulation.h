@@ -26,7 +26,7 @@ struct simulation_spec
 
         // Output files
         std::ofstream wavefunction_file;
-        std::ofstream out_file;
+        std::ofstream iterations_file;
 
         void open_output_files(); // Opens output files
         void free_memory();       // Closes output files and frees template_system and potentials
