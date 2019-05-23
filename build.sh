@@ -1,24 +1,16 @@
-# Build the program
+BASE=$(pwd)
+SRC=$BASE/src
+BUILD=$BASE/build
 
-# Find a working copy of mpiCC
-mpiccs=("mpicpc" "mpiCC" "mpicc")
-for cc in "${mpiccs[@]}"
-do
-	found=$(which $cc)
-	if [ ! -z "$found" ]; then
-		MPI_CC=$found
-		break
-	fi
-done
+MPI_CC=mpicc
+COMP_FLAGS="-c -O3"
+LINK_FLAGS="-o dmc"
 
-# Set the mpicc flags
-FLAGS_OPT="-O3"
-FLAGS_DEBUG="-g -O3"
+rm -r $BUILD
+mkdir $BUILD
+cd $BUILD
 
-MPI_CC_FLAGS=$FLAGS_OPT
-if [ "$1" == "debug" ]; then
-	MPI_CC_FLAGS=$FLAGS_DEBUG
-fi
+$MPI_CC $COMP_FLAGS $SRC/*.cpp
 
-echo "Building with $MPI_CC $MPI_CC_FLAGS"
-$MPI_CC $MPI_CC_FLAGS -o dmc main.cpp 
+cd $BASE
+$MPI_CC $LINK_FLAGS $BUILD/*.o

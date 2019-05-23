@@ -8,29 +8,14 @@
 #include <mpi.h>
 #include <unistd.h>
 
+#include "particle.h"
+#include "potential.h"
+#include "simulation.h"
+
 // Constants
 const double PI = 3.141592653589793; // You should know this one
 const double AMU = 1822.88486193;    // Unified atomic mass unit / electron mass
 const int MPI_ERROR = 1;	     // Thrown when an MPI call fails
-
-// Forward declerations
-class particle;
-class external_potential;
-
-// Program parameters
-int dimensions        = 3;      // The dimensionality of our system
-int target_population = 500;	// The number of DMC walkers per process
-int dmc_iterations    = 1000;   // The number of DMC iterations to carry out
-double tau            = 0.01;   // The DMC timestep
-double trial_energy   = 0;      // Energy used to control the DMC population
-
-// The system which will be copied to generate walkers
-std::vector<particle*> template_system;
-std::vector<external_potential*> potentials;
-
-// Output files
-std::ofstream wavefunction_file;
-std::ofstream out_file;
 
 // Generate a uniform random number \in [0,1].
 double rand_uniform()
@@ -47,55 +32,6 @@ double rand_normal(double var)
 	return sqrt(-2*var*log(u1)) * sin(2*PI*u2);
 }
 
-// An abstract particle, which can interact with
-// other particles (by default via the coulomb
-// interaction).
-class particle
-{
-public:
-	static int count;
-	particle()
-	{
-		++ count;
-		coords = new double[dimensions];
-	}
-
-	~particle()
-	{
-		-- count;
-		delete[] coords;
-	}
-
-	virtual double interaction(particle* other)
-	{
-		// Coulomb
-		double r = 0;
-		for (int i=0; i<dimensions; ++i)
-		{
-			double dxi = this->coords[i] - other->coords[i];
-			r += dxi * dxi;
-		}
-		r = sqrt(r);
-		return (this->charge()*other->charge())/r;
-	}
-
-	virtual void diffuse(double tau)=0;   // Called when a config diffuses in DMC
-	virtual particle* copy()=0;	      // Should return a (deep) copy of this particle
-	virtual double charge()=0;	      // The charge of this particle (electron charge = -1)
-	virtual double mass()=0;	      // The mass of this particle (electron mass = 1)
-	virtual void sample_wavefunction()=0; // Called when a request is sent to sample a walker wvfn.
-
-	// The location of this particle
-	double* coords;
-};
-int particle::count = 0;
-
-class external_potential
-{
-public:
-	virtual double potential(particle* p)=0;
-};
-
 class harmonic_well : public external_potential
 {
 public:
@@ -104,7 +40,7 @@ public:
 	virtual double potential(particle* p)
 	{
 		double r2 = 0;
-		for (int i=0; i<dimensions; ++i)
+		for (int i=0; i<simulation.dimensions; ++i)
 			r2 += p->coords[i]*p->coords[i];
 		return 0.5*r2*omega*omega;
 	}
@@ -133,15 +69,15 @@ public:
 		// Diffuse the particle by moving each
 		// coordinate by an amount sampled from
 		// a normal distribution with variance tau.
-		for (int i=0; i<dimensions; ++i)
+		for (int i=0; i<simulation.dimensions; ++i)
 			this->coords[i] += rand_normal(tau);
 	}
 
 	virtual void sample_wavefunction()
 	{
-		for (int  i=0; i<dimensions-1; ++i)
-			wavefunction_file << this->coords[i] << ",";
-		wavefunction_file << this->coords[dimensions-1];
+		for (int  i=0; i<simulation.dimensions-1; ++i)
+			simulation.wavefunction_file << this->coords[i] << ",";
+		simulation.wavefunction_file << this->coords[simulation.dimensions-1];
 	}
 };
 
@@ -156,7 +92,7 @@ class electron : public quantum_particle
 	{
 		// Copy this electron.
 		electron* ret = new electron();
-		for (int i=0; i<dimensions; ++i)
+		for (int i=0; i<simulation.dimensions; ++i)
 			ret->coords[i] = this->coords[i];
 		return ret;
 	}
@@ -173,7 +109,7 @@ public:
 	particle* copy()
 	{
 		particle* ret = new non_interacting_fermion();
-		for (int i=0; i<dimensions; ++i)
+		for (int i=0; i<simulation.dimensions; ++i)
 			ret->coords[i] = this->coords[i];
 		return ret;
 	}
@@ -196,7 +132,7 @@ public:
 	{
 		// Copy this nucleus
 		nucleus* ret = new nucleus(atomic_number, mass_number);
-		for (int i=0; i<dimensions; ++i)
+		for (int i=0; i<simulation.dimensions; ++i)
 			ret->coords[i] = this->coords[i];
 		return ret;
 	}
@@ -220,8 +156,8 @@ public:
 		for (int i = 0; i < particles.size(); ++i)
 		{
 			// Sum up external potential contributions
-			for (int j=0; j<potentials.size(); ++j)
-				ret += potentials[j]->potential(particles[i]);
+			for (int j=0; j<simulation.potentials.size(); ++j)
+				ret += simulation.potentials[j]->potential(particles[i]);
 
 			// Particle-particle interactions
 			// note j<i => no double counting
@@ -270,9 +206,9 @@ public:
 		{
 			particles[i]->sample_wavefunction();
 			if (i < particles.size() - 1)
-				wavefunction_file << ";";
+				simulation.wavefunction_file << ";";
 		}
-		wavefunction_file << "\n";
+		simulation.wavefunction_file << "\n";
 	}
 
 private:
@@ -292,8 +228,8 @@ private:
 	{
 		// Copy the template system
 		std::vector<particle*> ret;
-		for (int i=0; i<template_system.size(); ++i)
-			ret.push_back(template_system[i]->copy());
+		for (int i=0; i<simulation.template_system.size(); ++i)
+			ret.push_back(simulation.template_system[i]->copy());
 		return ret;
 	}
 };
@@ -322,23 +258,23 @@ void parse_atom(std::vector<std::string> split)
 
 	// Create the nucleus
 	auto n = new nucleus(charge, mass);
-	for (int i=4; i<4+dimensions; ++i)
+	for (int i=4; i<4+simulation.dimensions; ++i)
 		n->coords[i] = std::stod(split[i]);
 
-	template_system.push_back(n);
+	simulation.template_system.push_back(n);
 
 	// Add the specified number of electrons
 	for (int i=0; i<electrons; ++i)
 	{
 		auto e = new electron();
-		for (int i=0; i<dimensions; ++i)
+		for (int i=0; i<simulation.dimensions; ++i)
 			e->coords[i] = n->coords[i];
-		template_system.push_back(e);
+		simulation.template_system.push_back(e);
 	}
 }
 
 // Parse the input file.
-void read_input(int np, int pid)
+void read_input()
 {
 	std::ifstream input("input");
 	for (std::string line; getline(input, line); )
@@ -354,20 +290,20 @@ void read_input(int np, int pid)
 
 		// Read in the dimensionality
 		if (tag == "dimensions")
-			dimensions = std::stoi(split[1]);
+			simulation.dimensions = std::stoi(split[1]);
 
 		// Read in the number of DMC walkers and convert
 		// to walkers-per-process
 		else if (tag == "walkers") 
-			target_population = std::stoi(split[1])/np;
+			simulation.target_population = std::stoi(split[1])/simulation.np;
 
 		// Read in the number of DMC iterations
 		else if (tag == "iterations")
-			dmc_iterations = std::stoi(split[1]);
+			simulation.dmc_iterations = std::stoi(split[1]);
 
 		// Read in the DMC timestep
 		else if (tag == "tau")
-			tau = std::stod(split[1]);
+			simulation.tau = std::stod(split[1]);
 
 		// Read in an atom
 		else if (tag == "atom")
@@ -375,23 +311,24 @@ void read_input(int np, int pid)
 
 		// Read in an electron
 		else if (tag == "electron")
-			template_system.push_back(new electron());
+			simulation.template_system.push_back(new electron());
 
 		// Adds a noninteracting fermion into the system
 		else if (tag == "nif")
-			template_system.push_back(new non_interacting_fermion());
+			simulation.template_system.push_back(new non_interacting_fermion());
 
 		// Add a harmonic well to the system
 		else if (tag == "harmonic_well")
-			potentials.push_back(new harmonic_well(std::stod(split[1])));
+			simulation.potentials.push_back(new harmonic_well(std::stod(split[1])));
 	}
 
-	std::cout <<   "  PID: " << pid 
-		  << "\n    Dimensionallity   : " << dimensions
-		  << "\n    Iterations        : " << dmc_iterations
-	          << "\n    Target population : " << target_population
-		  << "\n    Particles         : " << template_system.size()
-		  << "\n    Potentials        : " << potentials.size() << "\n";
+	std::cout <<   "  PID: " << simulation.pid 
+		  << "\n    Dimensionallity   : " << simulation.dimensions
+		  << "\n    Iterations        : " << simulation.dmc_iterations
+	          << "\n    Target population : " << simulation.target_population
+		  << "\n    Particles         : " << simulation.template_system.size()
+		  << "\n    Potentials        : " << simulation.potentials.size() << "\n";
+
 	input.close();
 }
 
@@ -401,7 +338,7 @@ void read_input(int np, int pid)
 // spawn etc...
 int walkers_surviving(double pot_before, double pot_after)
 {
-	double p = exp(-tau*(pot_before + pot_after - 2*trial_energy)/2);
+	double p = exp(-simulation.tau*(pot_before + pot_after - 2*simulation.trial_energy)/2);
 	return std::min(int(floor(p+rand_uniform())), 3);
 }
 
@@ -415,11 +352,11 @@ struct iter_result
 	// Write the resuls to the "out" file
 	void write()
 	{
-		out_file << population << "," << trial_energy << "\n";
+		simulation.out_file << population << "," << trial_energy << "\n";
 	}
 
 	// Reduce the results of an iteration across processes
-	void mpi_reduce(int np, int pid)
+	void mpi_reduce()
 	{
 		double av_trial_e = 0;
 		double av_pot     = 0;
@@ -439,11 +376,11 @@ struct iter_result
 		if (ierr != 0) exit(MPI_ERROR);
 
 		// Record results on root process
-		if (pid == 0)
+		if (simulation.pid == 0)
 		{
 			population        = pop_sum;
-			average_potential = av_pot     / double(np);
-			trial_energy      = av_trial_e / double(np);
+			average_potential = av_pot     / double(simulation.np);
+			trial_energy      = av_trial_e / double(simulation.np);
 		}
 	}
 };
@@ -458,33 +395,31 @@ int main(int argc, char** argv)
 	int start_clock = clock();
 
 	// Get the number of processes and my id within them
-	int np = 1;
-	int pid = 0;
-	if (MPI_Comm_size(MPI_COMM_WORLD, &np)  != 0) exit(MPI_ERROR);
-	if (MPI_Comm_rank(MPI_COMM_WORLD, &pid) != 0) exit(MPI_ERROR);
+	if (MPI_Comm_size(MPI_COMM_WORLD, &simulation.np)  != 0) exit(MPI_ERROR);
+	if (MPI_Comm_rank(MPI_COMM_WORLD, &simulation.pid) != 0) exit(MPI_ERROR);
 
-	if (pid == 0) 
-	{
-		std::cout << np << " processes reporting for duty:\n";
-		out_file.open("out");
-	}
+	if (simulation.pid == 0) 
+		std::cout << simulation.np << " processes reporting for duty:\n";
 
 	// Seed random number generator
-	srand(pid*clock());
+	srand(simulation.pid*clock());
 
 	// Read our input and setup parameters accordingly 
 	// do for each process sequentially to avoid access issues
-	for (int pid_read = 0; pid_read < np; ++ pid_read)
+	for (int pid_read = 0; pid_read < simulation.np; ++ pid_read)
 	{
-		if (pid == pid_read) read_input(np, pid);
+		if (simulation.pid == pid_read) read_input();
 		MPI_Barrier(MPI_COMM_WORLD);
 	}
+	
+	// Ready output files
+	simulation.open_output_files();
 
 	// Our DMC walkers
 	std::vector<walker*> walkers;
 
 	// Initialize the walkers
-	for (int i=0; i<target_population; ++i)
+	for (int i=0; i<simulation.target_population; ++i)
 	{
 		walker* w = new walker();
 		walkers.push_back(w);
@@ -496,10 +431,11 @@ int main(int argc, char** argv)
 	}
 	
 	// Run our DMC iterations
-	for (int iter = 1; iter <= dmc_iterations; ++iter)
+	for (int iter = 1; iter <= simulation.dmc_iterations; ++iter)
 	{
 		// Output progress on root node
-		if (pid == 0) std::cout << "\rIteration: " << iter << "/" << dmc_iterations << "     ";
+		if (simulation.pid == 0) std::cout << "\rIteration: " << iter << "/"
+					<< simulation.dmc_iterations << "     ";
 		iter_result ir;
 
 		// The new walkers that appear after the iteration
@@ -510,7 +446,7 @@ int main(int argc, char** argv)
 
 			// Diffuse the walker and evaluate potential change
 			double pot_before = w->potential();
-			w->diffuse(tau);
+			w->diffuse(simulation.tau);
 			double pot_after  = w->potential();
 
 			// Work out how many survivded the move
@@ -531,51 +467,34 @@ int main(int argc, char** argv)
 		walkers = new_walkers;
 
 		// Record the resuts of the iteration
-		ir.population = walkers.size();
+		// and write to output
+		ir.population         = walkers.size();
 		ir.average_potential /= ir.population;
-		ir.trial_energy = trial_energy;
-
-		MPI_Barrier(MPI_COMM_WORLD); // Make sure processes are all on the same iteration
-		ir.mpi_reduce(np, pid);      // Accumulate results from all processes
-		if (pid == 0) ir.write();    // Output on root process
+		ir.trial_energy       = simulation.trial_energy;
+		ir.write();
 
 		// Set trial energy to control population, but allow some fluctuation
-		double log_pop_ratio = log(walkers.size()/double(target_population));
-		trial_energy = ir.average_potential - log_pop_ratio; 
+		double log_pop_ratio = log(walkers.size()/double(simulation.target_population));
+		simulation.trial_energy = ir.average_potential - log_pop_ratio; 
 	}
+	if (simulation.pid == 0) std::cout << "\n";
 
 	// Sample the final wavefunction to file
-	if (pid == 0) remove("wavefunction");  // Remove the old wavefunction file
-	for (int pid_sample = 0; pid_sample < np; ++ pid_sample)
-	{
-		if (pid == pid_sample)
-		{
-			wavefunction_file.open("wavefunction",
-				std::ofstream::out | std::ofstream::app);
-			for (int n=0; n<walkers.size(); ++n)
-				walkers[n]->sample_wavefunction();
-			wavefunction_file.close();
-		}
-
-		// One process at a time, to avoid access conflicts
-		MPI_Barrier(MPI_COMM_WORLD);
-	}
-	if (pid == 0) std::cout << "\n";
+	for (int n=0; n<walkers.size(); ++n)
+		walkers[n]->sample_wavefunction();
 
 	// Clean up memory
 	for (int i=0; i<walkers.size(); ++i) delete walkers[i];
-	for (int i=0; i<template_system.size(); ++i) delete template_system[i];
-	for (int i=0; i<potentials.size(); ++i) delete potentials[i];
-	if  (pid == 0) out_file.close();
+	simulation.free_memory();
 
 	// Output info on objects that werent deconstructed properly
 	if (walker::count != 0 || particle::count != 0)
-	std::cout << "PID: " << pid << " un-deleted objects:\n"
+	std::cout << "PID: " << simulation.pid << " un-deleted objects:\n"
 		  << "  Walkers   : " << walker::count   << "\n"
 		  << "  Particles : " << particle::count << "\n";
 
 	// Output success message
-	if (pid == 0)
+	if (simulation.pid == 0)
 	{
 		double time = (clock() - start_clock)/double(CLOCKS_PER_SEC);
 		std::cout << "Done, total time: " << time << "s.\n";
