@@ -1,29 +1,10 @@
-import os
-import numpy as np
 import matplotlib.pyplot as plt
+from parser import parse_wavefunction
 
-# Read the number of particles and coordinates
-# from  the first wavefunction file
-f0 = open("wavefunction_0")
-lines = f0.read().split("\n")
-f0.close()
-particle_count = len(lines[0].split(";")) - 1
-coord_count    = len(lines[0].split(";")[0].split(","))
+wavefunction = parse_wavefunction()
 
-# Prepare the wavefunction object
-wavefunction = []
-for i in range(0, particle_count): 
-	wavefunction.append([])
-	for j in range(0, coord_count): 
-		wavefunction[i].append([])
-
-# Read the wavefunction samples from each file
-for f in os.listdir("."):
-	if not f.startswith("wavefunction"): continue
-	for line in open(f).read().split("\n")[0:-1]:
-		for pi, p in enumerate(line.split(";")[0:-1]):
-			for ci, x in enumerate([float(i) for i in p.split(",")]):
-				wavefunction[pi][ci].append(x)
+particle_count = len(wavefunction)
+coord_count    = len(wavefunction[0])
 
 # Histogram each coordinate of each particle
 for pi in range(0, particle_count):
