@@ -1,3 +1,5 @@
+#include <iostream>
+
 #include "walker.h"
 #include "simulation.h"
 
@@ -67,11 +69,7 @@ walker* walker :: copy()
 void walker :: sample_wavefunction()
 {
 	for (int i=0; i<particles.size(); ++i)
-	{
 		particles[i]->sample_wavefunction();
-		if (i < particles.size() - 1)
-			simulation.wavefunction_file << ";";
-	}
 	simulation.wavefunction_file << "\n";
 }
 

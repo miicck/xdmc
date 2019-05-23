@@ -42,9 +42,15 @@ void quantum_particle :: diffuse(double tau)
 
 void quantum_particle :: sample_wavefunction()
 {
-	for (int  i=0; i<simulation.dimensions-1; ++i)
-		simulation.wavefunction_file << this->coords[i] << ",";
-	simulation.wavefunction_file << this->coords[simulation.dimensions-1];
+	// Output my coordinates in the form x1,x2, ... xn
+	// (with no trailing comma)
+	for (int  i=0; i<simulation.dimensions; ++i)
+	{
+		simulation.wavefunction_file << this->coords[i];
+		if (i < simulation.dimensions - 1)
+			simulation.wavefunction_file << ",";
+	}
+	simulation.wavefunction_file << ";";
 }
 
 particle* electron :: copy()

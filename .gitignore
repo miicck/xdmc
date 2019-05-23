@@ -1,3 +1,4 @@
 dmc
 *.swp
 src/build
+src/tests

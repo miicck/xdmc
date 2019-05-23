@@ -1,6 +1,8 @@
 #ifndef __RANDOM__
 #define __RANDOM__
 
+#include <cmath>
+
 // Generate a uniform random number \in [0,1].
 inline double rand_uniform()
 {

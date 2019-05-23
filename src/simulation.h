@@ -7,8 +7,9 @@
 #include "particle.h"
 #include "potential.h"
 
-struct simulation_spec
+class simulation_spec
 {
+public:
         // Program parameters
         int pid               = 0;      // The MPI PID of this process
         int np                = 1;      // The number of MPI processes
@@ -26,10 +27,22 @@ struct simulation_spec
 
         // Output files
         std::ofstream wavefunction_file;
-        std::ofstream iterations_file;
+        std::ofstream evolution_file;
+	std::ofstream progress_file;
 
-        void open_output_files(); // Opens output files
-        void free_memory();       // Closes output files and frees template_system and potentials
+	// Loads system from input, initializes MPI, opens output files etc.
+        void load(int argc, char** argv);
+
+	// Closes output files and frees template_system and potentials
+	void free_memory();
+
+private:
+	
+	// Reads/parses the input file
+	void read_input();
+	
+	// Parse an atom from an input line split by whitespace
+	void parse_atom(std::vector<std::string> split);
 };
 
 extern simulation_spec simulation;
