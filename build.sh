@@ -1,6 +1,6 @@
 BASE=$(pwd)
 SRC=$BASE/src
-BUILD=$BASE/build
+BUILD=$BASE/src/build
 
 MPI_CC=mpicc
 COMP_FLAGS="-c -O3"

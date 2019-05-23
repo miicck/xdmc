@@ -342,49 +342,6 @@ int walkers_surviving(double pot_before, double pot_after)
 	return std::min(int(floor(p+rand_uniform())), 3);
 }
 
-// Contains the results of a single DMC iteration
-struct iter_result
-{
-	int population;
-	double average_potential;
-	double trial_energy;
-	
-	// Write the resuls to the "out" file
-	void write()
-	{
-		simulation.out_file << population << "," << trial_energy << "\n";
-	}
-
-	// Reduce the results of an iteration across processes
-	void mpi_reduce()
-	{
-		double av_trial_e = 0;
-		double av_pot     = 0;
-		int pop_sum = 0;
-		int ierr    = 0;
-
-		// Sum population over processes
-		ierr = MPI_Reduce(&population, &pop_sum, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-		if (ierr != 0) exit(MPI_ERROR);
-
-		// Average average_potential over processes
-		ierr = MPI_Reduce(&average_potential, &av_pot, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-		if (ierr != 0) exit(MPI_ERROR);
-
-		// Average trial_energy over processes
-		ierr = MPI_Reduce(&trial_energy, &av_trial_e, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-		if (ierr != 0) exit(MPI_ERROR);
-
-		// Record results on root process
-		if (simulation.pid == 0)
-		{
-			population        = pop_sum;
-			average_potential = av_pot     / double(simulation.np);
-			trial_energy      = av_trial_e / double(simulation.np);
-		}
-	}
-};
-
 // The main DMC algorithm
 int main(int argc, char** argv)
 {
@@ -436,10 +393,13 @@ int main(int argc, char** argv)
 		// Output progress on root node
 		if (simulation.pid == 0) std::cout << "\rIteration: " << iter << "/"
 					<< simulation.dmc_iterations << "     ";
-		iter_result ir;
 
 		// The new walkers that appear after the iteration
 		std::vector<walker*> new_walkers;
+
+		// Variables to accumulate
+		double average_potential = 0;
+
 		for (int n=0; n<walkers.size(); ++n)
 		{
 			walker* w = walkers[n];
@@ -460,22 +420,19 @@ int main(int argc, char** argv)
 				new_walkers.push_back(w->copy());
 
 			// Accumulate the average potential
-			ir.average_potential += surviving*pot_after;
+			average_potential += surviving*pot_after;
 		}
 
 		// Set our walkers to the newly generated ones
 		walkers = new_walkers;
 
-		// Record the resuts of the iteration
-		// and write to output
-		ir.population         = walkers.size();
-		ir.average_potential /= ir.population;
-		ir.trial_energy       = simulation.trial_energy;
-		ir.write();
-
 		// Set trial energy to control population, but allow some fluctuation
+		average_potential /= double(walkers.size());
 		double log_pop_ratio = log(walkers.size()/double(simulation.target_population));
-		simulation.trial_energy = ir.average_potential - log_pop_ratio; 
+		simulation.trial_energy = average_potential - log_pop_ratio; 
+
+		// Output the results of this iteration
+		simulation.out_file << walkers.size() << "," << simulation.trial_energy << "\n";
 	}
 	if (simulation.pid == 0) std::cout << "\n";
 

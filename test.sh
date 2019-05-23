@@ -1,5 +1,5 @@
 BASE=$(pwd)
-TEST_DIR=$BASE/tests
+TEST_DIR=$BASE/src/tests
 CORES=$(nproc --all)
 
 for DIR in $(ls $TEST_DIR)
