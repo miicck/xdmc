@@ -16,7 +16,9 @@ for i in range(0, len(y_axes)):
 	energies = data[i]
 	to_fit = lambda n, a, b, c: a + b*np.exp(-n/c)
 	p0 = [energies[-1], energies[0] - energies[-1], len(energies)/4]
-	par, cov = curve_fit(to_fit, range(0, len(energies)), energies, p0)
+	bounds = [[min(energies), -np.inf, 1],
+		  [max(energies),  np.inf, len(energies)]]
+	par, cov = curve_fit(to_fit, range(0, len(energies)), energies, p0, bounds=bounds)
 	residuals = [e - to_fit(n, *par) for n, e in enumerate(energies)]
 	print par[0] ,"+/-", np.std(residuals)
 
