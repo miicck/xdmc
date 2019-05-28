@@ -37,8 +37,15 @@ public:
         virtual double mass()=0;              // The mass of this particle (electron mass = 1)
         virtual void sample_wavefunction()=0; // Called when a request is sent to sample a walker wvfn.
 
+   	// -1 for identical fermions, 1 for identical bosons, 0 otherwise
+	virtual int exchange_symmetry(particle* other)=0;
+
         // The location of this particle
         double* coords;
+
+	// The probability that this particle
+	// will diffuse into the given copy of it
+	double overlap_prob(particle* clone);
 };
 
 // A particle that is described as point-like
@@ -49,6 +56,7 @@ public:
         // Classical particles don't diffuse
         virtual void diffuse(double tau) { }
         virtual void sample_wavefunction() { }
+	virtual int exchange_symmetry(particle* other) { return 0; }
 };
 
 // A particle who is described by an ensemble of
@@ -67,6 +75,13 @@ class electron : public quantum_particle
         virtual double charge() { return -1; }
         virtual double mass()   { return  1; }
         virtual particle* copy();
+
+	virtual int exchange_symmetry(particle* other)
+	{ 
+		if (dynamic_cast<electron*>(other))
+			return -1; 
+		return 0;
+	}
 };
 
 // A fermion with no interactions
@@ -77,6 +92,13 @@ public:
         virtual double mass()   { return 1; }
         virtual double charge() { return 0; }
         particle* copy();
+
+	virtual int exchange_symmetry(particle* other)
+	{
+		if (dynamic_cast<non_interacting_fermion*>(other))
+			return -1;
+		return 0;
+	}
 };
 
 // An atomic nucleus, as described by an atomic

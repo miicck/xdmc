@@ -15,6 +15,9 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
+#include <iostream>
+
+#include "random.h"
 #include "walker.h"
 #include "simulation.h"
 
@@ -39,12 +42,60 @@ double walker :: potential()
 	return ret;
 }
 
-void walker :: diffuse(double tau)
+void walker :: diffuse()
 {
 	// Diffuse all of the particles (classical
 	// particles will automatically not diffuse)
 	for (int i=0; i<particles.size(); ++i)
-		particles[i]->diffuse(tau);
+		particles[i]->diffuse(simulation.tau);
+}
+
+void walker :: exchange()
+{
+	// Apply random exchange moves to particles
+	for (int i=0; i<particles.size(); ++i)
+	{
+		particle* p1 = particles[i];
+		for (int j=0; j<i; ++j)
+		{
+			particle* p2 = particles[j];
+			int exchange_sym = p1->exchange_symmetry(p2);
+
+			// These particles cant be exchanged
+			if (exchange_sym == 0) continue; 
+
+			// Exchange the particles
+			if (rand_uniform() < 0.5)
+			{
+				this->weight *= double(exchange_sym);
+				for (int c=0; c<simulation.dimensions; ++c)
+				{
+					double tmp = p1->coords[c];
+					p1->coords[c] = p2->coords[c];
+					p2->coords[c] = tmp;
+				}
+			}
+		}
+	}
+}
+
+void walker :: cancel(walker* other)
+{
+	// Apply cancellation of two walkers
+
+	// Caclulate the probability that these 
+	// two walkers would overlap in the next iteration
+	double p = 1.0;
+	for (int i=0; i<particles.size(); ++i)
+		p *= particles[i]->overlap_prob(other->particles[i]);
+
+	// With this probability, cancel the walkers
+	if (rand_uniform() < p)
+	{
+		double av_weight = (this->weight + other->weight)/2.0;
+		this->weight  = av_weight;
+		other->weight = av_weight;
+	}
 }
 
 walker :: walker()
@@ -52,6 +103,7 @@ walker :: walker()
 	// Setup the walker with the particles
 	// that describe the system.
 	++ count;
+	this->weight = 1;
 	this->particles.clear();
 	for (int i=0; i<simulation.template_system.size(); ++i)
 		this->particles.push_back(simulation.template_system[i]->copy());
@@ -60,6 +112,7 @@ walker :: walker()
 walker :: walker(std::vector<particle*> particles)
 {
 	++ count;
+	this->weight = 1;
 	this->particles = particles;
 }
 
@@ -78,7 +131,9 @@ walker* walker :: copy()
 	std::vector<particle*> copied_particles;
 	for (int i=0; i<particles.size(); ++i)
 		copied_particles.push_back(particles[i]->copy());
-	return new walker(copied_particles);
+	walker* copy = new walker(copied_particles);
+	copy->weight = this->weight;
+	return copy;
 }
 
 void walker :: sample_wavefunction()

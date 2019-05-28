@@ -16,6 +16,7 @@
 */
 
 #include <vector>
+#include <iostream>
 
 #include "simulation.h"
 #include "particle.h"
@@ -29,8 +30,23 @@
 // spawn etc...
 int walkers_surviving(double pot_before, double pot_after)
 {
+	if (std::isinf(pot_after)) return 0;
+	if (std::isinf(pot_before)) return 0;
+
 	double p = exp(-simulation.tau*(pot_before + pot_after - 2*simulation.trial_energy)/2);
 	return std::min(int(floor(p+rand_uniform())), 3);
+}
+
+// Renormalize the set of walkers such that sum |w_i|^2 = 1
+void renormalize(std::vector<walker*> &walkers)
+{
+	double av_weight_sq = 0;
+	for (int n=0; n<walkers.size(); ++n)
+		av_weight_sq += walkers[n]->weight * walkers[n]->weight;
+
+	av_weight_sq /= double(walkers.size());
+	for (int n=0; n<walkers.size(); ++n)
+		walkers[n]->weight /= sqrt(av_weight_sq);
 }
 
 // The main DMC algorithm
@@ -52,10 +68,9 @@ int main(int argc, char** argv)
 		walker* w = new walker();
 		walkers.push_back(w);
 
-		// Carry out an initial large diffusion
-		// to avoid unneccasary equilibriation
-		// and exact particle overlap at the origin
-		w->diffuse(1.0);
+		// Carry out an initial diffusion
+		// to avoid exact particle overlap
+		w->diffuse();
 	}
 	
 	// Run our DMC iterations
@@ -67,6 +82,20 @@ int main(int argc, char** argv)
 
 		// Variables to accumulate
 		double average_potential = 0;
+		double average_weight = 0;
+		double average_weight_sq = 0;
+
+		// Carry out exchange moves on the walkers
+		for (int n=0; n<walkers.size(); ++n)
+			walkers[n]->exchange();
+
+		// Apply cancellation of walkers
+		for (int n=0; n<walkers.size(); ++n)
+			for (int m=0; m<n; ++m)
+				walkers[n]->cancel(walkers[m]);
+
+		// Renormalize weights
+		renormalize(walkers);
 
 		for (int n=0; n<walkers.size(); ++n)
 		{
@@ -74,11 +103,18 @@ int main(int argc, char** argv)
 
 			// Diffuse the walker and evaluate potential change
 			double pot_before = w->potential();
-			w->diffuse(simulation.tau);
+			w->diffuse();
 			double pot_after  = w->potential();
 
-			// Work out how many survivded the move
+			// Work out how many will survive the move
 			int surviving = walkers_surviving(pot_before, pot_after);
+			if (w->weight*w->weight < 0.1)
+				surviving = 0;
+
+			// Accumulate averages
+			average_potential  += surviving*pot_after;
+			average_weight     += surviving*w->weight;
+			average_weight_sq  += surviving*w->weight*w->weight; 
 
 			if (surviving == 0) delete(w); // Delete this walker if it died
 			else new_walkers.push_back(w); // Otherwise it survives
@@ -86,23 +122,25 @@ int main(int argc, char** argv)
 			// Spawn new walkers
 			for (int s=0; s < surviving-1; ++s) 
 				new_walkers.push_back(w->copy());
-
-			// Accumulate the average potential
-			average_potential += surviving*pot_after;
 		}
 
 		// Set our walkers to the newly generated ones
 		walkers = new_walkers;
 
-		// Set trial energy to control population, but allow some fluctuation
 		average_potential /= double(walkers.size());
+		average_weight    /= double(walkers.size());
+		average_weight_sq /= double(walkers.size());
+
+		// Set trial energy to control population, but allow some fluctuation
 		double log_pop_ratio = log(walkers.size()/double(simulation.target_population));
 		simulation.trial_energy = average_potential - log_pop_ratio; 
 
 		// Output the main results of this iteration to track evolution
 		simulation.evolution_file 
-			<< walkers.size() << "," 
-			<< simulation.trial_energy << "\n";
+			<< walkers.size()          << "," 
+			<< simulation.trial_energy << ","
+			<< average_weight          << ","
+			<< average_weight_sq       << "\n";
 	}
 
 	// Sample the final wavefunction to file

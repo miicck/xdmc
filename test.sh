@@ -7,7 +7,9 @@ for DIR in $(ls $TEST_DIR)
 do
 	cd $TEST_DIR/$DIR
 	mpirun -np $CORES $BASE/dmc > /dev/null
-	echo $DIR energy: $(python $SCRIPT_DIR/estimate_energy.py)
+	echo $DIR
+	echo "    "$(cat progress_0 | grep "total time")
+	echo "    "energy: $(python $SCRIPT_DIR/estimate_energy.py)
 	mv input ..
 	rm *
 	mv ../input .

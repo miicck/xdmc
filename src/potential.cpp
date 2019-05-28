@@ -17,6 +17,7 @@
 
 #include "simulation.h"
 #include "potential.h"
+#include "constants.h"
 
 double harmonic_well::potential(particle* p)
 {
@@ -25,5 +26,3 @@ double harmonic_well::potential(particle* p)
 		r2 += p->coords[i]*p->coords[i];
 	return 0.5*r2*omega*omega;
 }
-
-

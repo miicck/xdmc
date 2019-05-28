@@ -15,6 +15,7 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
+#include <iostream>
 
 #include "simulation.h"
 #include "particle.h"
@@ -33,6 +34,17 @@ double particle::interaction(particle* other)
 	}
 	r = sqrt(r);
 	return (this->charge()*other->charge())/r;
+}
+
+double particle :: overlap_prob(particle* clone)
+{
+	double r = 0;
+	for (int i=0; i<simulation.dimensions; ++i)
+	{
+		double dxi = this->coords[i] - clone->coords[i];
+		r += dxi * dxi;
+	}
+	return exp(-r/(4*simulation.tau));
 }
 
 particle::particle()

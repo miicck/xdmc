@@ -24,6 +24,9 @@
 #include "particle.h"
 #include "potential.h"
 
+// This class represents a complete specification for
+// a simulation to run and progress, including ready-to-write
+// output files and control parameters. 
 class simulation_spec
 {
 public:

@@ -29,11 +29,14 @@ class walker
 public:
         static int count;
         double potential();
-        void diffuse(double tau);
+        void diffuse();
+	void exchange();
+	void cancel(walker* other);
         walker();
         ~walker();
         walker* copy();
         void sample_wavefunction();
+	double weight;
 
 private:
 

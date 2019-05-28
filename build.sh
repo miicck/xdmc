@@ -3,7 +3,7 @@ SRC=$BASE/src
 BUILD=$BASE/src/build
 
 MPI_CC=mpicc
-COMP_FLAGS="-c -O3"
+COMP_FLAGS="-c -O3 -g"
 LINK_FLAGS="-o dmc"
 
 rm -r $BUILD

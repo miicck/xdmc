@@ -19,6 +19,7 @@
 #define __RANDOM__
 
 #include <cmath>
+#include "constants.h"
 
 // Generate a uniform random number \in [0,1].
 inline double rand_uniform()
