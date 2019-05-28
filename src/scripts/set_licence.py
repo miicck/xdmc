@@ -1,4 +1,5 @@
-/*
+
+licence = """/*
     DMCPP
     test
     Copyright (C) 2019 Michael Hutcheon
@@ -14,27 +15,34 @@
     GNU General Public License for more details.
 
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
-*/
+*/"""
 
-#ifndef __RANDOM__
-#define __RANDOM__
+import sys
+for f in sys.argv[1:]:
 
-#include <cmath>
+	# Read the lines from the source
+	read  = open(f)
+	lines = read.read().split("\n")
+	read.close()
 
-// Generate a uniform random number \in [0,1].
-inline double rand_uniform()
-{
-        return (rand()%RAND_MAX)/double(RAND_MAX);
-}
+	# Find the Licence section if it exists
+	# (including trailing whitespace)
+	i_licence = []
+	end_found = False
+	if "/*" in lines[0]:
+		for i, l in enumerate(lines):
+			i_licence.append(i)
+			if "*/" in l:
+				end_found = True
+				continue
+			if end_found:
+				if len(l.strip()) > 0:
+					break
 
-// Generate a zero-mean noramlly distributed number
-// with the specified variance using a Box-Muller transform.
-inline double rand_normal(double var)
-{
-        double u1 = rand_uniform();
-        double u2 = rand_uniform();
-        return sqrt(-2*var*log(u1)) * sin(2*PI*u2);
-}
-
-#endif
-
+	# Overwrite the file with the new licence
+	write = open(f, "w")
+	write.write(licence+"\n\n")
+	for i, l in enumerate(lines):
+		if i in i_licence: continue
+		write.write(l+"\n")
+	write.close()
