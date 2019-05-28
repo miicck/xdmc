@@ -15,6 +15,7 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
+#include "simulation.h"
 #include "potential.h"
 
 double harmonic_well::potential(particle* p)

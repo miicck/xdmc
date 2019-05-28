@@ -15,6 +15,7 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef __RANDOM__
 #define __RANDOM__
 
 #include <cmath>

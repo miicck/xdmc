@@ -34,13 +34,12 @@ for f in sys.argv[1:]:
 	end_found = False
 	if "/*" in lines[0]:
 		for i, l in enumerate(lines):
-			i_licence.append(i)
-			if "*/" in l:
-				end_found = True
-				continue
 			if end_found:
 				if len(l.strip()) > 0:
 					break
+			if "*/" in l:
+				end_found = True
+			i_licence.append(i)
 
 	# Overwrite the file with the new licence
 	write = open(f, "w")

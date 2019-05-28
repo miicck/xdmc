@@ -15,6 +15,7 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef __SIMULATION__
 #define __SIMULATION__
 
 #include <vector>

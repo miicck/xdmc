@@ -15,6 +15,8 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
+#include <mpi.h>
+#include <vector>
 #include <sstream>
 #include <iterator>
 
@@ -84,7 +86,7 @@ void simulation_spec :: read_input()
                 // Read in the number of DMC walkers and convert
                 // to walkers-per-process
                 else if (tag == "walkers")
-                        target_population = std::stoi(split[1])/simulation.np;
+                        target_population = std::stoi(split[1])/np;
 
                 // Read in the number of DMC iterations
                 else if (tag == "iterations")
@@ -123,11 +125,11 @@ void simulation_spec::load(int argc, char** argv)
         if (MPI_Comm_rank(MPI_COMM_WORLD, &pid) != 0) exit(MPI_ERROR);
 
         // Seed random number generator
-        srand(simulation.pid*clock());
+        srand(pid*clock());
 
         // Read our input and setup parameters accordingly 
         // do for each process sequentially to avoid access issues
-        for (int pid_read = 0; pid_read < simulation.np; ++ pid_read)
+        for (int pid_read = 0; pid_read < np; ++ pid_read)
         {
                 if (pid == pid_read) read_input();
                 MPI_Barrier(MPI_COMM_WORLD);

@@ -15,6 +15,7 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef __CONSTANTS__
 #define __CONSTANTS__
 
 // Physical constants (we work in atomic units)

@@ -15,6 +15,7 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
+#ifndef __PARTICLE__
 #define __PARTICLE__
 
 #include "constants.h"

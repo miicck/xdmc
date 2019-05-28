@@ -15,9 +15,13 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
-#include "constants.h"
-#include "random.h"
+#include <vector>
+
+#include "simulation.h"
+#include "particle.h"
 #include "walker.h"
+#include "random.h"
+#include "constants.h"
 
 // Returns the number of walkers that should survive after a 
 // walker moves from potential pot_before to pot_after. i.e returns
@@ -115,6 +119,14 @@ int main(int argc, char** argv)
 	// Free memory used in the simulation specification
 	simulation.free_memory();
 }
+
+
+
+
+
+
+
+
 
 
 

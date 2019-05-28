@@ -15,7 +15,6 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
-
 #include "walker.h"
 #include "simulation.h"
 
