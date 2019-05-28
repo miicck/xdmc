@@ -1,7 +1,6 @@
 /*
     DMCPP
-    test
-    Copyright (C) 2019 Michael Hutcheon
+    Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,7 +15,6 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
-#include "simulation.h"
 #include "constants.h"
 #include "random.h"
 #include "walker.h"
@@ -117,6 +115,7 @@ int main(int argc, char** argv)
 	// Free memory used in the simulation specification
 	simulation.free_memory();
 }
+
 
 
 

@@ -1,8 +1,7 @@
 
 licence = """/*
     DMCPP
-    test
-    Copyright (C) 2019 Michael Hutcheon
+    Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -18,7 +17,11 @@ licence = """/*
 */"""
 
 import sys
+import os
 for f in sys.argv[1:]:
+	
+	if not os.path.isfile(f):
+		continue
 
 	# Read the lines from the source
 	read  = open(f)
