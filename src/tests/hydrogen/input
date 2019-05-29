@@ -3,3 +3,5 @@ walkers    1000    # The number of DMC walkers
 iterations 1000    # The number of DMC iterations to carry out 
 tau        0.01    # The DMC timestep
 atom 1 1 1 0 0 0   # Create an atom (charge electrons mass x y z)
+no_cancellation    # Turn off walker weight cancellation
+no_exchange        # Turn off exchange move

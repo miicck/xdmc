@@ -45,6 +45,31 @@ private:
 
         // Create a walker from a given particle set 
         walker(std::vector<particle*> particles);
+
+	// True if the potential needs re-evaluating
+	bool potential_dirty = true;
+	double last_potential = 0;
+};
+
+// A collection of walkers
+class walker_collection
+{
+public:
+	int size() { return walkers.size(); }
+	walker* operator[](int i) { return walkers[i]; }
+	walker_collection();
+	~walker_collection();
+	void renormalize();
+	void diffuse_and_branch();
+	void make_exchange_moves();
+	void apply_cancellations();
+	void sample_wavefunction();
+	double average_weight_sq();
+	double average_weight();
+	double energy_estimate();
+
+private:
+	std::vector<walker*> walkers;
 };
 
 #endif

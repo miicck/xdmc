@@ -96,6 +96,14 @@ void simulation_spec :: read_input()
                 else if (tag == "tau")
                         tau = std::stod(split[1]);
 
+		// Turn off exhange moves
+		else if (tag == "no_exchange")
+			exchange_moves = false;
+
+		// Turn off cancellation of walker weights
+		else if (tag == "no_cancellation")
+			cancellation = false;
+
                 // Read in an atom
                 else if (tag == "atom")
                         parse_atom(split);
@@ -117,6 +125,9 @@ void simulation_spec :: read_input()
 
 void simulation_spec::load(int argc, char** argv)
 {
+	// Get the start time so we can time stuff
+	start_clock = clock();
+	
 	// Initialize mpi
         if (MPI_Init(&argc, &argv) != 0) exit(MPI_ERROR);
 
@@ -136,6 +147,7 @@ void simulation_spec::load(int argc, char** argv)
         }
 
 	// Open various output files
+	error_file.open(       "error_"        + std::to_string(pid));
 	progress_file.open(    "progress_"     + std::to_string(pid));
 	evolution_file.open(   "evolution_"    + std::to_string(pid));
 	wavefunction_file.open("wavefunction_" + std::to_string(pid));
@@ -157,12 +169,24 @@ void simulation_spec::free_memory()
 		delete potentials[i];
 
 	// Output info on objects that werent deconstructed properly
-        //if (walker::count != 0 || particle::count != 0)
-        //std::cout << "PID: " << pid << " un-deleted objects:\n"
-        //         << "  Walkers   : " << walker::count   << "\n"
-        //         << "  Particles : " << particle::count << "\n";
+        if (walker::count != 0 || particle::count != 0)
+        error_file << "PID: " << pid << " un-deleted objects:\n"
+                   << "  Walkers   : " << walker::count   << "\n"
+                   << "  Particles : " << particle::count << "\n";
 
+	error_file.close();
 	MPI_Finalize();
 }
 
+void simulation_spec :: flush()
+{
+	error_file.flush();
+	progress_file.flush();
+	evolution_file.flush();
+	wavefunction_file.flush();
+}
 
+double simulation_spec :: time()
+{
+	return double(clock()-start_clock)/double(CLOCKS_PER_SEC);
+}

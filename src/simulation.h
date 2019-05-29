@@ -38,6 +38,8 @@ public:
         int dmc_iterations    = 1000;   // The number of DMC iterations to carry out
         double tau            = 0.01;   // The DMC timestep
         double trial_energy   = 0;      // Energy used to control the DMC population
+	bool exchange_moves   = true;   // True if we carry out exchange moves
+	bool cancellation     = true;   // True if we carry out walker cancellations
 
         // The system which will be copied to generate walkers
         std::vector<particle*> template_system;
@@ -49,12 +51,19 @@ public:
         std::ofstream wavefunction_file;
         std::ofstream evolution_file;
 	std::ofstream progress_file;
+	std::ofstream error_file;
+
+	// Flush output files so we have information if a run terminates
+	void flush();
 
 	// Loads system from input, initializes MPI, opens output files etc.
         void load(int argc, char** argv);
 
 	// Closes output files and frees template_system and potentials
 	void free_memory();
+
+	// Get the time since startup
+	double time();
 
 private:
 	
@@ -63,6 +72,9 @@ private:
 	
 	// Parse an atom from an input line split by whitespace
 	void parse_atom(std::vector<std::string> split);
+
+	// The result of clock() called at load
+	int start_clock;
 };
 
 extern simulation_spec simulation;
