@@ -4,10 +4,19 @@ import sys
 import os
 
 def parse_evolution():
+
 	# Labels for the plots
-	y_axes = ["Population", "Trial energy (Hartree)", "Average weight", "Average weight^2"]
+	y_axes = [
+		"Population",
+		"Trial energy (Hartree)",
+		"Average weight",
+		"Average weight^2"
+	]
+
+	# How to combine axes across processes
 	how_to_combine = [
-		lambda(p) : np.sum(p, axis=0), # Sum populations across processes
+		lambda(p) : np.sum(p, axis=0) , # Sum populations across processes
+		lambda(e) : np.mean(e, axis=0), # Average energies across processes
 		lambda(e) : np.mean(e, axis=0), # Average energies across processes
 		lambda(w) : np.mean(w, axis=0), # Average weights across processes
 		lambda(w) : np.mean(w, axis=0), # Average weights across processes
@@ -53,8 +62,10 @@ def parse_wavefunction():
 	for f in os.listdir("."):
 		if not f.startswith("wavefunction"): continue
 		for line in open(f).read().split("\n")[0:-1]:
+			weight = float(line.split(":")[0])
+			line = line.split(":")[1]
 			for pi, p in enumerate(line.split(";")[0:-1]):
 				for ci, x in enumerate([float(i) for i in p.split(",")]):
-					wavefunction[pi][ci].append(x)
+					wavefunction[pi][ci].append([weight, x])
 	
 	return np.array(wavefunction)

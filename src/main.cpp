@@ -27,9 +27,6 @@ void run_dmc()
 	// Our DMC walkers
 	simulation.progress_file << "Initializing walkers...\n";
 	walker_collection walkers;
-
-	// Initialize trial energy to avoid inital population explosion
-	simulation.trial_energy = walkers.energy_estimate();
 	
 	// Run our DMC iterations
 	simulation.progress_file << "Starting DMC simulation...\n";
@@ -37,7 +34,9 @@ void run_dmc()
 	{
 		simulation.progress_file 
 			<< "Iteration: " << iter << "/" 
-			<< simulation.dmc_iterations << "\n";
+			<< simulation.dmc_iterations
+			<< " Population: " << walkers.size()
+			<< " Trial energy: " << simulation.trial_energy << "\n";
 
 		// Carry out exchange moves on the walkers
 		if (simulation.exchange_moves)

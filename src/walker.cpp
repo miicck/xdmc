@@ -156,6 +156,7 @@ void walker :: cancel(walker* other)
 
 void walker :: sample_wavefunction()
 {
+	simulation.wavefunction_file << this->weight << ":";
 	for (int i=0; i<particles.size(); ++i)
 		particles[i]->sample_wavefunction();
 	simulation.wavefunction_file << "\n";
@@ -167,8 +168,12 @@ void walker :: sample_wavefunction()
 
 walker_collection :: walker_collection()
 {
+	// Reserve a reasonable amount of space to deal efficiently
+	// with the fact that the population can fluctuate.
+	walkers.reserve(simulation.target_population*4);
+
 	// Initialize the set of walkers to the target
-	// population size
+	// population size.
 	for (int i=0; i<simulation.target_population; ++i)
 	{
 		walker* w = new walker();
@@ -176,6 +181,8 @@ walker_collection :: walker_collection()
 
 		// Carry out initial diffusion to avoid
 		// exact particle overlap on first iteration
+		if (simulation.exchange_moves)
+			w->exchange();
 		w->diffuse();
 	}
 }
