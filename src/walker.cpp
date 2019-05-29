@@ -23,7 +23,48 @@
 // walker //
 //%%%%%%%%//
 
-int walker :: count = 0;
+int walker :: constructed_count = 0;
+
+walker :: walker()
+{
+	// Default constructor:
+	// Setup the walker with the particles
+	// that describe the system.
+	++ constructed_count;
+	this->weight = 1;
+	this->particles.clear();
+	for (int i=0; i<simulation.template_system.size(); ++i)
+		this->particles.push_back(simulation.template_system[i]->copy());
+}
+
+walker :: walker(std::vector<particle*> particles)
+{
+	// Constructor to create a walker explicitly from
+	// a collection of particles
+	++ constructed_count;
+	this->weight = 1;
+	this->particles = particles;
+}
+
+walker :: ~walker()
+{
+	// Clear up memory (delete all the particles).
+	-- constructed_count;
+	for (int i=0; i<particles.size(); ++i)
+		delete(particles[i]);
+}
+
+
+walker* walker :: copy()
+{
+	// Return a copy of this walker (copy each of the particles)
+	std::vector<particle*> copied_particles;
+	for (int i=0; i<particles.size(); ++i)
+		copied_particles.push_back(particles[i]->copy());
+	walker* copy = new walker(copied_particles);
+	copy->weight = this->weight;
+	return copy;
+}
 
 double walker :: potential()
 {
@@ -113,44 +154,6 @@ void walker :: cancel(walker* other)
 	}
 }
 
-walker :: walker()
-{
-	// Setup the walker with the particles
-	// that describe the system.
-	++ count;
-	this->weight = 1;
-	this->particles.clear();
-	for (int i=0; i<simulation.template_system.size(); ++i)
-		this->particles.push_back(simulation.template_system[i]->copy());
-}
-
-walker :: walker(std::vector<particle*> particles)
-{
-	++ count;
-	this->weight = 1;
-	this->particles = particles;
-}
-
-walker :: ~walker()
-{
-	// Clear up memory (delete all the particles).
-	-- count;
-	for (int i=0; i<particles.size(); ++i)
-		delete(particles[i]);
-}
-
-
-walker* walker :: copy()
-{
-	// Return a copy of this walker (copy each of the particles)
-	std::vector<particle*> copied_particles;
-	for (int i=0; i<particles.size(); ++i)
-		copied_particles.push_back(particles[i]->copy());
-	walker* copy = new walker(copied_particles);
-	copy->weight = this->weight;
-	return copy;
-}
-
 void walker :: sample_wavefunction()
 {
 	for (int i=0; i<particles.size(); ++i)
@@ -184,12 +187,13 @@ walker_collection :: ~walker_collection()
 		delete (*this)[n];
 }
 
-// Returns the number of walkers that should survive after a
-// walker with the given weight moves from potential pot_before to pot_after.
-// Returns 0 if the walker should die and 1 if it should live, 2 if another should
-// spawn etc...
 int walkers_surviving(double pot_before, double pot_after, double weight)
 {
+	// Returns the number of walkers that should survive after a
+	// walker with the given weight moves from potential pot_before to pot_after.
+	// Returns 0 if the walker should die and 1 if it should live, 2 if another should
+	// spawn etc...
+
         if (std::isinf(pot_after))  return 0;
         if (std::isinf(pot_before)) return 0;
 
@@ -203,6 +207,11 @@ int walkers_surviving(double pot_before, double pot_after, double weight)
 
 void walker_collection :: diffuse_and_branch()
 {
+	// Carry out diffusion and branching of the walkers
+	// (this is done as one step because we need to know
+	// the potential before and after diffusion to apply
+	// the branching step)
+
 	int nmax = size();
 	for (int n=0; n < nmax; ++n)
 	{
@@ -216,12 +225,20 @@ void walker_collection :: diffuse_and_branch()
 
 		if (surviving == 0)
 		{
-			walkers.erase(walkers.begin()+n);
+			// Delete this walker
+			// (swap it to the end first for efficient
+			// removal)
+			std::swap(walkers[n], walkers.back());
+			walkers.pop_back();
 			delete(w);
+
+			// Deal with the fact this messed up the
+			// thing we were iterating over
 			--n;
 			--nmax;
 		}
 
+		// Add neccasary copies of this walker at the end of the collection
 		for (int s=0; s<surviving-1; ++s)
 			walkers.push_back(w->copy());
 	}

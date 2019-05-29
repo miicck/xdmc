@@ -21,7 +21,19 @@
 #include "particle.h"
 #include "random.h"
 
-int particle::count;
+int particle::constructed_count;
+
+particle::particle()
+{
+	++ constructed_count;
+	coords = new double[simulation.dimensions];
+}
+
+particle::~particle()
+{
+	-- constructed_count;
+	delete[] coords;
+}
 
 double particle::interaction(particle* other)
 {
@@ -45,18 +57,6 @@ double particle :: overlap_prob(particle* clone)
 		r += dxi * dxi;
 	}
 	return exp(-r/(4*simulation.tau));
-}
-
-particle::particle()
-{
-	++ count;
-	coords = new double[simulation.dimensions];
-}
-
-particle::~particle()
-{
-	-- count;
-	delete[] coords;
 }
 
 void quantum_particle :: diffuse(double tau)
@@ -112,5 +112,3 @@ particle* nucleus :: copy()
 		ret->coords[i] = this->coords[i];
 	return ret;
 }
-
-

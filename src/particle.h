@@ -26,7 +26,7 @@
 class particle
 {
 public:
-        static int count;
+        static int constructed_count;
         particle();
         ~particle();
 

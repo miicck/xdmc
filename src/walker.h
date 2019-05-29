@@ -27,7 +27,7 @@
 class walker
 {
 public:
-        static int count;
+        static int constructed_count;
         double potential();
         void diffuse();
 	void exchange();

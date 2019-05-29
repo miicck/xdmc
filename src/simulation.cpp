@@ -169,10 +169,10 @@ void simulation_spec::free_memory()
 		delete potentials[i];
 
 	// Output info on objects that werent deconstructed properly
-        if (walker::count != 0 || particle::count != 0)
+        if (walker::constructed_count != 0 || particle::constructed_count != 0)
         error_file << "PID: " << pid << " un-deleted objects:\n"
-                   << "  Walkers   : " << walker::count   << "\n"
-                   << "  Particles : " << particle::count << "\n";
+                   << "  Walkers   : " << walker::constructed_count   << "\n"
+                   << "  Particles : " << particle::constructed_count << "\n";
 
 	error_file.close();
 	MPI_Finalize();
@@ -180,6 +180,7 @@ void simulation_spec::free_memory()
 
 void simulation_spec :: flush()
 {
+	// Flush all of the output files to disk
 	error_file.flush();
 	progress_file.flush();
 	evolution_file.flush();
@@ -188,5 +189,6 @@ void simulation_spec :: flush()
 
 double simulation_spec :: time()
 {
+	// Return the time in seconds since startup
 	return double(clock()-start_clock)/double(CLOCKS_PER_SEC);
 }
