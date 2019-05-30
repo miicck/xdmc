@@ -41,7 +41,62 @@ def parse_evolution():
 		data.append(how_to_combine[i]([d[i] for d in all_data]))
 	return np.array([y_axes, data])
 
+def transpose_wavefunction(wfn):
+	# Take a wavefunction of the form
+	# wavefunction[iteration number][walker number] = [weight, x0, x1...]
+	# and return the array
+	# [[w1, w2, w3 ... wN], [x0_1, x0_2, x0_3 ... x0_N], [x1_1, x1_2, x1_3 ... x1_N] ...]
+	# where 1 -> N runs over all iterations and walker numbers 
+	# (i.e walkers from all iterations are combined)
+	wfn_combined = []
+	for i in range(0, len(wfn)):
+		wfn_combined.extend(wfn[i])
+	return np.array(wfn_combined).T
+
 def parse_wavefunction():
+	
+	# Combines wavefunctions across processes
+	wfs = []
+	for f in os.listdir("."):
+		if f.startswith("wavefunction_"):
+			wf = parse_wavefunction_file(f)
+			wfs.append(wf)
+			continue # Only do one for now
+	wfn = wfs[0]
+	for wf in wfs[1:]:
+		for i in range(0, len(wfn)):
+			wfn[i].extend(wf[i])
+	return wfn
+			
+
+def parse_wavefunction_file(filename):
+	
+	# Parse wavefunction into the form
+	# wavefunction[iteration number][walker number] = [weight, x0, x1...]
+	# where x0, x1 ... are the coordinates of the particles
+	f0 = open(filename)
+	lines = f0.read().split("\n")
+	f0.close()
+
+	wavefunction = []
+	iteration    = []
+	for l in lines[0:-1]:
+		if "#" in l:
+			wavefunction.append(iteration)
+			iteration = []
+			continue
+
+		weight, coord_data = l.split(":")
+		particles = coord_data.split(";")[0:-1]
+
+		dat = [float(weight)]
+		for p in particles:
+			x = [float(xi) for xi in p.split(",")]
+			dat.append(x)
+
+		iteration.append(dat)
+
+	return wavefunction
 
 	# Read the number of particles and coordinates
 	# from  the first wavefunction file

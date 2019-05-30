@@ -297,6 +297,7 @@ void walker_collection :: sample_wavefunction()
 	// Sample the wavefunction to a file
 	for (int n=0; n<size(); ++n)
 		(*this)[n]->sample_wavefunction();
+	simulation.wavefunction_file << "#" << "\n";
 }
 
 void walker_collection :: make_exchange_moves()

@@ -3,8 +3,8 @@ SRC=$BASE/src
 BUILD=$BASE/src/build
 
 MPI_CC=mpicc
-COMP_FLAGS="-c -O3 -g"
-LINK_FLAGS="-o dmc"
+COMP_FLAGS="-c -O3 -g -p"
+LINK_FLAGS="-p -o xdmc"
 
 rm -r $BUILD
 mkdir $BUILD

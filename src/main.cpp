@@ -60,12 +60,13 @@ void run_dmc()
 			<< walkers.average_weight()    << ","
 			<< walkers.average_weight_sq() << "\n";
 
+		// Sample the wavefunction for the last 10 steps
+		//if (simulation.dmc_iterations - iter < 10)
+		walkers.sample_wavefunction();
+
 		// Flush output files after every iteration
 		simulation.flush();
 	}
-
-	// Sample the final wavefunction to file
-	walkers.sample_wavefunction();
 
 	// Output success message
 	simulation.progress_file << "Done, total time: " << simulation.time() << "s.\n";

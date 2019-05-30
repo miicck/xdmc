@@ -15,8 +15,6 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
-#include <iostream>
-
 #include "simulation.h"
 #include "particle.h"
 #include "random.h"
