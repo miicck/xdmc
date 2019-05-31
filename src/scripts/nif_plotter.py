@@ -22,7 +22,7 @@ def plot_analytic_2nif_harmonic(min_lim, max_lim, LEVELS, alpha=1.0):
 	psi1 = lambda x : x * psi0(x)
         xs = np.linspace(min_lim,max_lim,100)
         xs, ys = np.meshgrid(xs, xs)
-        zs = [psi0(x)*psi1(y)-psi0(y)*psi1(x) for x, y in zip(xs,ys)]
+        zs = [(psi0(x)*psi1(y)-psi0(y)*psi1(x)) for x, y in zip(xs,ys)]
         plt.contour(xs,ys,zs,LEVELS,alpha=alpha, cmap=get_weight_cmap(alpha=False))
 	plt.plot([min_lim, max_lim], [min_lim, max_lim], color="black")
 	label_plot()
@@ -48,8 +48,8 @@ def plot_2nif(start_iter, end_iter):
 	iterations = len(wavefunction)
 	wfn = parser.transpose_wavefunction(wavefunction)
 
-	xs = [x[0] for x in wfn[1]]
-	ys = [x[0] for x in wfn[2]]
+	xs = np.array([x[0] for x in wfn[1]])
+	ys = np.array([x[0] for x in wfn[2]])
 	zs = wfn[0]
 
 	fs = "{0} walkers from {1} dmc iteration(s) {2} to {3}"
@@ -76,6 +76,7 @@ def plot_2nif(start_iter, end_iter):
 	for iplt, tau in enumerate([0.05, 1.0]):
 
 		zn  = np.zeros((len(yn), len(xn)))
+		# rs  = (xs**2 + ys**2)**0.5 # Use for phase space factor?
 		for iy, y in enumerate(yn):
 			for ix, x in enumerate(xn):
 				dr2 = (xs - x)**2 + (ys - y)**2

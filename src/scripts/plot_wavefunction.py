@@ -19,16 +19,19 @@ print "Coordinates: ",num_coords
 
 for ip, particle in enumerate(coords):
 
-	positive_walkers = np.array([p for w, p in zip(weights, particle) if w > 0])
-	negative_walkers = np.array([p for w, p in zip(weights, particle) if w < 0])
+	positive_walkers = np.array([p for w, p in zip(weights, particle) if w > 0]).T
+	negative_walkers = np.array([p for w, p in zip(weights, particle) if w < 0]).T
 
-	for ix, x in enumerate(positive_walkers.T):
+	for ix, x in enumerate(positive_walkers):
 		plt.subplot(num_particles, num_coords, ip*num_coords+ix+1)
 		plt.hist(x, label="Positive", alpha=0.5, bins=len(x)/10)
 
-	for ix, x in enumerate(negative_walkers.T):
+	for ix, x in enumerate(negative_walkers):
 		plt.subplot(num_particles, num_coords, ip*num_coords+ix+1)
 		plt.hist(x, label="Negative", alpha=0.5, bins=len(x)/10)
+
+	for ix in range(0,len(negative_walkers)):
+		plt.subplot(num_particles, num_coords, ip*num_coords+ix+1)
 		plt.xlabel("Particle {0} coord {1}".format(ip+1, ix+1))
 		plt.legend()
 
