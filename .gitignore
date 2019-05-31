@@ -1,5 +1,4 @@
 xdmc
 *.swp
-src/build
-src/tests
 *.pyc
+src/build
