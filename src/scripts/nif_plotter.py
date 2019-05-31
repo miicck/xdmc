@@ -2,6 +2,31 @@ import parser
 import matplotlib.pyplot as plt
 import numpy as np
 
+def plot_analytic_2nif_harmonic(min_lim, max_lim, LEVELS, alpha=1.0):
+	def psi0(x):
+                return np.exp(-x**2)
+
+        def psi1(x):
+                return x * psi0(x)
+
+        xs = np.linspace(min_lim,max_lim,100)
+        xs, ys = np.meshgrid(xs, xs)
+        zs = [psi0(x)*psi1(y)-psi0(y)*psi1(x) for x, y in zip(xs,ys)]
+
+        plt.contour(xs,ys,zs,LEVELS,alpha=alpha)
+
+def plot_2nif_fast(wavefunction):
+	
+	wfn = parser.transpose_wavefunction(wavefunction)
+	xs = [x[0] for x in wfn[1]]
+	ys = [x[0] for x in wfn[2]]
+	zs = wfn[0]
+
+	plt.scatter(xs,ys,c=zs,alpha=0.2)
+	plot_analytic_2nif_harmonic(-4,4,40,alpha=0.5)
+	plt.xlim([-4,4])
+	plt.ylim([-4,4])
+
 def plot_2nif(wavefunction):
 	iterations = len(wavefunction)
 	wfn = parser.transpose_wavefunction(wavefunction)
@@ -20,15 +45,23 @@ def plot_2nif(wavefunction):
 	xs = [x[0] for x in wfn[1]]
 	ys = [x[0] for x in wfn[2]]
 	zs = wfn[0]
+
 	plt.suptitle("{0} walkers from {1} dmc iteration(s)".format(len(zs), iterations))
 
-	RES = 20
-	min_lim = min(min(xs), min(ys))
-	max_lim = max(max(xs), max(ys))
+	RES    = 10
+	LEVELS = 40
+	min_lim = -4
+	max_lim = 4
+
+	plt.subplot(2,2,3)
+	plt.scatter(xs, ys, c=zs, alpha=0.2)
+	plt.xlim([min_lim,max_lim])
+	plt.ylim([min_lim,max_lim])
+
 	xn  = np.linspace(min_lim, max_lim, RES)
 	yn  = np.linspace(min_lim, max_lim, RES)
 
-	for iplt, tau in enumerate([0.01, 0.1, 1.0]):
+	for iplt, tau in enumerate([0.05, 0.5]):
 
 		zn  = [] 
 		for y in yn:
@@ -45,18 +78,8 @@ def plot_2nif(wavefunction):
 		xplot, yplot = np.meshgrid(xn, yn)
 
 		plt.subplot(2,2,1+iplt)
-		plt.contour(xplot, yplot, zn)
+		plt.contour(xplot, yplot, zn, LEVELS)
 		plt.plot([min_lim, max_lim], [min_lim, max_lim], color="black")
 
-	def psi0(x):
-		return np.exp(-x**2)
-
-	def psi1(x):
-		return x * psi0(x)
-
-	xs = np.linspace(min_lim,max_lim,100)
-	xs, ys = np.meshgrid(xs, xs)
-	zs = [psi0(x)*psi1(y)-psi0(y)*psi1(x) for x, y in zip(xs,ys)]
-
 	plt.subplot(224)
-	plt.contour(xs,ys,zs)
+	plot_analytic_2nif_harmonic(min_lim, max_lim, LEVELS)

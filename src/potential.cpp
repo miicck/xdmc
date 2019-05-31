@@ -38,5 +38,5 @@ double atomic_potential :: potential(particle* p)
 	}
 	r = sqrt(r);
 
-	return this->charge * p->charge() / r;
+	return this->charge * p->charge / r;
 }

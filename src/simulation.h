@@ -38,8 +38,6 @@ public:
         int dmc_iterations    = 1000;   // The number of DMC iterations to carry out
         double tau            = 0.01;   // The DMC timestep
         double trial_energy   = 0;      // Energy used to control the DMC population
-	bool exchange_moves   = true;   // True if we carry out exchange moves
-	bool cancellation     = true;   // True if we carry out walker cancellations
 
         // The system which will be copied to generate walkers
         std::vector<particle*> template_system;

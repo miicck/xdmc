@@ -57,7 +57,7 @@ void simulation_spec :: parse_atom(std::vector<std::string> split)
         // Add the specified number of electrons
         for (int i=0; i<electrons; ++i)
         {
-                auto e = new electron();
+		particle* e = particle::create_electron();
                 for (int i=0; i<dimensions; ++i)
                         e->coords[i] = centre[i];
                 template_system.push_back(e);
@@ -96,25 +96,17 @@ void simulation_spec :: read_input()
                 else if (tag == "tau")
                         tau = std::stod(split[1]);
 
-		// Turn off exhange moves
-		else if (tag == "no_exchange")
-			exchange_moves = false;
-
-		// Turn off cancellation of walker weights
-		else if (tag == "no_cancellation")
-			cancellation = false;
-
                 // Read in an atom
                 else if (tag == "atom")
                         parse_atom(split);
 
                 // Read in an electron
                 else if (tag == "electron")
-                        template_system.push_back(new electron());
+                        template_system.push_back(particle::create_electron());
 
                 // Adds a noninteracting fermion into the system
                 else if (tag == "nif")
-                        template_system.push_back(new non_interacting_fermion());
+                        template_system.push_back(particle::create_nif());
 
                 // Add a harmonic well to the system
                 else if (tag == "harmonic_well")

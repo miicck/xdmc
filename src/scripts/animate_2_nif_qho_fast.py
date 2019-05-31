@@ -11,8 +11,8 @@ plt.show()
 n_saved = []
 n = -1
 while True:
-	n = (n+1)%count + len(wavefunction) - count
-	nifp.plot_2nif([wavefunction[n]])
+	n = (n+1)%len(wavefunction)
+	nifp.plot_2nif_fast([wavefunction[n]])
 	plt.suptitle("Iteration {0}".format(n+1))
 	plt.draw()
 	plt.pause(0.001)

@@ -33,17 +33,55 @@ particle::~particle()
 	delete[] coords;
 }
 
-double particle::interaction(particle* other)
+particle* particle :: copy()
 {
-	// Coulomb
+	particle* p = new particle();
+
+	p->half_spins = this->half_spins;
+	p->charge     = this->charge;
+	p->mass       = this->mass;
+
+	for (int i=0; i<simulation.dimensions; ++i)
+		p->coords[i] = this->coords[i];
+
+	return p;
+}
+
+int particle :: exchange_symmetry(particle* other)
+{
+	// Returns 
+	//     0 for non-identical particles
+	//     1 for identical bosons
+	//    -1 for identical fermions
+
+	// Check if identical (same quantum numbers)
+	if (this->half_spins != other->half_spins)      return 0;
+	if (fabs(this->mass   - other->mass)   > 10e-4) return 0;
+	if (fabs(this->charge - other->charge) > 10e-4) return 0;
+
+	// Return exchange symmetry
+	if (this->half_spins % 2 == 0) return 1; // Boson
+	return -1; // Fermion
+}
+
+double coulomb(particle* a, particle* b)
+{
+	if (fabs(a->charge) < 10e-10) return 0;
+	if (fabs(b->charge) < 10e-10) return 0;
+
 	double r = 0;
 	for (int i=0; i<simulation.dimensions; ++i)
 	{
-		double dxi = this->coords[i] - other->coords[i];
+		double dxi = a->coords[i] - b->coords[i];
 		r += dxi * dxi;
 	}
 	r = sqrt(r);
-	return (this->charge()*other->charge())/r;
+	return (a->charge*b->charge)/r;
+}
+
+double particle::interaction(particle* other)
+{
+	return coulomb(this, other);
 }
 
 double particle :: overlap_prob(particle* clone)
@@ -57,7 +95,7 @@ double particle :: overlap_prob(particle* clone)
 	return exp(-r/(4*simulation.tau));
 }
 
-void quantum_particle :: diffuse(double tau)
+void particle :: diffuse(double tau)
 {
 	// Diffuse the particle by moving each
 	// coordinate by an amount sampled from
@@ -66,7 +104,7 @@ void quantum_particle :: diffuse(double tau)
 		this->coords[i] += rand_normal(tau);
 }
 
-void quantum_particle :: sample_wavefunction()
+void particle :: sample_wavefunction()
 {
 	// Output my coordinates in the form x1,x2, ... xn
 	// (with no trailing comma)
@@ -77,36 +115,4 @@ void quantum_particle :: sample_wavefunction()
 			simulation.wavefunction_file << ",";
 	}
 	simulation.wavefunction_file << ";";
-}
-
-particle* electron :: copy()
-{
-	// Copy this electron.
-	electron* ret = new electron();
-	for (int i=0; i<simulation.dimensions; ++i)
-		ret->coords[i] = this->coords[i];
-	return ret;
-}
-
-particle* non_interacting_fermion :: copy()
-{
-	particle* ret = new non_interacting_fermion();
-	for (int i=0; i<simulation.dimensions; ++i)
-		ret->coords[i] = this->coords[i];
-	return ret;
-}
-
-nucleus :: nucleus(double atomic_number, double mass_number)
-{
-	this->atomic_number = atomic_number;
-	this->mass_number   = mass_number;
-}
-
-particle* nucleus :: copy()
-{
-	// Copy this nucleus
-	nucleus* ret = new nucleus(atomic_number, mass_number);
-	for (int i=0; i<simulation.dimensions; ++i)
-		ret->coords[i] = this->coords[i];
-	return ret;
 }

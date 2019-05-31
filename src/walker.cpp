@@ -181,8 +181,7 @@ walker_collection :: walker_collection()
 
 		// Carry out initial diffusion to avoid
 		// exact particle overlap on first iteration
-		if (simulation.exchange_moves)
-			w->exchange();
+		w->exchange();
 		w->diffuse();
 	}
 }

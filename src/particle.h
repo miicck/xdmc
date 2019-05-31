@@ -20,25 +20,25 @@
 
 #include "constants.h"
 
-// An abstract particle, which can interact with
-// other particles (by default via the coulomb
-// interaction).
+// A quantum mechanical particle, as described by its quantum numbers
+// and a position which diffuses according to DMC.
 class particle
 {
 public:
-        static int constructed_count;
         particle();
         ~particle();
+        static int constructed_count;
 
-        virtual double interaction(particle* other); // The interaction energy with some other particle
-        virtual void diffuse(double tau)=0;   // Called when a config diffuses in DMC
-        virtual particle* copy()=0;           // Should return a (deep) copy of this particle
-        virtual double charge()=0;            // The charge of this particle (electron charge = -1)
-        virtual double mass()=0;              // The mass of this particle (electron mass = 1)
-        virtual void sample_wavefunction()=0; // Called when a request is sent to sample a walker wvfn.
+        double interaction(particle* other);    // The interaction energy with some other particle
+	int exchange_symmetry(particle* other); // 1, 0 or -1 depending on spin statistics
 
-   	// -1 for identical fermions, 1 for identical bosons, 0 otherwise
-	virtual int exchange_symmetry(particle* other)=0;
+        void sample_wavefunction();   // Called when a request is sent to sample a walker wvfn.
+        void diffuse(double tau);     // Called when a config diffuses in DMC
+        particle* copy();             // Should return a (deep) copy of this particle
+
+        double charge  = 0;           // The charge of this particle (electron charge = -1)
+        double mass    = 0;           // The mass of this particle (electron mass = 1)
+	int half_spins = 0;           // This spin of this particle (+/- 1 => spin = +/- 1/2)
 
         // The location of this particle
         double* coords;
@@ -46,75 +46,24 @@ public:
 	// The probability that this particle
 	// will diffuse into the given copy of it
 	double overlap_prob(particle* clone);
-};
 
-// A particle that is described as point-like
-// and static within the DMC algorithm.
-class classical_particle : public particle
-{
-public:
-        // Classical particles don't diffuse
-        virtual void diffuse(double tau) { }
-        virtual void sample_wavefunction() { }
-	virtual int exchange_symmetry(particle* other) { return 0; }
-};
-
-// A particle who is described by an ensemble of
-// diffusing walkers within the DMC algorithm
-class quantum_particle : public particle
-{
-public:
-        virtual void diffuse(double tau);
-        virtual void sample_wavefunction();
-};
-
-// I read about these in a physics textbook once, thought
-// they might be important.
-class electron : public quantum_particle
-{
-        virtual double charge() { return -1; }
-        virtual double mass()   { return  1; }
-        virtual particle* copy();
-
-	virtual int exchange_symmetry(particle* other)
-	{ 
-		if (dynamic_cast<electron*>(other))
-			return -1; 
-		return 0;
-	}
-};
-
-// A fermion with no interactions
-class non_interacting_fermion : public quantum_particle
-{
-public:
-        virtual double interaction(particle* other) { return 0; }
-        virtual double mass()   { return 1; }
-        virtual double charge() { return 0; }
-        particle* copy();
-
-	virtual int exchange_symmetry(particle* other)
+	// Different particle types
+	static particle* create_electron()
 	{
-		if (dynamic_cast<non_interacting_fermion*>(other))
-			return -1;
-		return 0;
+		particle* e = new particle();
+		e->charge = -1.0;
+		e->mass   =  1.0;
+		e->half_spins = 1;
+		return e;
 	}
-};
 
-// An atomic nucleus, as described by an atomic
-// number and a mass number.
-class nucleus : public classical_particle
-{
-public:
-        nucleus(double atomic_number, double mass_number);
-        virtual double charge() { return atomic_number; }
-        virtual double mass()   { return mass_number * AMU; } // Convert mass to atomic units
-        virtual particle* copy();
-private:
-        double atomic_number;
-        double mass_number;
+	// Create a non-interacting fermion
+	static particle* create_nif()
+	{
+		particle* n = new particle();
+		n->half_spins = 1;
+		return n;
+	}
 };
 
 #endif
-
-

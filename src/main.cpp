@@ -39,12 +39,10 @@ void run_dmc()
 			<< " Trial energy: " << simulation.trial_energy << "\n";
 
 		// Carry out exchange moves on the walkers
-		if (simulation.exchange_moves)
-			walkers.make_exchange_moves();
+		walkers.make_exchange_moves();
 
 		// Apply cancellation of walkers
-		if (simulation.cancellation)
-			walkers.apply_cancellations();
+		walkers.apply_cancellations();
 
 		// Apply diffusion-branching step
 		walkers.diffuse_and_branch();

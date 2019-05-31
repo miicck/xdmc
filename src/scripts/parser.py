@@ -53,13 +53,13 @@ def transpose_wavefunction(wfn):
 		wfn_combined.extend(wfn[i])
 	return np.array(wfn_combined).T
 
-def parse_wavefunction():
+def parse_wavefunction(requested_iter=None):
 	
 	# Combines wavefunctions across processes
 	wfs = []
 	for f in os.listdir("."):
 		if f.startswith("wavefunction_"):
-			wf = parse_wavefunction_file(f)
+			wf = parse_wavefunction_file(f, requested_iter)
 			wfs.append(wf)
 			continue # Only do one for now
 	wfn = wfs[0]
@@ -69,7 +69,7 @@ def parse_wavefunction():
 	return wfn
 			
 
-def parse_wavefunction_file(filename):
+def parse_wavefunction_file(filename, requested_iter=None):
 	
 	# Parse wavefunction into the form
 	# wavefunction[iteration number][walker number] = [weight, x0, x1...]
@@ -78,9 +78,24 @@ def parse_wavefunction_file(filename):
 	lines = f0.read().split("\n")
 	f0.close()
 
+	# Get the start location of each iteration
+	i_iter_start = [0]
+	for i, l in enumerate(lines):
+		if not "#" in l: continue
+		i_iter_start.append(i+1)
+	
+	# Validate the requested number of iterations
+	if requested_iter is None:
+		requested_iter = len(i_iter_start)-1
+	if requested_iter > len(i_iter_start) - 1:
+		requested_iter = len(i_iter_start)-1
+
 	wavefunction = []
 	iteration    = []
-	for l in lines[0:-1]:
+
+	# Read the requested number of iterations
+	for i in range(i_iter_start[-1 - requested_iter], len(lines)-1):
+		l = lines[i]
 		if "#" in l:
 			wavefunction.append(iteration)
 			iteration = []
