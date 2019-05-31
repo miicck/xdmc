@@ -8,14 +8,20 @@ do
 	cd $TEST_DIR/$DIR
 
 	# Run test and profile
-	mpirun -np $CORES $BASE/xdmc > /dev/null
+	nice -15 mpirun -np $CORES $BASE/xdmc > /dev/null
 	gprof $BASE/xdmc gmon.out > profile
 
 	# Output basic results
+	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	echo $DIR
+	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	echo "    "$(cat progress_0 | grep "total time")
 	echo "    "energy: $(python $SCRIPT_DIR/estimate_energy.py)
-	head -n 9 profile | tail -5
+	echo ""
+	echo "Profiling info:"
+	head -n 9 profile | tail -6
+	echo ""
+	echo ""
 
 	# Remove output
 	mv input ..

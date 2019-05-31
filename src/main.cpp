@@ -58,8 +58,7 @@ void run_dmc()
 			<< walkers.average_weight()    << ","
 			<< walkers.average_weight_sq() << "\n";
 
-		// Sample the wavefunction for the last 10 steps
-		//if (simulation.dmc_iterations - iter < 10)
+		// Sample the wavefunction to file
 		walkers.sample_wavefunction();
 
 		walkers.renormalize();

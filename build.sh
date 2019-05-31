@@ -6,7 +6,7 @@ MPI_CC=mpicc
 COMP_FLAGS="-c -O3 -g -p"
 LINK_FLAGS="-p -o xdmc"
 
-rm -r $BUILD
+rm -r $BUILD 2> /dev/null
 mkdir $BUILD
 cd $BUILD
 
