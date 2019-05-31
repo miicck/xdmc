@@ -1,10 +1,18 @@
 import parser
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 import numpy as np
+
+def get_weight_cmap():
+	cmap = plt.cm.RdBu
+	my_cmap = cmap(np.arange(cmap.N))
+	my_cmap[:,-1] = 0.5*abs(np.linspace(-1, 1, cmap.N))
+	my_cmap = ListedColormap(my_cmap)
+	return my_cmap
 
 def plot_analytic_2nif_harmonic(min_lim, max_lim, LEVELS, alpha=1.0):
 	def psi0(x):
-                return np.exp(-x**2)
+                return np.exp(-x**2/2)
 
         def psi1(x):
                 return x * psi0(x)
@@ -22,12 +30,13 @@ def plot_2nif_fast(wavefunction):
 	ys = [x[0] for x in wfn[2]]
 	zs = wfn[0]
 
-	plt.scatter(xs,ys,c=zs,alpha=0.2)
+	plt.scatter(xs,ys,c=zs,cmap=get_weight_cmap())
 	plot_analytic_2nif_harmonic(-4,4,40,alpha=0.5)
 	plt.xlim([-4,4])
 	plt.ylim([-4,4])
 
-def plot_2nif(wavefunction):
+def plot_2nif(start_iter, end_iter):
+	wavefunction = parser.parse_wavefunction(start_iter, end_iter)
 	iterations = len(wavefunction)
 	wfn = parser.transpose_wavefunction(wavefunction)
 
@@ -46,15 +55,18 @@ def plot_2nif(wavefunction):
 	ys = [x[0] for x in wfn[2]]
 	zs = wfn[0]
 
-	plt.suptitle("{0} walkers from {1} dmc iteration(s)".format(len(zs), iterations))
+	fs = "{0} walkers from {1} dmc iteration(s) {2} to {3}"
+	plt.suptitle(fs.format(len(zs), iterations, start_iter, end_iter))
 
-	RES    = 10
+	RES    = 20
 	LEVELS = 40
 	min_lim = -4
 	max_lim = 4
 
 	plt.subplot(2,2,3)
-	plt.scatter(xs, ys, c=zs, alpha=0.2)
+	alpha = min(0.2, 200.0/len(zs))
+
+	plt.scatter(xs, ys, c=zs, cmap=get_weight_cmap())
 	plt.xlim([min_lim,max_lim])
 	plt.ylim([min_lim,max_lim])
 

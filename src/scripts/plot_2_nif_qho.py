@@ -1,8 +1,8 @@
-import parser
 import matplotlib.pyplot as plt
-import nif_plotter as nifp
+import nif_plotter
 import sys
 
-count = int(sys.argv[1])
-nifp.plot_2nif(parser.parse_wavefunction(count))
+start = int(sys.argv[1])
+end   = int(sys.argv[2])
+nif_plotter.plot_2nif(start, end)
 plt.show()

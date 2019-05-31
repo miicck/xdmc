@@ -312,7 +312,4 @@ void walker_collection :: apply_cancellations()
 	for (int n=0; n<size(); ++n)
 		for (int m=0; m<n; ++m)
 			(*this)[n]->cancel((*this)[m]);
-
-	// Renormalize the weights
-	renormalize();
 }

@@ -38,14 +38,14 @@ void run_dmc()
 			<< " Population: " << walkers.size()
 			<< " Trial energy: " << simulation.trial_energy << "\n";
 
+		// Apply diffusion-branching step
+		walkers.diffuse_and_branch();
+
 		// Carry out exchange moves on the walkers
 		walkers.make_exchange_moves();
 
 		// Apply cancellation of walkers
 		walkers.apply_cancellations();
-
-		// Apply diffusion-branching step
-		walkers.diffuse_and_branch();
 
 		// Set trial energy to control population, but allow some fluctuation
 		double log_pop_ratio = log(walkers.size()/double(simulation.target_population));
@@ -61,6 +61,8 @@ void run_dmc()
 		// Sample the wavefunction for the last 10 steps
 		//if (simulation.dmc_iterations - iter < 10)
 		walkers.sample_wavefunction();
+
+		walkers.renormalize();
 
 		// Flush output files after every iteration
 		simulation.flush();
