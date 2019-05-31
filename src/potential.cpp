@@ -15,6 +15,7 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
+#include <cmath>
 #include "simulation.h"
 #include "potential.h"
 #include "constants.h"
@@ -25,4 +26,17 @@ double harmonic_well::potential(particle* p)
 	for (int i=0; i<simulation.dimensions; ++i)
 		r2 += p->coords[i]*p->coords[i];
 	return 0.5*r2*omega*omega;
+}
+
+double atomic_potential :: potential(particle* p)
+{
+	double r = 0;
+	for (int i=0; i<simulation.dimensions; ++i)
+	{
+		double dxi = p->coords[i] - this->coords[i];
+		r += dxi * dxi;
+	}
+	r = sqrt(r);
+
+	return this->charge * p->charge() / r;
 }

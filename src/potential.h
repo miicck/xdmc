@@ -35,6 +35,26 @@ private:
         double omega = 1;
 };
 
+class atomic_potential : public external_potential
+{
+public:
+	atomic_potential(double charge, double* coords)
+	{
+		this->coords = coords;
+		this->charge = charge;
+	}
+	
+	~atomic_potential()
+	{
+		delete[] this->coords;
+	}
+
+	virtual double potential(particle* p);
+private:
+	double  charge;
+	double* coords;
+};
+
 #endif
 
 

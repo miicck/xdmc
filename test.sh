@@ -11,6 +11,6 @@ do
 	echo "    "$(cat progress_0 | grep "total time")
 	echo "    "energy: $(python $SCRIPT_DIR/estimate_energy.py)
 	mv input ..
-	rm *
+	rm * 2> /dev/null
 	mv ../input .
 done

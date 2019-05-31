@@ -47,19 +47,19 @@ void simulation_spec :: parse_atom(std::vector<std::string> split)
         int electrons = std::stoi(split[2]);
         double mass   = std::stod(split[3]);
 
-        // Create the nucleus
-        auto n = new nucleus(charge, mass);
-        for (int i=4; i<4+dimensions; ++i)
-                n->coords[i] = std::stod(split[i]);
+	double* centre = new double[simulation.dimensions];
+	for (int i=4; i<4+dimensions; ++i)
+		centre[i] = std::stod(split[i]);
 
-        template_system.push_back(n);
+	// Create the nucleus
+	potentials.push_back(new atomic_potential(charge, centre));
 
         // Add the specified number of electrons
         for (int i=0; i<electrons; ++i)
         {
                 auto e = new electron();
                 for (int i=0; i<dimensions; ++i)
-                        e->coords[i] = n->coords[i];
+                        e->coords[i] = centre[i];
                 template_system.push_back(e);
         }
 }
