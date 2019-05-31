@@ -94,6 +94,7 @@ def parse_wavefunction_file(filename, iter_start=0, iter_end=None):
 	# Read the requested number of iterations
 	for i in range(i_iter_start[iter_start],
 		       i_iter_start[iter_end]):
+
 		l = lines[i]
 		if "#" in l:
 			wavefunction.append(iteration)
@@ -105,7 +106,7 @@ def parse_wavefunction_file(filename, iter_start=0, iter_end=None):
 
 		dat = [float(weight)]
 		for p in particles:
-			x = [float(xi) for xi in p.split(",")]
+			x = np.array([float(xi) for xi in p.split(",")])
 			dat.append(x)
 
 		iteration.append(dat)

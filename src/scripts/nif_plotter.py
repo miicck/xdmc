@@ -18,12 +18,8 @@ def get_weight_cmap(ws=np.linspace(-1,1,1000), alpha=True):
 	return my_cmap
 
 def plot_analytic_2nif_harmonic(min_lim, max_lim, LEVELS, alpha=1.0):
-	def psi0(x):
-                return np.exp(-x**2/2)
-
-        def psi1(x):
-                return x * psi0(x)
-
+	psi0 = lambda x : np.exp(-x**2/2)
+	psi1 = lambda x : x * psi0(x)
         xs = np.linspace(min_lim,max_lim,100)
         xs, ys = np.meshgrid(xs, xs)
         zs = [psi0(x)*psi1(y)-psi0(y)*psi1(x) for x, y in zip(xs,ys)]

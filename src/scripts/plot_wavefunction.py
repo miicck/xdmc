@@ -1,25 +1,35 @@
 import matplotlib.pyplot as plt
-from parser import parse_wavefunction
+import numpy as np
+import parser
+import sys
 
-wavefunction = parse_wavefunction()
+start = int(sys.argv[1])
+end   = int(sys.argv[2])
 
-particle_count = len(wavefunction)
-coord_count    = len(wavefunction[0])
+wavefunction = parser.parse_wavefunction(start, end)
+wfn = parser.transpose_wavefunction(wavefunction)
 
-# Histogram each coordinate of each particle
-for pi in range(0, particle_count):
-	for ci in range(0, coord_count):
+weights = wfn[0]
+coords  = wfn[1:]
 
-		psi = wavefunction[pi][ci]
-		
-		positive_x = [p[1] for p in psi if p[0] > 0]
-		negative_x = [p[1] for p in psi if p[0] < 0]
+num_particles = len(coords)
+num_coords    = len(coords[0][0])
+print "Particles  : ",num_particles
+print "Coordinates: ",num_coords
 
-		sp_index = 1 + pi + ci*particle_count
-		plt.subplot(particle_count, coord_count, sp_index)
-		plt.hist(positive_x, bins=len(psi)/100, alpha=0.5, label="Positive")
-		plt.hist(negative_x, bins=len(psi)/100, alpha=0.5, label="Negative")
-		plt.xlabel("Particle "+str(pi)+" coord "+str(ci))
+for ip, particle in enumerate(coords):
+
+	positive_walkers = np.array([p for w, p in zip(weights, particle) if w > 0])
+	negative_walkers = np.array([p for w, p in zip(weights, particle) if w < 0])
+
+	for ix, x in enumerate(positive_walkers.T):
+		plt.subplot(num_particles, num_coords, ip*num_coords+ix+1)
+		plt.hist(x, label="Positive", alpha=0.5, bins=len(x)/10)
+
+	for ix, x in enumerate(negative_walkers.T):
+		plt.subplot(num_particles, num_coords, ip*num_coords+ix+1)
+		plt.hist(x, label="Negative", alpha=0.5, bins=len(x)/10)
+		plt.xlabel("Particle {0} coord {1}".format(ip+1, ix+1))
 		plt.legend()
 
 plt.show()
