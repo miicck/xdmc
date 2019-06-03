@@ -17,12 +17,15 @@ def get_weight_cmap(ws=np.linspace(-1,1,1000), alpha=True):
 	my_cmap = ListedColormap(my_cmap)
 	return my_cmap
 
-def plot_analytic_2nif_harmonic(min_lim, max_lim, LEVELS, alpha=1.0):
+def analytic(xs,ys):
 	psi0 = lambda x : np.exp(-x**2/2)
 	psi1 = lambda x : x * psi0(x)
+        return np.array([(psi0(x)*psi1(y)-psi0(y)*psi1(x)) for x, y in zip(xs,ys)])
+
+def plot_analytic_2nif_harmonic(min_lim, max_lim, LEVELS, alpha=1.0):
         xs = np.linspace(min_lim,max_lim,100)
         xs, ys = np.meshgrid(xs, xs)
-        zs = [(psi0(x)*psi1(y)-psi0(y)*psi1(x)) for x, y in zip(xs,ys)]
+        zs = analytic(xs, ys)
         plt.contour(xs,ys,zs,LEVELS,alpha=alpha, cmap=get_weight_cmap(alpha=False))
 	plt.plot([min_lim, max_lim], [min_lim, max_lim], color="black")
 	label_plot()
@@ -43,6 +46,34 @@ def plot_2nif_fast(start_iter, end_iter):
 	plt.ylim([-4,4])
 	label_plot()
 
+def bin_2nif(start_iter, end_iter, RES=100):
+	wavefunction = parser.parse_wavefunction(start_iter, end_iter)
+	wfn = parser.transpose_wavefunction(wavefunction)
+	xs = np.array([x[0] for x in wfn[1]])
+	ys = np.array([x[0] for x in wfn[2]])
+	ws = wfn[0]
+
+	MAX = 4.0
+	MIN = -4.0
+	bins    = np.zeros((RES,RES))
+
+	for x,y,w in zip(xs,ys,ws):
+		xi = int(RES*(x - MIN)/(MAX - MIN))
+		yi = int(RES*(y - MIN)/(MAX - MIN))
+		if xi < 0:    continue
+		if yi < 0:    continue
+		if xi >= RES: continue
+		if yi >= RES: continue
+		bins[xi][yi] += w
+	
+	xs = np.linspace(MIN, MAX, RES)
+	ys = np.linspace(MIN, MAX, RES)
+	xs, ys = np.meshgrid(xs, ys)
+	plt.subplot(221)
+	plt.contour(xs, ys, bins, 40)
+	plt.subplot(222)
+	plt.contour(xs, ys, analytic(xs, ys), 40)
+
 def plot_2nif(start_iter, end_iter):
 	wavefunction = parser.parse_wavefunction(start_iter, end_iter)
 	iterations = len(wavefunction)
@@ -51,6 +82,7 @@ def plot_2nif(start_iter, end_iter):
 	xs = np.array([x[0] for x in wfn[1]])
 	ys = np.array([x[0] for x in wfn[2]])
 	zs = wfn[0]
+	zs_an = analytic(xs, ys)
 
 	fs = "{0} walkers from {1} dmc iteration(s) {2} to {3}"
 	plt.suptitle(fs.format(len(zs), iterations, start_iter, end_iter))
@@ -73,23 +105,30 @@ def plot_2nif(start_iter, end_iter):
 	xn = np.linspace(min_lim, max_lim, RES)
 	yn = np.linspace(min_lim, max_lim, RES)
 	
-	for iplt, tau in enumerate([0.05, 1.0]):
+	for iplt, tau in enumerate([0.01, 1.0]):
 
-		zn  = np.zeros((len(yn), len(xn)))
-		# rs  = (xs**2 + ys**2)**0.5 # Use for phase space factor?
+		zn    = np.zeros((len(yn), len(xn)))
+		zn_an = np.zeros((len(yn), len(xn)))
 		for iy, y in enumerate(yn):
 			for ix, x in enumerate(xn):
 				dr2 = (xs - x)**2 + (ys - y)**2
 				val = np.sum(zs*np.exp(-dr2/(2*tau)))
+				val_an = np.sum(zs_an*np.exp(-dr2/(2*tau)))
 				zn[iy][ix] = val
+				zn_an[iy][ix] = val_an
 
 		xplot, yplot = np.meshgrid(xn, yn)
 
-
-		plt.subplot(2,2,1+iplt)
-		plt.contour(xplot, yplot, zn, LEVELS, cmap=get_weight_cmap(zs, alpha=False))
+		plt.subplot(2,4,1+2*iplt)
+		plt.contour(xplot, yplot, zn_an, LEVELS, cmap=get_weight_cmap(zs, alpha=False))
+		plt.title("Averaged analytic wavefunction\n(Using Guassian kernel with Tau = {0})".format(tau))
 		plt.plot([min_lim, max_lim], [min_lim, max_lim], color="black")
-		plt.title("Averaged wavefunction\n(Using Guassian kernel with Tau = {0})".format(tau))
+		label_plot()
+
+		plt.subplot(2,4,2+2*iplt)
+		plt.contour(xplot, yplot, zn, LEVELS, cmap=get_weight_cmap(zs, alpha=False))
+		plt.title("Averaged QMC wavefunction\n(Using Guassian kernel with Tau = {0})".format(tau))
+		plt.plot([min_lim, max_lim], [min_lim, max_lim], color="black")
 		label_plot()
 
 	plt.subplot(224)

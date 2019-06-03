@@ -64,6 +64,14 @@ public:
 		n->half_spins = 1;
 		return n;
 	}
+
+	// Create a non-interacting boson
+	static particle* create_nib()
+	{
+		particle* n = new particle();
+		n->half_spins = 0;
+		return n;
+	}
 };
 
 #endif

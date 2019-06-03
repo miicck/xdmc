@@ -22,13 +22,15 @@ for ip, particle in enumerate(coords):
 	positive_walkers = np.array([p for w, p in zip(weights, particle) if w > 0]).T
 	negative_walkers = np.array([p for w, p in zip(weights, particle) if w < 0]).T
 
+	bins = len(positive_walkers[0])/10
+	if bins > 1000: bins = 1000
 	for ix, x in enumerate(positive_walkers):
 		plt.subplot(num_particles, num_coords, ip*num_coords+ix+1)
-		plt.hist(x, label="Positive", alpha=0.5, bins=len(x)/10)
+		plt.hist(x, label="Positive", alpha=0.5, bins=bins)
 
 	for ix, x in enumerate(negative_walkers):
 		plt.subplot(num_particles, num_coords, ip*num_coords+ix+1)
-		plt.hist(x, label="Negative", alpha=0.5, bins=len(x)/10)
+		plt.hist(x, label="Negative", alpha=0.5, bins=bins)
 
 	for ix in range(0,len(negative_walkers)):
 		plt.subplot(num_particles, num_coords, ip*num_coords+ix+1)

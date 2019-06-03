@@ -218,6 +218,10 @@ void walker_collection :: diffuse_and_branch()
 	// the potential before and after diffusion to apply
 	// the branching step)
 
+	// Normalize the walkers so that the population stays
+	// roughly constant
+	this->renormalize();
+
 	int nmax = size();
 	for (int n=0; n < nmax; ++n)
 	{

@@ -38,7 +38,7 @@ void run_dmc()
 			<< " Population: " << walkers.size()
 			<< " Trial energy: " << simulation.trial_energy << "\n";
 
-		// Apply diffusion-branching step
+		// Apply diffusion-branching step.
 		walkers.diffuse_and_branch();
 
 		// Carry out exchange moves on the walkers
@@ -60,8 +60,6 @@ void run_dmc()
 
 		// Sample the wavefunction to file
 		walkers.sample_wavefunction();
-
-		walkers.renormalize();
 
 		// Flush output files after every iteration
 		simulation.flush();

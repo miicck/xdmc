@@ -104,9 +104,13 @@ void simulation_spec :: read_input()
                 else if (tag == "electron")
                         template_system.push_back(particle::create_electron());
 
-                // Adds a noninteracting fermion into the system
+                // Add a non interacting fermion into the system
                 else if (tag == "nif")
                         template_system.push_back(particle::create_nif());
+
+		// Add a non interacting boson into the system
+		else if (tag == "nib")
+			template_system.push_back(particle::create_nib());
 
                 // Add a harmonic well to the system
                 else if (tag == "harmonic_well")

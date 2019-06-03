@@ -2,3 +2,4 @@ xdmc
 *.swp
 *.pyc
 src/build
+*previous_runs*
