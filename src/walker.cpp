@@ -91,12 +91,12 @@ double walker :: potential()
 	return last_potential;
 }
 
-void walker :: diffuse()
+void walker :: diffuse(double tau=simulation.tau)
 {
 	// Diffuse all of the particles (classical
 	// particles will automatically not diffuse)
 	for (int i=0; i<particles.size(); ++i)
-		particles[i]->diffuse(simulation.tau);
+		particles[i]->diffuse(tau);
 	
 	// Particles have moved => potential has changed
 	potential_dirty = true;
@@ -183,7 +183,7 @@ walker_collection :: walker_collection()
 		// Carry out initial diffusion to avoid
 		// exact particle overlap on first iteration
 		w->exchange();
-		w->diffuse();
+		w->diffuse(1.0);
 	}
 }
 

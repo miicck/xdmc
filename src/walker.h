@@ -29,7 +29,7 @@ class walker
 public:
         static int constructed_count;
         double potential();
-        void diffuse();
+        void diffuse(double tau);
 	void exchange();
 	void cancel(walker* other);
         walker();
