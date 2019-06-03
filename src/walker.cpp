@@ -109,35 +109,36 @@ void walker :: exchange()
 	// are exchanged, the potential remains the
 	// same => we do not need to set the potential_dirty
 	// flag.
-	for (int i=0; i<particles.size(); ++i)
+
+	// No exchanges possible
+	if (simulation.exchange_values.size() == 0) return;
+
+	// Apply exchanges stochastically
+	if (rand_uniform() < 0.5) return;
+
+	// Pick a random exchangable pair
+	int i = rand() % simulation.exchange_values.size();
+	particle* p1 = particles[simulation.exchange_pairs[2*i]];
+	particle* p2 = particles[simulation.exchange_pairs[2*i+1]];
+
+	// Exchange them 
+	this->weight *= double(simulation.exchange_values[i]);
+	for (int c=0; c<simulation.dimensions; ++c)
 	{
-		particle* p1 = particles[i];
-		for (int j=0; j<i; ++j)
-		{
-			particle* p2 = particles[j];
-			int exchange_sym = p1->exchange_symmetry(p2);
-
-			// These particles cant be exchanged
-			if (exchange_sym == 0) continue; 
-
-			// Exchange the particles
-			if (rand_uniform() < 0.5)
-			{
-				this->weight *= double(exchange_sym);
-				for (int c=0; c<simulation.dimensions; ++c)
-				{
-					double tmp = p1->coords[c];
-					p1->coords[c] = p2->coords[c];
-					p2->coords[c] = tmp;
-				}
-			}
-		}
+		double tmp = p1->coords[c];
+		p1->coords[c] = p2->coords[c];
+		p2->coords[c] = tmp;
 	}
 }
 
 void walker :: cancel(walker* other)
 {
 	// Apply cancellation of two walkers
+
+	// Cancellation is only necassary if there is
+	// a fermionic exchange in the system (as this is
+	// the only way that walker signs can change)
+	if (!simulation.has_fermionic_exchange) return;
 
 	// Caclulate the probability that these 
 	// two walkers would overlap in the next iteration

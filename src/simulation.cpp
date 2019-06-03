@@ -117,6 +117,30 @@ void simulation_spec :: read_input()
                         potentials.push_back(new harmonic_well(std::stod(split[1])));
         }
         input.close();
+
+	// Work out exchange properties of the system
+	for (int i=0; i<template_system.size(); ++i)
+	{
+		particle* p1 = template_system[i];
+		for (int j=0; j<i; ++j)
+		{
+			particle* p2 = template_system[j];
+			int exchange_sym = p1->exchange_symmetry(p2);
+
+			// These particles cannot be exchanged 
+			if (exchange_sym == 0) continue;
+
+			// Record the fact that there is a possible
+			// fermionic exchange in the system
+			if (exchange_sym < 0)
+				has_fermionic_exchange = true;
+
+			// Record this exchangable pair
+			exchange_pairs.push_back(i);
+			exchange_pairs.push_back(j);
+			exchange_values.push_back(exchange_sym);
+		}
+	}
 }
 
 void simulation_spec::load(int argc, char** argv)
@@ -147,6 +171,12 @@ void simulation_spec::load(int argc, char** argv)
 	progress_file.open(    "progress_"     + std::to_string(pid));
 	evolution_file.open(   "evolution_"    + std::to_string(pid));
 	wavefunction_file.open("wavefunction_" + std::to_string(pid));
+	
+	// Output results
+	progress_file << "System loaded\n";
+	progress_file << "    Particles      : " << template_system.size() << "\n";
+	progress_file << "    Dimensions     : " << dimensions << "\n";
+	progress_file << "    Exchange pairs : " << exchange_values.size() << "\n"; 
 }
 
 void simulation_spec::free_memory()

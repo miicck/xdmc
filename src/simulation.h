@@ -40,7 +40,11 @@ public:
         double trial_energy   = 0;      // Energy used to control the DMC population
 
         // The system which will be copied to generate walkers
+	// and a list of pairs of particles which can be exchanged
         std::vector<particle*> template_system;
+	std::vector<int> exchange_pairs;
+	std::vector<int> exchange_values;
+	bool has_fermionic_exchange = false;
 
         // The potentials applied to the system (additive)
         std::vector<external_potential*> potentials;
