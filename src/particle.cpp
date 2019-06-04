@@ -64,18 +64,24 @@ int particle :: exchange_symmetry(particle* other)
 	return -1; // Fermion
 }
 
-double coulomb(particle* a, particle* b)
+double particle :: sq_distance_to(particle* other)
 {
-	if (fabs(a->charge) < 10e-10) return 0;
-	if (fabs(b->charge) < 10e-10) return 0;
-
-	double r = 0;
+	// Returns | this->coords - other->coords |^2
+	double r2 = 0;
 	for (int i=0; i<simulation.dimensions; ++i)
 	{
-		double dxi = a->coords[i] - b->coords[i];
-		r += dxi * dxi;
+		double dxi = this->coords[i] - other->coords[i];
+		r2 += dxi * dxi;
 	}
-	r = sqrt(r);
+	return r2;
+}
+
+double coulomb(particle* a, particle* b)
+{
+	// The coulomb interaction between two particles
+	if (fabs(a->charge) < 10e-10) return 0;
+	if (fabs(b->charge) < 10e-10) return 0;
+	double r = sqrt(a->sq_distance_to(b));
 	return (a->charge*b->charge)/r;
 }
 
@@ -86,13 +92,11 @@ double particle::interaction(particle* other)
 
 double particle :: overlap_prob(particle* clone)
 {
-	double r = 0;
-	for (int i=0; i<simulation.dimensions; ++i)
-	{
-		double dxi = this->coords[i] - clone->coords[i];
-		r += dxi * dxi;
-	}
-	return exp(-r/(4*simulation.tau));
+	// This is proportional to the probability that
+	// these two particles would diffuse into the
+	// same location next iteration.
+	double r2 = this->sq_distance_to(clone);
+	return exp(-r2/(4*simulation.tau));
 }
 
 void particle :: diffuse(double tau)

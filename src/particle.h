@@ -29,6 +29,7 @@ public:
         ~particle();
         static int constructed_count;
 
+	double sq_distance_to(particle* other); // Returns | this->coords - other->coords |^2
         double interaction(particle* other);    // The interaction energy with some other particle
 	int exchange_symmetry(particle* other); // 1, 0 or -1 depending on spin statistics
 
