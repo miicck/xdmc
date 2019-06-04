@@ -64,6 +64,17 @@ int particle :: exchange_symmetry(particle* other)
 	return -1; // Fermion
 }
 
+void particle :: exchange(particle* other)
+{
+	// Swap the coordinates of this with other
+	for (int i=0; i<simulation.dimensions; ++i)
+	{
+		double tmp = this->coords[i];
+		this->coords[i]  = other->coords[i];
+		other->coords[i] = tmp;
+	}
+}
+
 double particle :: sq_distance_to(particle* other)
 {
 	// Returns | this->coords - other->coords |^2

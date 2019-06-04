@@ -13,10 +13,11 @@ def rolling_av(data, sample_length):
 
 # Read in the evolution data
 y_axes, data = parse_evolution()
+sq_size = int(len(data)**0.5)+1
 
 # Plot each dataseries on its own subplot
 for i, d in enumerate(data):
-	plt.subplot(len(data),1,i+1)
+	plt.subplot(sq_size,sq_size,i+1)
 	plt.plot(d)
 	plt.plot(rolling_av(d,len(d)/100))
 	plt.xlabel("Iteration")

@@ -31,6 +31,7 @@ public:
         double potential();
         void diffuse(double tau);
 	void exchange();
+	void reflect_to_irr_wedge();
 	void cancel(walker* other);
         walker();
         ~walker();
@@ -55,18 +56,21 @@ private:
 class walker_collection
 {
 public:
-	int size() { return walkers.size(); }
-	walker* operator[](int i) { return walkers[i]; }
 	walker_collection();
 	~walker_collection();
+
+	int size() { return walkers.size(); }
+	walker* operator[](int i) { return walkers[i]; }
+
 	void renormalize();
 	void diffuse_and_branch();
 	void make_exchange_moves();
 	void apply_cancellations();
 	void sample_wavefunction();
+
 	double average_weight_sq();
 	double average_weight();
-	double energy_estimate();
+	double average_potential();
 
 private:
 	std::vector<walker*> walkers;

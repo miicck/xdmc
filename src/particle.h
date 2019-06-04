@@ -32,6 +32,7 @@ public:
 	double sq_distance_to(particle* other); // Returns | this->coords - other->coords |^2
         double interaction(particle* other);    // The interaction energy with some other particle
 	int exchange_symmetry(particle* other); // 1, 0 or -1 depending on spin statistics
+	void exchange(particle* other);         // Swap my coordinates with those of other
 
         void sample_wavefunction();   // Called when a request is sent to sample a walker wvfn.
         void diffuse(double tau);     // Called when a config diffuses in DMC

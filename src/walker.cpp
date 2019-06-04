@@ -16,6 +16,7 @@
 */
 
 #include "random.h"
+#include "math.h"
 #include "walker.h"
 #include "simulation.h"
 
@@ -102,6 +103,40 @@ void walker :: diffuse(double tau=simulation.tau)
 	potential_dirty = true;
 }
 
+void walker :: reflect_to_irr_wedge()
+{
+	// Exchange my particles until their coordinates
+	// increase monotonically
+	// For example:
+	// For a 1d system of three fermions this would
+	// swap them until x1 < x2 < x3
+	while(true)
+	{
+		bool swap_made = false;
+		for (int n=0; n<simulation.exchange_values.size(); ++n)
+		{
+			particle* p1 = this->particles[simulation.exchange_pairs[2*n]];
+			particle* p2 = this->particles[simulation.exchange_pairs[2*n+1]];
+			
+			for (int c=0; c<simulation.dimensions; ++c)
+			{
+				if (p1->coords[c] < p2->coords[c])
+					break;
+				else if (p1->coords[c] == p2->coords[c])
+					continue;
+				else
+				{
+					swap_made = true;
+					p1->exchange(p2);
+				}
+			}
+		}
+
+		if (!swap_made)
+			break;
+	}
+}
+
 void walker :: exchange()
 {
 	// Apply random exchange moves to particles
@@ -123,12 +158,7 @@ void walker :: exchange()
 
 	// Exchange them 
 	this->weight *= double(simulation.exchange_values[i]);
-	for (int c=0; c<simulation.dimensions; ++c)
-	{
-		double tmp = p1->coords[c];
-		p1->coords[c] = p2->coords[c];
-		p2->coords[c] = tmp;
-	}
+	p1->exchange(p2);
 }
 
 void walker :: cancel(walker* other)
@@ -139,6 +169,9 @@ void walker :: cancel(walker* other)
 	// a fermionic exchange in the system (as this is
 	// the only way that walker signs can change)
 	if (!simulation.has_fermionic_exchange) return;
+
+	// Don't cancel walkers of the same sign
+	if (sign(this->weight) == sign(other->weight)) return;
 
 	// Caclulate the probability that these 
 	// two walkers would overlap in the next iteration
@@ -182,8 +215,11 @@ walker_collection :: walker_collection()
 
 		// Carry out initial diffusion to avoid
 		// exact particle overlap on first iteration
-		w->exchange();
 		w->diffuse(1.0);
+
+		// Reflect the walker to the irreducible
+		// wedge of space defined by exchange symmetries
+		w->reflect_to_irr_wedge();
 	}
 }
 
@@ -275,14 +311,14 @@ double walker_collection :: average_weight()
 	return av_weight;
 }
 
-double walker_collection :: energy_estimate()
+double walker_collection :: average_potential()
 {
 	// Returns (1/N) * sum_i |w_i|*v_i
 	// Where v_i is the potential energy 
 	// of the i^th walker.
 	double energy = 0;
 	for (int n=0; n<size(); ++n)
-		energy += (*this)[n]->potential();
+		energy += (*this)[n]->potential() * fabs((*this)[n]->weight);
 	energy /= double(size());
 	return energy;
 }

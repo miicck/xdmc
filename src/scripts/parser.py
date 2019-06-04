@@ -10,7 +10,8 @@ def parse_evolution():
 		"Population",
 		"Trial energy (Hartree)",
 		"Average weight",
-		"Average weight^2"
+		"Average weight^2",
+		"Average potential (Hartree)"
 	]
 
 	# How to combine axes across processes
@@ -20,6 +21,7 @@ def parse_evolution():
 		lambda(e) : np.mean(e, axis=0), # Average energies across processes
 		lambda(w) : np.mean(w, axis=0), # Average weights across processes
 		lambda(w) : np.mean(w, axis=0), # Average weights across processes
+		lambda(e) : np.mean(e, axis=0), # Average energies across processes
 	]
 
 	# Read in the evolution from each process
