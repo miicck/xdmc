@@ -47,17 +47,14 @@ void run_dmc()
 		// Apply cancellation of walkers
 		walkers.apply_cancellations();
 
-		// Set trial energy to control population, but allow some fluctuation
-		double log_pop_ratio = log(walkers.size()/double(simulation.target_population));
-		simulation.trial_energy = walkers.average_potential() - log_pop_ratio; 
-
 		// Output the main results of this iteration to track evolution
 		simulation.evolution_file 
-			<< walkers.size()              << "," 
-			<< simulation.trial_energy     << ","
-			<< walkers.average_weight()    << ","
-			<< walkers.average_weight_sq() << ","
-			<< walkers.average_potential() << "\n";
+			<< walkers.size()               << "," 
+			<< simulation.trial_energy      << ","
+			<< walkers.average_weight()     << ","
+			<< walkers.average_mod_weight() << ","
+			<< walkers.average_weight_sq()  << ","
+			<< walkers.average_potential()  << "\n";
 
 		// Sample the wavefunction to file
 		walkers.sample_wavefunction();

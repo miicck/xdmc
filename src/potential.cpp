@@ -16,9 +16,18 @@
 */
 
 #include <cmath>
+#include <string>
+#include <sstream>
 #include "simulation.h"
 #include "potential.h"
 #include "constants.h"
+
+std::string harmonic_well :: one_line_description()
+{
+	std::stringstream des;
+	des << "Harmonic well (omega = " << omega << ")";
+	return des.str();
+}
 
 double harmonic_well::potential(particle* p)
 {
@@ -26,6 +35,15 @@ double harmonic_well::potential(particle* p)
 	for (int i=0; i<simulation.dimensions; ++i)
 		r2 += p->coords[i]*p->coords[i];
 	return 0.5*r2*omega*omega;
+}
+
+std::string atomic_potential :: one_line_description()
+{
+	std::stringstream des;
+	des << "Atomic potential (charge = " << charge << ") position: ";
+	for (int i=0; i<simulation.dimensions; ++i)
+		des << coords[i] << " ";
+	return des.str();
 }
 
 double atomic_potential :: potential(particle* p)

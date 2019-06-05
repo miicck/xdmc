@@ -27,17 +27,22 @@
 class walker
 {
 public:
-        static int constructed_count;
-        double potential();
-        void diffuse(double tau);
-	void exchange();
-	void reflect_to_irr_wedge();
-	void cancel(walker* other);
         walker();
         ~walker();
-        walker* copy();
-        void sample_wavefunction();
+        static int constructed_count;
+
 	double weight;
+        double potential();
+
+        void diffuse(double tau);
+	void exchange();
+	void cancel(walker* other);
+	void reflect_to_irr_wedge();
+
+        walker* copy();
+	walker* branch_copy();
+
+        void sample_wavefunction();
 
 private:
 
@@ -62,15 +67,16 @@ public:
 	int size() { return walkers.size(); }
 	walker* operator[](int i) { return walkers[i]; }
 
-	void renormalize();
 	void diffuse_and_branch();
 	void make_exchange_moves();
 	void apply_cancellations();
 	void sample_wavefunction();
 
-	double average_weight_sq();
 	double average_weight();
+	double average_weight_sq();
+	double average_mod_weight();
 	double average_potential();
+	double sum_mod_weight();
 
 private:
 	std::vector<walker*> walkers;

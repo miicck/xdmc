@@ -18,6 +18,7 @@
 #ifndef __PARTICLE__
 #define __PARTICLE__
 
+#include <string>
 #include "constants.h"
 
 // A quantum mechanical particle, as described by its quantum numbers
@@ -42,38 +43,15 @@ public:
         double mass    = 0;           // The mass of this particle (electron mass = 1)
 	int half_spins = 0;           // This spin of this particle (+/- 1 => spin = +/- 1/2)
 
+	std::string name = "Particle";
+	std::string one_line_description();
+
         // The location of this particle
         double* coords;
 
 	// The probability that this particle
 	// will diffuse into the given copy of it
 	double overlap_prob(particle* clone);
-
-	// Different particle types
-	static particle* create_electron()
-	{
-		particle* e = new particle();
-		e->charge = -1.0;
-		e->mass   =  1.0;
-		e->half_spins = 1;
-		return e;
-	}
-
-	// Create a non-interacting fermion
-	static particle* create_nif()
-	{
-		particle* n = new particle();
-		n->half_spins = 1;
-		return n;
-	}
-
-	// Create a non-interacting boson
-	static particle* create_nib()
-	{
-		particle* n = new particle();
-		n->half_spins = 0;
-		return n;
-	}
 };
 
 #endif

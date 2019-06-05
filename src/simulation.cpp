@@ -38,30 +38,30 @@ std::vector<std::string> split_whitespace(std::string to_split)
         return split;
 }
 
-// Parse an atom from the input file. Creates a
-// nucleus and the appropriate number of electrons
-// in the template system.
-void simulation_spec :: parse_atom(std::vector<std::string> split)
+void simulation_spec :: parse_particle(std::vector<std::string> split)
 {
-        double charge = std::stod(split[1]);
-        int electrons = std::stoi(split[2]);
-        double mass   = std::stod(split[3]);
+	// Parse a particle from the format
+	// particle name mass charge half_spins x1 x2 x3 ...
+	particle* p   = new particle();
+	p->name       = split[1];
+	p->mass       = std::stod(split[2]);
+	p->charge     = std::stod(split[3]);
+	p->half_spins = std::stoi(split[4]);
+	for (int i=0; i<dimensions; ++i)
+		p->coords[i] = std::stod(split[5+i]);
+	template_system.push_back(p);
+}
 
-	double* centre = new double[simulation.dimensions];
-	for (int i=4; i<4+dimensions; ++i)
-		centre[i] = std::stod(split[i]);
-
-	// Create the nucleus
-	potentials.push_back(new atomic_potential(charge, centre));
-
-        // Add the specified number of electrons
-        for (int i=0; i<electrons; ++i)
-        {
-		particle* e = particle::create_electron();
-                for (int i=0; i<dimensions; ++i)
-                        e->coords[i] = centre[i];
-                template_system.push_back(e);
-        }
+void simulation_spec :: parse_atomic_potential(std::vector<std::string> split)
+{
+	// Parse an atomic potential from the format
+	// atomic_potential charge x1 x2 x3 ...
+	
+	double charge  = std::stod(split[1]);
+	double* coords = new double[dimensions];
+	for (int i=0; i<dimensions; ++i)
+		coords[i] = std::stod(split[2+i]);
+	potentials.push_back(new atomic_potential(charge, coords));
 }
 
 // Parse the input file.
@@ -96,25 +96,17 @@ void simulation_spec :: read_input()
                 else if (tag == "tau")
                         tau = std::stod(split[1]);
 
-                // Read in an atom
-                else if (tag == "atom")
-                        parse_atom(split);
-
-                // Read in an electron
-                else if (tag == "electron")
-                        template_system.push_back(particle::create_electron());
-
-                // Add a non interacting fermion into the system
-                else if (tag == "nif")
-                        template_system.push_back(particle::create_nif());
-
-		// Add a non interacting boson into the system
-		else if (tag == "nib")
-			template_system.push_back(particle::create_nib());
+		// Read in a particle
+		else if (tag == "particle")
+			parse_particle(split);
 
                 // Add a harmonic well to the system
                 else if (tag == "harmonic_well")
                         potentials.push_back(new harmonic_well(std::stod(split[1])));
+
+		// Add an atomic potential to the system
+		else if (tag == "atomic_potential")
+			parse_atomic_potential(split);
         }
         input.close();
 
@@ -130,10 +122,9 @@ void simulation_spec :: read_input()
 			// These particles cannot be exchanged 
 			if (exchange_sym == 0) continue;
 
-			// Record the fact that there is a possible
-			// fermionic exchange in the system
-			if (exchange_sym < 0)
-				has_fermionic_exchange = true;
+			// Record the number of exchange pairs
+			if (exchange_sym < 0) ++fermionic_exchange_pairs;
+			else ++bosonic_exchange_pairs;
 
 			// Record this exchangable pair
 			exchange_pairs.push_back(i);
@@ -174,9 +165,34 @@ void simulation_spec::load(int argc, char** argv)
 	
 	// Output results
 	progress_file << "System loaded\n";
-	progress_file << "    Particles      : " << template_system.size() << "\n";
-	progress_file << "    Dimensions     : " << dimensions << "\n";
-	progress_file << "    Exchange pairs : " << exchange_values.size() << "\n"; 
+	progress_file << "    Dimensions     : " << dimensions               << "\n";
+	progress_file << "    Particles      : " << template_system.size()   << "\n";
+	progress_file << "    Exchange pairs : " << exchange_values.size()   << "\n"; 
+	progress_file << "       Bosonic     : " << bosonic_exchange_pairs   << "\n";
+	progress_file << "       Fermionic   : " << fermionic_exchange_pairs << "\n";
+	progress_file << "    Total charge   : " << total_charge()           << "\n";
+	progress_file << "    DMC timestep   : " << tau                      << "\n";
+	progress_file << "    DMC walkers    : " 
+		      << target_population*np << " (total) "
+		      << target_population    << " (per process)\n";
+	progress_file << "    DMC iterations : " 
+		      << dmc_iterations << " => Imaginary time in [0, " 
+		      << dmc_iterations*tau << "]\n";
+	progress_file << "Particles\n";
+	for (int i=0; i<template_system.size(); ++i)
+		progress_file << "    " << template_system[i]->one_line_description() << "\n";
+	progress_file << "Potentials\n";
+	for (int i=0; i<potentials.size(); ++i)
+		progress_file << "    " << potentials[i]->one_line_description() << "\n";
+}
+
+double simulation_spec :: total_charge()
+{
+	// Work out the total charge on the system
+	double sum = 0;
+	for (int i=0; i<template_system.size(); ++i)
+		sum += template_system[i]->charge;
+	return sum;
 }
 
 void simulation_spec::free_memory()

@@ -39,15 +39,20 @@ public:
         double tau            = 0.01;   // The DMC timestep
         double trial_energy   = 0;      // Energy used to control the DMC population
 
+        // The external potentials applied to the system (additive)
+        std::vector<external_potential*> potentials;
+
         // The system which will be copied to generate walkers
-	// and a list of pairs of particles which can be exchanged
         std::vector<particle*> template_system;
+
+	// Exchange information about the system
 	std::vector<int> exchange_pairs;
 	std::vector<int> exchange_values;
-	bool has_fermionic_exchange = false;
+	int fermionic_exchange_pairs = 0;
+	int bosonic_exchange_pairs   = 0;
 
-        // The potentials applied to the system (additive)
-        std::vector<external_potential*> potentials;
+	// Derived information about the system
+	double total_charge();
 
         // Output files
         std::ofstream wavefunction_file;
@@ -71,9 +76,12 @@ private:
 	
 	// Reads/parses the input file
 	void read_input();
-	
-	// Parse an atom from an input line split by whitespace
-	void parse_atom(std::vector<std::string> split);
+
+	// Parse a particle from an input line
+	void parse_particle(std::vector<std::string> split);
+
+	// Parse an atomic potential from an input file
+	void parse_atomic_potential(std::vector<std::string> split);
 
 	// The result of clock() called at load
 	int start_clock;

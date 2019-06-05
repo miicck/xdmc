@@ -15,6 +15,9 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
+#include <string>
+#include <sstream>
+
 #include "simulation.h"
 #include "particle.h"
 #include "random.h"
@@ -45,6 +48,16 @@ particle* particle :: copy()
 		p->coords[i] = this->coords[i];
 
 	return p;
+}
+
+std::string particle :: one_line_description()
+{
+	std::stringstream des;
+	des << name;
+	des << " [charge: " << this->charge 
+            << " mass: " << this->mass
+	    << " spin: " << this->half_spins << "/2]";
+	return des.str();
 }
 
 int particle :: exchange_symmetry(particle* other)

@@ -58,13 +58,24 @@ walker :: ~walker()
 
 walker* walker :: copy()
 {
-	// Return a copy of this walker (copy each of the particles)
+	// Return an exact copy of this walker
+	// (copy each of the particles and the weight)
 	std::vector<particle*> copied_particles;
 	for (int i=0; i<particles.size(); ++i)
 		copied_particles.push_back(particles[i]->copy());
 	walker* copy = new walker(copied_particles);
 	copy->weight = this->weight;
 	return copy;
+}
+
+walker* walker :: branch_copy()
+{
+	// Return a branched version of this walker
+	// (weight is already accounted for by branching
+	// step, the sign is all that continues)
+	walker* bcopy = this->copy();
+	bcopy->weight = sign(bcopy->weight);
+	return bcopy;
 }
 
 double walker :: potential()
@@ -168,7 +179,7 @@ void walker :: cancel(walker* other)
 	// Cancellation is only necassary if there is
 	// a fermionic exchange in the system (as this is
 	// the only way that walker signs can change)
-	if (!simulation.has_fermionic_exchange) return;
+	if (simulation.fermionic_exchange_pairs == 0) return;
 
 	// Don't cancel walkers of the same sign
 	if (sign(this->weight) == sign(other->weight)) return;
@@ -230,22 +241,24 @@ walker_collection :: ~walker_collection()
 		delete (*this)[n];
 }
 
-int walkers_surviving(double pot_before, double pot_after, double weight)
+double potential_greens_function(double pot_before, double pot_after)
 {
-	// Returns the number of walkers that should survive after a
-	// walker with the given weight moves from potential pot_before to pot_after.
-	// Returns 0 if the walker should die and 1 if it should live, 2 if another should
-	// spawn etc...
-
+	// Evaluate the potential-dependent part of the greens
+	// function G_v(x,x',tau) = exp(-tau*(v(x)+v(x')-2E_T)/2)
         if (std::isinf(pot_after))  return 0;
         if (std::isinf(pot_before)) return 0;
 
         double av_potential = (pot_before + pot_after)/2;
         double exponent     = -simulation.tau*(av_potential - simulation.trial_energy);
-        double p            = fabs(weight) * exp(exponent);
-        int surviving       = std::min(int(floor(p+rand_uniform())), 3);
+	return exp(exponent);
+}
 
-        return surviving;
+int branch_from_weight(double weight)
+{
+	// Returns how many walkers should be produced
+	// from one walker of the given weight
+	int num = (int)floor(fabs(weight) + rand_uniform());
+	return std::min(num, 3);
 }
 
 void walker_collection :: diffuse_and_branch()
@@ -255,50 +268,52 @@ void walker_collection :: diffuse_and_branch()
 	// the potential before and after diffusion to apply
 	// the branching step)
 
-	// Normalize the walkers so that the population stays
-	// roughly constant
-	this->renormalize();
+	// Set the trial energy to control population
+	double log_pop_ratio = log(sum_mod_weight()/double(simulation.target_population));
+	simulation.trial_energy = average_potential() - log_pop_ratio;
 
 	int nmax = size();
 	for (int n=0; n < nmax; ++n)
 	{
 		walker* w = (*this)[n];
 
+		// Diffuse according to the diffusive
+		// part of the greens function
+		// (recording the potential before/after)
 		double pot_before = w->potential();
 		w->diffuse();
-		double pot_after = w->potential();
+		double pot_after  = w->potential();
 
-		int surviving = walkers_surviving(pot_before, pot_after, w->weight);
+		// Multiply the weight by the potential-
+		// dependent part of the greens function
+		w->weight *= potential_greens_function(pot_before, pot_after);
 
-		if (surviving == 0)
-		{
-			// Delete this walker
-			// (swap it to the end first for efficient
-			// removal)
-			std::swap(walkers[n], walkers.back());
-			walkers.pop_back();
-			delete(w);
-
-			// Deal with the fact this messed up the
-			// thing we were iterating over
-			--n;
-			--nmax;
-		}
-
-		// Add neccasary copies of this walker at the end of the collection
-		for (int s=0; s<surviving-1; ++s)
-			walkers.push_back(w->copy());
+		// Apply branching step, adding branched
+		// survivors to the end of the collection
+		int surviving = branch_from_weight(w->weight);
+		for (int s=0; s<surviving; ++s)
+			walkers.push_back(w->branch_copy());
 	}
+
+	// Delete the previous iterations walkers
+	for (int n=0; n < nmax; ++n) delete walkers[n];
+	walkers.erase(walkers.begin(), walkers.begin() + nmax);
 }
 
-double walker_collection :: average_weight_sq()
+double walker_collection :: sum_mod_weight()
 {
-	// Returns (1/N) * sum_i |w_i|^2
-	double av_weight_sq = 0;
+	// Returns sum_i |w_i|
+	// This is the effective population
+	double sum = 0;
 	for (int n=0; n<size(); ++n)
-		av_weight_sq += (*this)[n]->weight*(*this)[n]->weight;
-	av_weight_sq /= double(size());
-	return av_weight_sq;
+		sum += fabs((*this)[n]->weight);
+	return sum;
+}
+
+double walker_collection :: average_mod_weight()
+{
+	// Returns (1/N) * sum_i |w_i|
+	return sum_mod_weight()/double(size());
 }
 
 double walker_collection :: average_weight()
@@ -311,6 +326,16 @@ double walker_collection :: average_weight()
 	return av_weight;
 }
 
+double walker_collection :: average_weight_sq()
+{
+	// Returns (1/N) * sum_i |w_i|^2
+	double av_weight_sq = 0;
+	for (int n=0; n<size(); ++n)
+		av_weight_sq += (*this)[n]->weight*(*this)[n]->weight;
+	av_weight_sq /= double(size());
+	return av_weight_sq;
+}
+
 double walker_collection :: average_potential()
 {
 	// Returns (1/N) * sum_i |w_i|*v_i
@@ -321,15 +346,6 @@ double walker_collection :: average_potential()
 		energy += (*this)[n]->potential() * fabs((*this)[n]->weight);
 	energy /= double(size());
 	return energy;
-}
-
-void walker_collection :: renormalize()
-{
-	// Renormalize the walker weights such that
-	// sum_i |w_i|^2 = 1
-	double norm = sqrt(this->average_weight_sq());
-	for (int n=0; n<size(); ++n)
-		(*this)[n]->weight /= norm;
 }
 
 void walker_collection :: sample_wavefunction()

@@ -18,12 +18,14 @@
 #ifndef __POTENTIAL__
 #define __POTENTIAL__
 
+#include <string>
 #include "particle.h"
 
 class external_potential
 {
 public:
         virtual double potential(particle* p)=0;
+	virtual std::string one_line_description()=0;
 };
 
 class harmonic_well : public external_potential
@@ -31,6 +33,7 @@ class harmonic_well : public external_potential
 public:
         harmonic_well(double omega) { this->omega = omega; }
         virtual double potential(particle* p);
+	virtual std::string one_line_description();
 private:
         double omega = 1;
 };
@@ -50,6 +53,7 @@ public:
 	}
 
 	virtual double potential(particle* p);
+	virtual std::string one_line_description();
 private:
 	double  charge;
 	double* coords;

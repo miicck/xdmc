@@ -10,6 +10,7 @@ def parse_evolution():
 		"Population",
 		"Trial energy (Hartree)",
 		"Average weight",
+                "Average |weight|",
 		"Average weight^2",
 		"Average potential (Hartree)"
 	]
@@ -19,6 +20,7 @@ def parse_evolution():
 		lambda(p) : np.sum(p, axis=0) , # Sum populations across processes
 		lambda(e) : np.mean(e, axis=0), # Average energies across processes
 		lambda(e) : np.mean(e, axis=0), # Average energies across processes
+		lambda(w) : np.mean(w, axis=0), # Average weights across processes
 		lambda(w) : np.mean(w, axis=0), # Average weights across processes
 		lambda(w) : np.mean(w, axis=0), # Average weights across processes
 		lambda(e) : np.mean(e, axis=0), # Average energies across processes

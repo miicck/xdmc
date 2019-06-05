@@ -1,7 +1,9 @@
 dimensions 1       # The dimensionallity of the system
 walkers    1000    # The number of DMC walkers
-iterations 1000    # The number of DMC iterations to carry out 
-tau        0.01    # The DMC timestep
-harmonic_well 1    # Create a harmonic well with omega = 1
-nif                # Put two noninteracting fermions in it
-nif
+iterations 10000   # The number of DMC iterations to carry out 
+tau        0.001   # The DMC timestep
+
+# Create a harmonic well with two non interacting fermions in it
+harmonic_well 1
+particle non_interacting_fermion 0 0 1 0 0 0
+particle non_interacting_fermion 0 0 1 0 0 0
