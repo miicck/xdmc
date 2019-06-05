@@ -197,16 +197,16 @@ void simulation_spec::load(int argc, char** argv)
 	// Open various output files
 	if (pid == 0)
 	{
-		// Files are simply named on the root node
-		error_file.open("error");
+		// Files on the root process
+		error_file.open("error_0");
 		progress_file.open("progress");
 		evolution_file.open("evolution");
 		wavefunction_file.open("wavefunction");
 	}
 	else
 	{
-		// Files not on the root node have their pid appended
-		error_file.open("error_" + std::to_string(pid));
+		// We only open the error files on other processes
+		error_file.open("error_"+std::to_string(pid));
 	}
 	
 	// Output parameters to the progress file
