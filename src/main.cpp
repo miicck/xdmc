@@ -15,11 +15,15 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
+#include <mpi.h>
 #include "simulation.h"
 #include "particle.h"
 #include "walker.h"
 #include "random.h"
 #include "constants.h"
+
+// Forward decleration
+void mpi_reduce_iteration(walker_collection& walkers, int iter);
 
 // Run the DMC calculation
 void run_dmc()
@@ -32,12 +36,6 @@ void run_dmc()
 	simulation.progress_file << "Starting DMC simulation...\n";
 	for (int iter = 1; iter <= simulation.dmc_iterations; ++iter)
 	{
-		simulation.progress_file 
-			<< "Iteration: " << iter << "/" 
-			<< simulation.dmc_iterations
-			<< " Population: " << walkers.size()
-			<< " Trial energy: " << simulation.trial_energy << "\n";
-
 		// Apply diffusion-branching step.
 		walkers.diffuse_and_branch();
 
@@ -47,24 +45,15 @@ void run_dmc()
 		// Apply cancellation of walkers
 		walkers.apply_cancellations();
 
-		// Output the main results of this iteration to track evolution
-		simulation.evolution_file 
-			<< walkers.size()               << "," 
-			<< simulation.trial_energy      << ","
-			<< walkers.average_weight()     << ","
-			<< walkers.average_mod_weight() << ","
-			<< walkers.average_weight_sq()  << ","
-			<< walkers.average_potential()  << "\n";
-
-		// Sample the wavefunction to file
-		walkers.sample_wavefunction();
+		// Reduce this iteration and output
+		mpi_reduce_iteration(walkers, iter);
 
 		// Flush output files after every iteration
 		simulation.flush();
 	}
 
 	// Output success message
-	simulation.progress_file << "Done, total time: " << simulation.time() << "s.\n";
+	simulation.progress_file << "\nDone, total time: " << simulation.time() << "s.\n";
 }
 
 // Program entrypoint
@@ -78,4 +67,53 @@ int main(int argc, char** argv)
 
 	// Free memory used in the simulation specification
 	simulation.free_memory();
+}
+
+void mpi_reduce_iteration(walker_collection& walkers, int iter)
+{
+	// Sum population across processes
+	int population = walkers.size();
+	int population_red;
+	MPI_Reduce(&population, &population_red, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+
+	// Average trial energy across processes
+	double triale = simulation.trial_energy;
+	double triale_red;
+	MPI_Reduce(&triale, &triale_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	triale_red /= double(simulation.np);
+
+	// Avarage <weight> across processes
+	double av_weight = walkers.average_weight();
+	double av_weight_red;
+	MPI_Reduce(&av_weight, &av_weight_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	av_weight_red /= double(simulation.np);
+
+	// Average <|weight|> across processes
+	double av_mod_weight = walkers.average_mod_weight();
+	double av_mod_weight_red;
+	MPI_Reduce(&av_mod_weight, &av_mod_weight_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+	av_mod_weight_red /= double(simulation.np);
+
+	// Output iteration information
+	simulation.progress_file << "\nIteration " << iter << "/" << simulation.dmc_iterations << "\n";
+	simulation.progress_file << "    Trial energy   : " << triale_red     << " Hartree\n";
+	simulation.progress_file << "    Population     : " << population_red << "\n";
+
+	if (iter == 1)
+	{
+		// Before the first iteration, output names of the
+		// evolution file columns
+		simulation.evolution_file
+			<< "Population,"
+			<< "Trial energy (Hartree),"
+			<< "Average weight,"
+			<< "Average |weight|\n";
+	}
+
+	// Output evolution information to file
+	simulation.evolution_file
+			<< population_red    << ","
+			<< triale_red        << ","
+			<< av_weight_red     << ","
+			<< av_mod_weight_red << "\n";
 }

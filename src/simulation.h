@@ -24,6 +24,31 @@
 #include "particle.h"
 #include "potential.h"
 
+// Class to help with I/O, ensures the file
+// is open, but leaves it closed until needed
+class output_file
+{
+public:
+	output_file() { filename = "/dev/null"; }
+	output_file(std::string fn) { filename = fn; }
+
+	template<class T>
+	output_file& operator<<(T t)
+	{
+		if (!file.is_open()) file.open(filename);
+		file << t;
+		return (*this);
+	}
+
+	void open(std::string fn) { filename = fn; }
+	void close() { if(file.is_open()) file.close(); }
+	void flush() { if(file.is_open()) file.flush(); }
+
+private:
+	std::string filename;
+	std::ofstream file;
+};
+
 // This class represents a complete specification for
 // a simulation to run and progress, including ready-to-write
 // output files and control parameters. 
@@ -55,13 +80,16 @@ public:
 	double total_charge();
 
         // Output files
-        std::ofstream wavefunction_file;
-        std::ofstream evolution_file;
-	std::ofstream progress_file;
-	std::ofstream error_file;
+        output_file wavefunction_file;
+        output_file evolution_file;
+	output_file progress_file;
+	output_file error_file;
 
 	// Flush output files so we have information if a run terminates
 	void flush();
+
+	// Output details of the simulation to the progress file
+	void output_sim_details();
 
 	// Loads system from input, initializes MPI, opens output files etc.
         void load(int argc, char** argv);

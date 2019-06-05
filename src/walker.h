@@ -73,7 +73,6 @@ public:
 	void sample_wavefunction();
 
 	double average_weight();
-	double average_weight_sq();
 	double average_mod_weight();
 	double average_potential();
 	double sum_mod_weight();

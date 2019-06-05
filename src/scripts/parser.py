@@ -4,45 +4,16 @@ import sys
 import os
 
 def parse_evolution():
-
-	# Labels for the plots
-	y_axes = [
-		"Population",
-		"Trial energy (Hartree)",
-		"Average weight",
-                "Average |weight|",
-		"Average weight^2",
-		"Average potential (Hartree)"
-	]
-
-	# How to combine axes across processes
-	how_to_combine = [
-		lambda(p) : np.sum(p, axis=0) , # Sum populations across processes
-		lambda(e) : np.mean(e, axis=0), # Average energies across processes
-		lambda(e) : np.mean(e, axis=0), # Average energies across processes
-		lambda(w) : np.mean(w, axis=0), # Average weights across processes
-		lambda(w) : np.mean(w, axis=0), # Average weights across processes
-		lambda(w) : np.mean(w, axis=0), # Average weights across processes
-		lambda(e) : np.mean(e, axis=0), # Average energies across processes
-	]
-
-	# Read in the evolution from each process
-	all_data = []
-	for f in os.listdir("."):
-		if not f.startswith("evolution"): continue
-
-		# Read in our data from the evolution file
-		data = []
-		for line in open(f).read().split("\n"):
-			if len(line.strip()) > 0:
-				data.append([float(i) for i in line.split(",")])
-		data = zip(*data)
-		all_data.append(data)
-
-	# Combine the data from each process
-	data = []
-	for i in range(0, len(all_data[0])):
-		data.append(how_to_combine[i]([d[i] for d in all_data]))
+    
+        # Read in our data from the evolution file
+        # ignoring the first line which has y axes labels on it
+        lines  = open("evolution").read().split("\n")
+        y_axes = lines[0].split(",")
+        data   = []
+        for line in lines[1:]:
+                if len(line.strip()) > 0:
+                        data.append([float(i) for i in line.split(",")])
+        data = zip(*data)
 	return np.array([y_axes, data])
 
 def transpose_wavefunction(wfn):
@@ -62,7 +33,7 @@ def parse_wavefunction(iter_start=0, iter_end=None):
 	# Combines wavefunctions across processes
 	wfs = []
 	for f in os.listdir("."):
-		if f.startswith("wavefunction_"):
+		if f.startswith("wavefunction"):
 			wf = parse_wavefunction_file(f, iter_start, iter_end)
 			wfs.append(wf)
 			continue # Only do one for now

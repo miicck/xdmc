@@ -134,10 +134,47 @@ void simulation_spec :: read_input()
 	}
 }
 
+void simulation_spec :: output_sim_details()
+{
+	// Output system information
+	progress_file << "System loaded\n";
+	progress_file << "    Dimensions     : " << dimensions               << "\n";
+	progress_file << "    Particles      : " << template_system.size()   << "\n";
+	progress_file << "    Exchange pairs : " << exchange_values.size()   << "\n"; 
+	progress_file << "       Bosonic     : " << bosonic_exchange_pairs   << "\n";
+	progress_file << "       Fermionic   : " << fermionic_exchange_pairs << "\n";
+	progress_file << "    Total charge   : " << total_charge()           << "\n";
+	progress_file << "    DMC timestep   : " << tau                      << "\n";
+
+	progress_file << "    DMC walkers    : " 
+		      << target_population*np << " (total) "
+		      << target_population    << " (per process)\n";
+
+	progress_file << "    DMC iterations : " 
+		      << dmc_iterations << " => Imaginary time in [0, " 
+		      << dmc_iterations*tau << "]\n";
+
+	progress_file << "    MPI processes  : " << np  << "\n";
+	progress_file << "    MPI pid        : " << pid << "\n";
+
+	// Output a summary of particles to the progress file
+	progress_file << "Particles\n";
+	for (int i=0; i<template_system.size(); ++i)
+		progress_file << "    " << template_system[i]->one_line_description() << "\n";
+
+	// Output a summary of potentials to the progress file
+	progress_file << "Potentials\n";
+	for (int i=0; i<potentials.size(); ++i)
+		progress_file << "    " << potentials[i]->one_line_description() << "\n";
+
+	progress_file << "\n";
+}
+
 void simulation_spec::load(int argc, char** argv)
 {
 	// Get the start time so we can time stuff
 	start_clock = clock();
+
 	
 	// Initialize mpi
         if (MPI_Init(&argc, &argv) != 0) exit(MPI_ERROR);
@@ -158,32 +195,22 @@ void simulation_spec::load(int argc, char** argv)
         }
 
 	// Open various output files
-	error_file.open(       "error_"        + std::to_string(pid));
-	progress_file.open(    "progress_"     + std::to_string(pid));
-	evolution_file.open(   "evolution_"    + std::to_string(pid));
-	wavefunction_file.open("wavefunction_" + std::to_string(pid));
+	if (pid == 0)
+	{
+		// Files are simply named on the root node
+		error_file.open("error");
+		progress_file.open("progress");
+		evolution_file.open("evolution");
+		wavefunction_file.open("wavefunction");
+	}
+	else
+	{
+		// Files not on the root node have their pid appended
+		error_file.open("error_" + std::to_string(pid));
+	}
 	
-	// Output results
-	progress_file << "System loaded\n";
-	progress_file << "    Dimensions     : " << dimensions               << "\n";
-	progress_file << "    Particles      : " << template_system.size()   << "\n";
-	progress_file << "    Exchange pairs : " << exchange_values.size()   << "\n"; 
-	progress_file << "       Bosonic     : " << bosonic_exchange_pairs   << "\n";
-	progress_file << "       Fermionic   : " << fermionic_exchange_pairs << "\n";
-	progress_file << "    Total charge   : " << total_charge()           << "\n";
-	progress_file << "    DMC timestep   : " << tau                      << "\n";
-	progress_file << "    DMC walkers    : " 
-		      << target_population*np << " (total) "
-		      << target_population    << " (per process)\n";
-	progress_file << "    DMC iterations : " 
-		      << dmc_iterations << " => Imaginary time in [0, " 
-		      << dmc_iterations*tau << "]\n";
-	progress_file << "Particles\n";
-	for (int i=0; i<template_system.size(); ++i)
-		progress_file << "    " << template_system[i]->one_line_description() << "\n";
-	progress_file << "Potentials\n";
-	for (int i=0; i<potentials.size(); ++i)
-		progress_file << "    " << potentials[i]->one_line_description() << "\n";
+	// Output parameters to the progress file
+	output_sim_details();
 }
 
 double simulation_spec :: total_charge()

@@ -326,16 +326,6 @@ double walker_collection :: average_weight()
 	return av_weight;
 }
 
-double walker_collection :: average_weight_sq()
-{
-	// Returns (1/N) * sum_i |w_i|^2
-	double av_weight_sq = 0;
-	for (int n=0; n<size(); ++n)
-		av_weight_sq += (*this)[n]->weight*(*this)[n]->weight;
-	av_weight_sq /= double(size());
-	return av_weight_sq;
-}
-
 double walker_collection :: average_potential()
 {
 	// Returns (1/N) * sum_i |w_i|*v_i

@@ -15,7 +15,7 @@ do
 	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
 	echo $DIR
 	echo "%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%"
-	echo "    "$(cat progress_0 | grep "total time")
+	echo "    "$(cat progress | grep "total time")
 	echo "    "energy: $(python $SCRIPT_DIR/estimate_energy.py)
 	echo ""
 	echo "Profiling info:"
