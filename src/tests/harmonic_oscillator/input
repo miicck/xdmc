@@ -5,4 +5,4 @@ tau        0.01    # The DMC timestep
 
 # Create a harmonic well (omega = 1) with a particle in it
 harmonic_well 1
-particle 0 0 0 0 0 0
+particle particle 0 0 0 0
