@@ -1,6 +1,6 @@
 dimensions 1       # The dimensionallity of the system
 walkers    1000    # The number of DMC walkers
-iterations 10000   # The number of DMC iterations to carry out 
+iterations 20000   # The number of DMC iterations to carry out 
 tau        0.001   # The DMC timestep
 
 # Create a harmonic well with two non interacting fermions in it

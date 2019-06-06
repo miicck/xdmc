@@ -47,9 +47,6 @@ void run_dmc()
 
 		// Reduce this iteration and output
 		mpi_reduce_iteration(walkers, iter);
-
-		// Flush output files after every iteration
-		simulation.flush();
 	}
 
 	// Output success message
@@ -71,7 +68,7 @@ int main(int argc, char** argv)
 
 void mpi_reduce_iteration(walker_collection& walkers, int iter)
 {
-	// Sum population across processes
+	// Sum up walkers across processes
 	int population = walkers.size();
 	int population_red;
 	MPI_Reduce(&population, &population_red, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -116,4 +113,11 @@ void mpi_reduce_iteration(walker_collection& walkers, int iter)
 			<< triale_red        << ","
 			<< av_weight_red     << ","
 			<< av_mod_weight_red << "\n";
+
+	// Write the wavefunction to file
+	simulation.wavefunction_file << "# Iteration " << iter << "\n";
+	walkers.write_wavefunction();
+
+	// Flush output files after every call
+	simulation.flush();
 }

@@ -33,8 +33,7 @@ def plot_analytic_2nif_harmonic(min_lim, max_lim, LEVELS, alpha=1.0):
 
 def plot_2nif_fast(start_iter, end_iter):
 	
-	wavefunction = parser.parse_wavefunction(start_iter, end_iter)
-	wfn = parser.transpose_wavefunction(wavefunction)
+	wfn = parser.parse_wavefunction(start_iter, end_iter)
 	xs = [x[0] for x in wfn[1]]
 	ys = [x[0] for x in wfn[2]]
 	zs = wfn[0]
@@ -46,16 +45,15 @@ def plot_2nif_fast(start_iter, end_iter):
 	plt.ylim([-4,4])
 	label_plot()
 
-def bin_2nif(start_iter, end_iter, RES=100):
-	wavefunction = parser.parse_wavefunction(start_iter, end_iter)
-	wfn = parser.transpose_wavefunction(wavefunction)
+def bin_2nif(start_iter, end_iter, RES=40):
+	wfn = parser.parse_wavefunction(start_iter, end_iter)
 	xs = np.array([x[0] for x in wfn[1]])
 	ys = np.array([x[0] for x in wfn[2]])
 	ws = wfn[0]
 
-	MAX = 4.0
-	MIN = -4.0
-	bins    = np.zeros((RES,RES))
+	MAX  = 4.0
+	MIN  = -4.0
+	bins = np.zeros((RES,RES))
 
 	for x,y,w in zip(xs,ys,ws):
 		xi = int(RES*(x - MIN)/(MAX - MIN))
@@ -75,9 +73,8 @@ def bin_2nif(start_iter, end_iter, RES=100):
 	plt.contour(xs, ys, analytic(xs, ys), 40)
 
 def plot_2nif(start_iter, end_iter):
-	wavefunction = parser.parse_wavefunction(start_iter, end_iter)
-	iterations = len(wavefunction)
-	wfn = parser.transpose_wavefunction(wavefunction)
+	wfn = parser.parse_wavefunction(start_iter, end_iter)
+        iterations = end_iter - start_iter
 
 	xs = np.array([x[0] for x in wfn[1]])
 	ys = np.array([x[0] for x in wfn[2]])

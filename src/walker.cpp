@@ -15,6 +15,8 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
+#include <sstream>
+
 #include "random.h"
 #include "math.h"
 #include "walker.h"
@@ -199,12 +201,24 @@ void walker :: cancel(walker* other)
 	}
 }
 
-void walker :: sample_wavefunction()
+void walker :: write_wavefunction()
 {
+	// Write the walker wavefunction in the form
+	// [weight: x1, y1, z1 ...; x2, y2, z2 ...; ...]
+	// where x1 is the x coord of the first particle etc
 	simulation.wavefunction_file << this->weight << ":";
 	for (int i=0; i<particles.size(); ++i)
-		particles[i]->sample_wavefunction();
-	simulation.wavefunction_file << "\n";
+	{
+		for (int j=0; j<simulation.dimensions; ++j)
+		{
+			simulation.wavefunction_file
+				<< particles[i]->coords[j];
+			if (j != simulation.dimensions - 1)
+				simulation.wavefunction_file << ",";
+		}
+		if (i != particles.size() - 1)
+			simulation.wavefunction_file << ";";
+	}
 }
 
 //%%%%%%%%%%%%%%%%%%%//
@@ -338,14 +352,6 @@ double walker_collection :: average_potential()
 	return energy;
 }
 
-void walker_collection :: sample_wavefunction()
-{
-	// Sample the wavefunction to a file
-	for (int n=0; n<size(); ++n)
-		(*this)[n]->sample_wavefunction();
-	simulation.wavefunction_file << "#" << "\n";
-}
-
 void walker_collection :: make_exchange_moves()
 {
 	// Apply exchange moves to each of the walkers
@@ -359,4 +365,14 @@ void walker_collection :: apply_cancellations()
 	for (int n=0; n<size(); ++n)
 		for (int m=0; m<n; ++m)
 			(*this)[n]->cancel((*this)[m]);
+}
+
+void walker_collection :: write_wavefunction()
+{
+	// Write the wavefunction to disk
+	for (int n=0; n<size(); ++n)
+	{
+		(*this)[n]->write_wavefunction();
+		simulation.wavefunction_file << "\n";
+	}
 }

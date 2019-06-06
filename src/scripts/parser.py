@@ -16,35 +16,54 @@ def parse_evolution():
         data = zip(*data)
 	return np.array([y_axes, data])
 
-def transpose_wavefunction(wfn):
-	# Take a wavefunction of the form
-	# wavefunction[iteration number][walker number] = [weight, x0, x1...]
-	# and return the array
-	# [[w1, w2, w3 ... wN], [x0_1, x0_2, x0_3 ... x0_N], [x1_1, x1_2, x1_3 ... x1_N] ...]
-	# where 1 -> N runs over all iterations and walker numbers 
-	# (i.e walkers from all iterations are combined)
-	wfn_combined = []
-	for i in range(0, len(wfn)):
-		wfn_combined.extend(wfn[i])
-	return np.array(wfn_combined).T
-
 def parse_wavefunction(iter_start=0, iter_end=None):
 	
 	# Combines wavefunctions across processes
-	wfs = []
+        combined = None
 	for f in os.listdir("."):
 		if f.startswith("wavefunction"):
 			wf = parse_wavefunction_file(f, iter_start, iter_end)
-			wfs.append(wf)
-			continue # Only do one for now
-	wfn = wfs[0]
-	for wf in wfs[1:]:
-		for i in range(0, len(wfn)):
-			wfn[i].extend(wf[i])
-	return wfn
-			
+                        if combined is None:
+                            combined = wf
+                        else:
+                            for i, wfi in enumerate(wf):
+                                combined[i].extend(wfi)
+	return combined
 
 def parse_wavefunction_file(filename, iter_start=0, iter_end=None):
+
+        # Reads a wavefunction file and returns
+        # [weights, x1s, x2s ...]
+        # where weights_i is the weight of the i^th walker
+        # xjs_i is the position of the j^th particle in the i^th walker
+        # Note that the position is read as a vector, even if the
+        # system is one dimensional (i.e x -> [x] for a 1d system)
+        f = open(filename)
+        lines = f.read().split("\n")
+        f.close()
+        
+        if iter_end is None: iter_end = iter_start + 1
+
+        iter_count = -1
+        data = []
+        for line in lines:
+            if "#" in line:
+                iter_count += 1
+                continue
+            if iter_count < iter_start: continue
+            if iter_count >= iter_end: break
+
+            weight, coords = line.split(":")
+            dat = [float(weight)]
+            for particle in coords.split(";"):
+                dat.append([float(w) for w in particle.split(",")])
+            data.append(dat)
+
+        data = map(list, zip(*data))
+        return data
+            
+
+def parse_wavefunction_file_old(filename, iter_start=0, iter_end=None):
 	
 	# Parse wavefunction into the form
 	# wavefunction[iteration number][walker number] = [weight, x0, x1...]
@@ -54,10 +73,11 @@ def parse_wavefunction_file(filename, iter_start=0, iter_end=None):
 	f0.close()
 
 	# Get the start location of each iteration
-	i_iter_start = [0]
+	i_iter_start = []
 	for i, l in enumerate(lines):
 		if not "#" in l: continue
 		i_iter_start.append(i+1)
+        i_iter_start.append(len(lines)+1)
 	
 	# Validate the requested number of iterations
 	if iter_end is None or iter_end > len(i_iter_start) - 1:
@@ -70,7 +90,8 @@ def parse_wavefunction_file(filename, iter_start=0, iter_end=None):
 	for i in range(i_iter_start[iter_start],
 		       i_iter_start[iter_end]):
 
-		l = lines[i]
+                if i >= len(lines): l = "#"
+                else: l = lines[i]
 		if "#" in l:
 			wavefunction.append(iteration)
 			iteration = []
@@ -86,31 +107,4 @@ def parse_wavefunction_file(filename, iter_start=0, iter_end=None):
 
 		iteration.append(dat)
 
-	return wavefunction
-
-	# Read the number of particles and coordinates
-	# from  the first wavefunction file
-	f0 = open("wavefunction_0")
-	lines = f0.read().split("\n")
-	f0.close()
-	particle_count = len(lines[0].split(";")) - 1
-	coord_count    = len(lines[0].split(";")[0].split(","))
-
-	# Prepare the wavefunction object
-	wavefunction = []
-	for i in range(0, particle_count): 
-		wavefunction.append([])
-		for j in range(0, coord_count): 
-			wavefunction[i].append([])
-
-	# Read the wavefunction samples from each file
-	for f in os.listdir("."):
-		if not f.startswith("wavefunction"): continue
-		for line in open(f).read().split("\n")[0:-1]:
-			weight = float(line.split(":")[0])
-			line = line.split(":")[1]
-			for pi, p in enumerate(line.split(";")[0:-1]):
-				for ci, x in enumerate([float(i) for i in p.split(",")]):
-					wavefunction[pi][ci].append([weight, x])
-	
-	return np.array(wavefunction)
+        return wavefunction
