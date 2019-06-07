@@ -164,13 +164,13 @@ void simulation_spec :: output_sim_details()
 
 	// Output a summary of particles to the progress file
 	progress_file << "Particles\n";
-	for (int i=0; i<template_system.size(); ++i)
+	for (unsigned i=0; i<template_system.size(); ++i)
 	       progress_file << "    " << i << ": "
 			     << template_system[i]->one_line_description() << "\n";
 
 	// Output a summary of exchange information
 	progress_file << "Exchange pairs (sign, particle 1, particle 2)\n";
-	for (int i=0; i<exchange_values.size(); ++i)
+	for (unsigned i=0; i<exchange_values.size(); ++i)
 	       progress_file << "    " << exchange_values[i] << " "
 			     << exchange_pairs[2*i]   << " "
 			     << exchange_pairs[2*i+1] << "\n";
