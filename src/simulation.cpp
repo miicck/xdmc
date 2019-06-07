@@ -127,8 +127,8 @@ void simulation_spec :: read_input()
 			else ++bosonic_exchange_pairs;
 
 			// Record this exchangable pair
-			exchange_pairs.push_back(i);
 			exchange_pairs.push_back(j);
+			exchange_pairs.push_back(i);
 			exchange_values.push_back(exchange_sym);
 		}
 	}
@@ -157,15 +157,23 @@ void simulation_spec :: output_sim_details()
 	progress_file << "    MPI processes  : " << np  << "\n";
 	progress_file << "    MPI pid        : " << pid << "\n";
 
-	// Output a summary of particles to the progress file
-	progress_file << "Particles\n";
-	for (unsigned i=0; i<template_system.size(); ++i)
-		progress_file << "    " << template_system[i]->one_line_description() << "\n";
-
 	// Output a summary of potentials to the progress file
 	progress_file << "Potentials\n";
 	for (unsigned i=0; i<potentials.size(); ++i)
 		progress_file << "    " << potentials[i]->one_line_description() << "\n";
+
+	// Output a summary of particles to the progress file
+	progress_file << "Particles\n";
+	for (int i=0; i<template_system.size(); ++i)
+	       progress_file << "    " << i << ": "
+			     << template_system[i]->one_line_description() << "\n";
+
+	// Output a summary of exchange information
+	progress_file << "Exchange pairs (sign, particle 1, particle 2)\n";
+	for (int i=0; i<exchange_values.size(); ++i)
+	       progress_file << "    " << exchange_values[i] << " "
+			     << exchange_pairs[2*i]   << " "
+			     << exchange_pairs[2*i+1] << "\n";
 
 	progress_file << "\n";
 }

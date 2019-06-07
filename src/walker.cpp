@@ -161,8 +161,10 @@ void walker :: exchange()
 	// No exchanges possible
 	if (simulation.exchange_values.size() == 0) return;
 
-	// Apply exchanges stochastically
-	if (rand_uniform() < 0.5) return;
+        // Make each type of exchange with
+        // equal probability (including no exchange)
+        double ne = (double)simulation.exchange_values.size();
+        if (rand_uniform() < 1/(ne+1)) return;
 
 	// Pick a random exchangable pair
 	int i = rand() % simulation.exchange_values.size();
