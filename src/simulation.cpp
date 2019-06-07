@@ -111,10 +111,10 @@ void simulation_spec :: read_input()
         input.close();
 
 	// Work out exchange properties of the system
-	for (int i=0; i<template_system.size(); ++i)
+	for (unsigned i=0; i<template_system.size(); ++i)
 	{
 		particle* p1 = template_system[i];
-		for (int j=0; j<i; ++j)
+		for (unsigned j=0; j<i; ++j)
 		{
 			particle* p2 = template_system[j];
 			int exchange_sym = p1->exchange_symmetry(p2);
@@ -159,12 +159,12 @@ void simulation_spec :: output_sim_details()
 
 	// Output a summary of particles to the progress file
 	progress_file << "Particles\n";
-	for (int i=0; i<template_system.size(); ++i)
+	for (unsigned i=0; i<template_system.size(); ++i)
 		progress_file << "    " << template_system[i]->one_line_description() << "\n";
 
 	// Output a summary of potentials to the progress file
 	progress_file << "Potentials\n";
-	for (int i=0; i<potentials.size(); ++i)
+	for (unsigned i=0; i<potentials.size(); ++i)
 		progress_file << "    " << potentials[i]->one_line_description() << "\n";
 
 	progress_file << "\n";
@@ -214,7 +214,7 @@ double simulation_spec :: total_charge()
 {
 	// Work out the total charge on the system
 	double sum = 0;
-	for (int i=0; i<template_system.size(); ++i)
+	for (unsigned i=0; i<template_system.size(); ++i)
 		sum += template_system[i]->charge;
 	return sum;
 }
@@ -227,11 +227,11 @@ void simulation_spec::free_memory()
 	wavefunction_file.close();
 
 	// Free memory in template_system
-	for (int i=0; i<template_system.size(); ++i)
+	for (unsigned i=0; i<template_system.size(); ++i)
 		delete template_system[i];
 
 	// Free memory in potentials
-	for (int i=0; i<potentials.size(); ++i)
+	for (unsigned i=0; i<potentials.size(); ++i)
 		delete potentials[i];
 
 	// Output info on objects that werent deconstructed properly

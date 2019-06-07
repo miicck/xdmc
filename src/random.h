@@ -18,7 +18,7 @@
 #ifndef __RANDOM__
 #define __RANDOM__
 
-#include <cmath>
+#include <math.h>
 #include "constants.h"
 
 // Generate a uniform random number \in [0,1].

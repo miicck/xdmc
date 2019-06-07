@@ -26,6 +26,7 @@ class external_potential
 public:
         virtual double potential(particle* p)=0;
 	virtual std::string one_line_description()=0;
+	virtual ~external_potential() { }
 };
 
 class harmonic_well : public external_potential
@@ -47,7 +48,7 @@ public:
 		this->charge = charge;
 	}
 	
-	~atomic_potential()
+	virtual ~atomic_potential()
 	{
 		delete[] this->coords;
 	}

@@ -36,7 +36,7 @@ walker :: walker()
 	++ constructed_count;
 	this->weight = 1;
 	this->particles.clear();
-	for (int i=0; i<simulation.template_system.size(); ++i)
+	for (unsigned i=0; i<simulation.template_system.size(); ++i)
 		this->particles.push_back(simulation.template_system[i]->copy());
 }
 
@@ -53,7 +53,7 @@ walker :: ~walker()
 {
 	// Clear up memory (delete all the particles).
 	-- constructed_count;
-	for (int i=0; i<particles.size(); ++i)
+	for (unsigned i=0; i<particles.size(); ++i)
 		delete(particles[i]);
 }
 
@@ -63,7 +63,7 @@ walker* walker :: copy()
 	// Return an exact copy of this walker
 	// (copy each of the particles and the weight)
 	std::vector<particle*> copied_particles;
-	for (int i=0; i<particles.size(); ++i)
+	for (unsigned i=0; i<particles.size(); ++i)
 		copied_particles.push_back(particles[i]->copy());
 	walker* copy = new walker(copied_particles);
 	copy->weight = this->weight;
@@ -89,15 +89,15 @@ double walker :: potential()
 	// Evaluate the potential of the system
 	// in the configuration described by this walker
 	last_potential = 0;
-	for (int i = 0; i < particles.size(); ++i)
+	for (unsigned i = 0; i < particles.size(); ++i)
 	{
 		// Sum up external potential contributions
-		for (int j=0; j<simulation.potentials.size(); ++j)
+		for (unsigned j=0; j<simulation.potentials.size(); ++j)
 			last_potential += simulation.potentials[j]->potential(particles[i]);
 
 		// Particle-particle interactions
 		// note j<i => no double counting
-		for (int j=0; j<i; ++j)
+		for (unsigned j=0; j<i; ++j)
 			last_potential += particles[i]->interaction(particles[j]);
 	}
 
@@ -109,7 +109,7 @@ void walker :: diffuse(double tau=simulation.tau)
 {
 	// Diffuse all of the particles (classical
 	// particles will automatically not diffuse)
-	for (int i=0; i<particles.size(); ++i)
+	for (unsigned i=0; i<particles.size(); ++i)
 		particles[i]->diffuse(tau);
 	
 	// Particles have moved => potential has changed
@@ -126,7 +126,7 @@ void walker :: reflect_to_irr_wedge()
 	while(true)
 	{
 		bool swap_made = false;
-		for (int n=0; n<simulation.exchange_values.size(); ++n)
+		for (unsigned n=0; n<simulation.exchange_values.size(); ++n)
 		{
 			particle* p1 = this->particles[simulation.exchange_pairs[2*n]];
 			particle* p2 = this->particles[simulation.exchange_pairs[2*n+1]];
@@ -189,7 +189,7 @@ void walker :: cancel(walker* other)
 	// Caclulate the probability that these 
 	// two walkers would overlap in the next iteration
 	double p = 1.0;
-	for (int i=0; i<particles.size(); ++i)
+	for (unsigned i=0; i<particles.size(); ++i)
 		p *= particles[i]->overlap_prob(other->particles[i]);
 
 	// With this probability, cancel the walkers
@@ -207,7 +207,7 @@ void walker :: write_wavefunction()
 	// [weight: x1, y1, z1 ...; x2, y2, z2 ...; ...]
 	// where x1 is the x coord of the first particle etc
 	simulation.wavefunction_file << this->weight << ":";
-	for (int i=0; i<particles.size(); ++i)
+	for (unsigned i=0; i<particles.size(); ++i)
 	{
 		for (int j=0; j<simulation.dimensions; ++j)
 		{

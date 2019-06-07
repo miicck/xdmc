@@ -15,7 +15,7 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
-#include <cmath>
+#include <math.h>
 #include <string>
 #include <sstream>
 #include "simulation.h"
