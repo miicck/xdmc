@@ -1,31 +1,38 @@
+# The base directory, the source directory
+# and the build directory locations
 BASE=$(pwd)
 SRC=$BASE/src
 BUILD=$BASE/src/build
 
-MPI_CC=mpicc
+# Run through compilers in preference order
+# until we find one that exists on this system
+for COMP in mpic++ mpicc.openmpi mpicc
+do
+	if [ ! -z $(which $COMP) ]
+	then
+		COMPILER=$COMP
+		break
+	fi
+done
 
-if [ ! -z $(which mpicc.openmpi) ]
-then
-	MPI_CC=mpicc.openmpi
-fi
-
-if [ ! -z $(which mpic++) ]
-then
-	MPI_CC=mpic++
-fi
-
+# Set libraries, compiler flags and linker flags
 LIBS="-lstdc++ -lm"
 COMP_FLAGS="-c -Wall -O3 -g -p"
 LINK_FLAGS="-p -o xdmc"
 
-rm -r $BUILD 2> /dev/null
-mkdir $BUILD
+# Create the build directory
+mkdir $BUILD 2> /dev/null
+
+# Compile the .cpp files
 cd $BUILD
+echo "Building with   :" $COMPILER $COMP_FLAGS
+$COMPILER $COMP_FLAGS $SRC/*.cpp
 
-echo "Building with   :" $MPI_CC $COMP_FLAGS
-$MPI_CC $COMP_FLAGS $SRC/*.cpp
-
+# Link the resulting .o files
 cd $BASE
-echo "Linking with    :" $MPI_CC $LINK_FLAGS
+echo "Linking with    :" $COMPILER $LINK_FLAGS
 echo "Using libraries :" $LIBS
-$MPI_CC $LINK_FLAGS $BUILD/*.o $LIBS
+$COMPILER $LINK_FLAGS $BUILD/*.o $LIBS
+
+# Remove the build directory
+rm $BUILD 2> /dev/null
