@@ -22,10 +22,10 @@ rm -r $BUILD 2> /dev/null
 mkdir $BUILD
 cd $BUILD
 
-echo Building with  : $MPI_CC $COMP_FLAGS
+echo "Building with   :" $MPI_CC $COMP_FLAGS
 $MPI_CC $COMP_FLAGS $SRC/*.cpp
 
 cd $BASE
-echo Linking with   : $MPI_CC $LINK_FLAGS
-echo Using libraries: $LIBS
+echo "Linking with    :" $MPI_CC $LINK_FLAGS
+echo "Using libraries :" $LIBS
 $MPI_CC $LINK_FLAGS $BUILD/*.o $LIBS
