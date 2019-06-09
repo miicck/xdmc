@@ -56,13 +56,14 @@ class simulation_spec
 {
 public:
         // Program parameters
-        int pid               = 0;      // The MPI PID of this process
-        int np                = 1;      // The number of MPI processes
-        int dimensions        = 3;      // The dimensionality of our system
-        int target_population = 500;    // The number of DMC walkers per process
-        int dmc_iterations    = 1000;   // The number of DMC iterations to carry out
-        double tau            = 0.01;   // The DMC timestep
-        double trial_energy   = 0;      // Energy used to control the DMC population
+        int pid                 = 0;    // The MPI PID of this process
+        int np                  = 1;    // The number of MPI processes
+        int dimensions          = 3;    // The dimensionality of our system
+        int target_population   = 500;  // The number of DMC walkers per process
+        int dmc_iterations      = 1000; // The number of DMC iterations to carry out
+        double tau              = 0.01; // The DMC timestep
+        double trial_energy     = 0;    // Energy used to control the DMC population
+	bool write_wavefunction = true; // True if we should write wavefunction files
 
         // The external potentials applied to the system (additive)
         std::vector<external_potential*> potentials;

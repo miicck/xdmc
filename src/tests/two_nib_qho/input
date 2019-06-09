@@ -1,7 +1,8 @@
-dimensions 1       # The dimensionallity of the system
-walkers    1000    # The number of DMC walkers
-iterations 1000    # The number of DMC iterations to carry out 
-tau        0.01    # The DMC timestep
+dimensions	   1     # The dimensionallity of the system
+walkers		   1000  # The number of DMC walkers
+iterations	   1000  # The number of DMC iterations to carry out 
+tau		   0.01  # The DMC timestep
+write_wavefunction false # Dont write wavefunction files
 
 # Create a harmonic well with two non-interacting bosons in it
 harmonic_well 1

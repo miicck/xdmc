@@ -107,6 +107,10 @@ void simulation_spec :: read_input()
 		// Add an atomic potential to the system
 		else if (tag == "atomic_potential")
 			parse_atomic_potential(split);
+
+		// Should we write the wavefunctions this run
+		else if (tag == "write_wavefunction")
+			write_wavefunction = split[1] == "true";
         }
         input.close();
 
@@ -138,24 +142,25 @@ void simulation_spec :: output_sim_details()
 {
 	// Output system information
 	progress_file << "System loaded\n";
-	progress_file << "    Dimensions     : " << dimensions               << "\n";
-	progress_file << "    Particles      : " << template_system.size()   << "\n";
-	progress_file << "    Exchange pairs : " << exchange_values.size()   << "\n"; 
-	progress_file << "       Bosonic     : " << bosonic_exchange_pairs   << "\n";
-	progress_file << "       Fermionic   : " << fermionic_exchange_pairs << "\n";
-	progress_file << "    Total charge   : " << total_charge()           << "\n";
-	progress_file << "    DMC timestep   : " << tau                      << "\n";
+	progress_file << "    Dimensions         : " << dimensions               << "\n";
+	progress_file << "    Particles          : " << template_system.size()   << "\n";
+	progress_file << "    Exchange pairs     : " << exchange_values.size()   << "\n"; 
+	progress_file << "       Bosonic         : " << bosonic_exchange_pairs   << "\n";
+	progress_file << "       Fermionic       : " << fermionic_exchange_pairs << "\n";
+	progress_file << "    Total charge       : " << total_charge()           << "\n";
+	progress_file << "    DMC timestep       : " << tau                      << "\n";
 
-	progress_file << "    DMC walkers    : " 
+	progress_file << "    DMC walkers        : " 
 		      << target_population*np << " (total) "
 		      << target_population    << " (per process)\n";
 
-	progress_file << "    DMC iterations : " 
+	progress_file << "    DMC iterations     : " 
 		      << dmc_iterations << " => Imaginary time in [0, " 
 		      << dmc_iterations*tau << "]\n";
 
-	progress_file << "    MPI processes  : " << np  << "\n";
-	progress_file << "    MPI pid        : " << pid << "\n";
+	progress_file << "    MPI processes      : " << np  << "\n";
+	progress_file << "    MPI pid            : " << pid << "\n";
+	progress_file << "    Write wavefunction : " << write_wavefunction << "\n";
 
 	// Output a summary of potentials to the progress file
 	progress_file << "Potentials\n";

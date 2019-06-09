@@ -115,8 +115,11 @@ void mpi_reduce_iteration(walker_collection& walkers, int iter)
 			<< av_mod_weight_red << "\n";
 
 	// Write the wavefunction to file
-	simulation.wavefunction_file << "# Iteration " << iter << "\n";
-	walkers.write_wavefunction();
+	if (simulation.write_wavefunction)
+	{
+		simulation.wavefunction_file << "# Iteration " << iter << "\n";
+		walkers.write_wavefunction();
+	}
 
 	// Flush output files after every call
 	simulation.flush();
