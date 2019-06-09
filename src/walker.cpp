@@ -312,8 +312,16 @@ void walker_collection :: diffuse_and_branch()
 	}
 
 	// Delete the previous iterations walkers
-	for (int n=0; n < nmax; ++n) delete walkers[n];
-	walkers.erase(walkers.begin(), walkers.begin() + nmax);
+	for (int n=0; n < nmax; ++n)
+	{
+		// Replace the nth walker with the
+		// last walker, allowing us to shorten
+		// the array from the end (delete the
+		// nth walker in the process)
+		delete walkers[n];
+		walkers[n] = walkers.back();
+		walkers.pop_back();
+	}
 }
 
 double walker_collection :: sum_mod_weight()
