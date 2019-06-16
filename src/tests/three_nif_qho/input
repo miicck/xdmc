@@ -8,3 +8,4 @@ write_wavefunction false # Dont write wavefunction files
 harmonic_well 1
 particle non_interacting_fermion 0 0 1 0
 particle non_interacting_fermion 0 0 1 0
+particle non_interacting_fermion 0 0 1 0
