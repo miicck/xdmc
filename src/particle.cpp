@@ -26,18 +26,22 @@ int particle::constructed_count;
 
 particle::particle()
 {
+	// Track the number of particles that have been constructed
 	++ constructed_count;
 	coords = new double[simulation.dimensions];
 }
 
 particle::~particle()
 {
+	// TRack the number of particles that have been deconstructed
 	-- constructed_count;
 	delete[] coords;
 }
 
 particle* particle :: copy()
 {
+	// Create a copy of this particle by copying each of its
+	// quantum numbers and it's location
 	particle* p = new particle();
 
 	p->half_spins = this->half_spins;
@@ -52,6 +56,8 @@ particle* particle :: copy()
 
 std::string particle :: one_line_description()
 {
+	// Returns a one line description of the particle
+	// for writing to output files
 	std::stringstream des;
 	des << name;
 	des << " [charge: " << this->charge 

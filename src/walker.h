@@ -19,7 +19,6 @@
 #define __WALKER__
 
 #include <vector>
-#include <string>
 #include "particle.h"
 
 // The object used by the diffusion monte carlo algorithm
@@ -56,31 +55,4 @@ private:
 	double last_potential = 0;
 };
 
-// A collection of walkers
-class walker_collection
-{
-public:
-	walker_collection();
-	~walker_collection();
-
-	int size() { return walkers.size(); }
-	walker* operator[](int i) { return walkers[i]; }
-
-	void diffuse_and_branch();
-	void make_exchange_moves();
-	void apply_cancellations();
-
-	double average_weight();
-	double average_mod_weight();
-	double average_potential();
-	double sum_mod_weight();
-
-	void write_wavefunction();
-
-private:
-	std::vector<walker*> walkers;
-};
-
 #endif
-
-

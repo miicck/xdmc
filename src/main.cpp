@@ -15,15 +15,11 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
-#include <mpi.h>
 #include "simulation.h"
 #include "particle.h"
-#include "walker.h"
+#include "walker_collection.h"
 #include "random.h"
 #include "constants.h"
-
-// Forward decleration
-void mpi_reduce_iteration(walker_collection& walkers, int iter);
 
 // Run the DMC calculation
 void run_dmc()
@@ -40,13 +36,16 @@ void run_dmc()
 		walkers.diffuse_and_branch();
 
 		// Carry out exchange moves on the walkers
-		walkers.make_exchange_moves();
+		if (simulation.exchange_moves)
+			walkers.make_exchange_moves();
 
 		// Apply cancellation of walkers
-		walkers.apply_cancellations();
+		if (simulation.make_cancellations)
+			walkers.apply_cancellations();
 
-		// Reduce this iteration and output
-		mpi_reduce_iteration(walkers, iter);
+		// Output information about the walkers
+		// at this iteration
+		walkers.write_output(iter);
 	}
 
 	// Output success message
@@ -64,63 +63,4 @@ int main(int argc, char** argv)
 
 	// Free memory used in the simulation specification
 	simulation.free_memory();
-}
-
-void mpi_reduce_iteration(walker_collection& walkers, int iter)
-{
-	// Sum up walkers across processes
-	int population = walkers.size();
-	int population_red;
-	MPI_Reduce(&population, &population_red, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
-
-	// Average trial energy across processes
-	double triale = simulation.trial_energy;
-	double triale_red;
-	MPI_Reduce(&triale, &triale_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	triale_red /= double(simulation.np);
-
-	// Avarage <weight> across processes
-	double av_weight = walkers.average_weight();
-	double av_weight_red;
-	MPI_Reduce(&av_weight, &av_weight_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	av_weight_red /= double(simulation.np);
-
-	// Average <|weight|> across processes
-	double av_mod_weight = walkers.average_mod_weight();
-	double av_mod_weight_red;
-	MPI_Reduce(&av_mod_weight, &av_mod_weight_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-	av_mod_weight_red /= double(simulation.np);
-
-	// Output iteration information
-	simulation.progress_file << "\nIteration " << iter << "/" << simulation.dmc_iterations << "\n";
-	simulation.progress_file << "    Trial energy   : " << triale_red     << " Hartree\n";
-	simulation.progress_file << "    Population     : " << population_red << "\n";
-
-	if (iter == 1)
-	{
-		// Before the first iteration, output names of the
-		// evolution file columns
-		simulation.evolution_file
-			<< "Population,"
-			<< "Trial energy (Hartree),"
-			<< "Average weight,"
-			<< "Average |weight|\n";
-	}
-
-	// Output evolution information to file
-	simulation.evolution_file
-			<< population_red    << ","
-			<< triale_red        << ","
-			<< av_weight_red     << ","
-			<< av_mod_weight_red << "\n";
-
-	// Write the wavefunction to file
-	if (simulation.write_wavefunction)
-	{
-		simulation.wavefunction_file << "# Iteration " << iter << "\n";
-		walkers.write_wavefunction();
-	}
-
-	// Flush output files after every call
-	simulation.flush();
 }

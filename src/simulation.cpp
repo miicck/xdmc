@@ -111,6 +111,14 @@ void simulation_spec :: read_input()
 		// Should we write the wavefunctions this run
 		else if (tag == "write_wavefunction")
 			write_wavefunction = split[1] == "true";
+
+		// Turn off exchange moves
+		else if (tag == "no_exchange")
+			exchange_moves = false;
+
+		// Turn off walker cancellations
+		else if (tag == "no_cancellation")
+			make_cancellations = false;
         }
         input.close();
 
@@ -159,8 +167,9 @@ void simulation_spec :: output_sim_details()
 		      << dmc_iterations*tau << "]\n";
 
 	progress_file << "    MPI processes      : " << np  << "\n";
-	progress_file << "    MPI pid            : " << pid << "\n";
 	progress_file << "    Write wavefunction : " << write_wavefunction << "\n";
+	progress_file << "    Exchange moves     : " << exchange_moves << "\n";
+	progress_file << "    Cancellations      : " << make_cancellations << "\n";
 
 	// Output a summary of potentials to the progress file
 	progress_file << "Potentials\n";

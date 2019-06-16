@@ -64,6 +64,8 @@ public:
         double tau              = 0.01; // The DMC timestep
         double trial_energy     = 0;    // Energy used to control the DMC population
 	bool write_wavefunction = true; // True if we should write wavefunction files
+	bool exchange_moves     = true; // True if we should make exchange moves
+	bool make_cancellations = true; // True if we should make walker cancellations
 
         // The external potentials applied to the system (additive)
         std::vector<external_potential*> potentials;

@@ -40,7 +40,7 @@ def plot_2nif_fast(start_iter, end_iter):
 
 	plot_analytic_2nif_harmonic(-4,4,5)
 	plt.scatter(xs,ys,c=zs,cmap=get_weight_cmap(zs))
-	plt.title("Walker positions\n(With analytic solution overlaid)")
+	plt.title("Walker positions\n(With analytic solution overlaid)\n")
 	plt.xlim([-4,4])
 	plt.ylim([-4,4])
 	label_plot()
