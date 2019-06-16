@@ -24,8 +24,8 @@
 #include "particle.h"
 #include "potential.h"
 
-// Class to help with I/O, ensures the file
-// is open, but leaves it closed until needed
+// Class to help with I/O. Leaves the file
+// closed until it's needed.
 class output_file
 {
 public:
