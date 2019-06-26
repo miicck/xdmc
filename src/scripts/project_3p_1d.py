@@ -44,6 +44,7 @@ def project_wavefunction(wfn):
 	bins = np.zeros((BINS,BINS))
 
 	# Bin the wavefunction into this range
+	print "Projecting wavefunction of length", len(wfn)
 	for w, x, y, z in wfn:
 
 		# Work out the u coordinate
@@ -78,11 +79,12 @@ start = int(sys.argv[1])
 end   = int(sys.argv[2])
 
 plt.subplot(121)
-project_wavefunction(np.array(parser.parse_wavefunction(start, end)).T)
+wfn = np.array(parser.parse_wavefunction(start, end)).T
+project_wavefunction(wfn)
 
 # Plot the analytic solution
 awfn = []
-for n in range(0, 1000000):
+for n in range(0, len(wfn)):
 	x,y,z = np.random.rand(3)*(MAX-MIN) + MIN
 	awfn.append([psi(x,y,z),[x],[y],[z]])
 awfn = np.array(awfn)
