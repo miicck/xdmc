@@ -6,8 +6,7 @@ import sys
 start = int(sys.argv[1])
 end   = int(sys.argv[2])
 
-wavefunction = parser.parse_wavefunction(start, end)
-wfn = parser.transpose_wavefunction(wavefunction)
+wfn = parser.parse_wavefunction(start, end)
 
 weights = wfn[0]
 coords  = wfn[1:]
