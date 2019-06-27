@@ -18,9 +18,73 @@
 #include <math.h>
 #include <string>
 #include <sstream>
+#include <fstream>
 #include "simulation.h"
 #include "potential.h"
 #include "constants.h"
+
+std::string grid_potential :: one_line_description()
+{
+	std::stringstream des;
+	des << "Grid potential (extent = " << extent << " grid size = " << grid_size << ")";
+	return des.str();
+}
+
+grid_potential :: grid_potential(std::string filename)
+{
+	std::ifstream file(filename);
+
+	// Read the number of dimensions, the grid size and the extent from file
+	int read_dimensions;
+	file >> read_dimensions >> this->grid_size >> this->extent;
+
+	// Check dimensionality is correct
+	if (read_dimensions != simulation.dimensions)
+	{
+		simulation.error_file << "Incorrect dimensionality in grid_potential!\n";
+		throw "Incorrect dimensionality in grid_potential!";
+	}
+
+	// Read data from file
+	this->data = new double[read_dimensions * this->grid_size];
+	double val;
+	int n = 0;
+	while(file >> val)
+	{
+		this->data[n] = val;
+		++n;
+		if (n >= read_dimensions * this->grid_size)
+		{
+			simulation.error_file 
+				<< "Warning: grid_potential file has more lines than expected "
+				<< "please check it is correct.";
+			break;
+		}
+	}
+}
+
+double grid_potential :: potential(particle* p)
+{
+	int coord = 0;
+	int stride = 1;
+
+	for (int i=0; i<simulation.dimensions; ++i)
+	{
+		// Work out the coordinate I'm at
+		double frac = (p->coords[i] + extent)/(2*extent);
+		int c = int(grid_size*frac);
+		
+		// Outside of grid => infinite potential
+		if (c < 0 || c >= grid_size) 
+			return INFINITY;
+
+		// Add the resulting stride to the coodinate
+		coord  += c*stride;
+		stride *= grid_size;
+	}
+
+	return data[coord];
+}
 
 std::string harmonic_well :: one_line_description()
 {

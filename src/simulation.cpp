@@ -99,6 +99,10 @@ void simulation_spec :: read_input()
 		// Read in a particle
 		else if (tag == "particle")
 			parse_particle(split);
+	
+		// Add a potential from a grid to the system
+		else if (tag == "grid_potential")
+			potentials.push_back(new grid_potential(split[1]));
 
                 // Add a harmonic well to the system
                 else if (tag == "harmonic_well")
@@ -226,6 +230,7 @@ void simulation_spec::load(int argc, char** argv)
 
 	// Files on all processes have their pid appended
 	error_file.open("error_"+std::to_string(pid));
+	error_file.auto_flush = true;
 	wavefunction_file.open("wavefunction_"+std::to_string(pid));
 	
 	// Output parameters to the progress file

@@ -29,6 +29,19 @@ public:
 	virtual ~external_potential() { }
 };
 
+class grid_potential : public external_potential
+{
+public:
+	grid_potential(std::string filename);
+	virtual double potential(particle* p);
+	virtual std::string one_line_description();
+	virtual ~grid_potential() { delete[] this->data; }
+private:
+	int grid_size;
+	double extent;
+	double* data;
+};
+
 class harmonic_well : public external_potential
 {
 public:

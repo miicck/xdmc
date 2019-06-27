@@ -37,12 +37,16 @@ public:
 	{
 		if (!file.is_open()) file.open(filename);
 		file << t;
+		if (auto_flush) flush();
 		return (*this);
 	}
 
 	void open(std::string fn) { filename = fn; }
 	void close() { if(file.is_open()) file.close(); }
 	void flush() { if(file.is_open()) file.flush(); }
+
+	// Set to true to automatically flush the file after each write
+	bool auto_flush = false; 
 
 private:
 	std::string filename;
