@@ -17,7 +17,7 @@ def parse_evolution():
 	return np.array([y_axes, data])
 
 def parse_wavefunction(iter_start=0, iter_end=None):
-	
+
 	# Combines wavefunctions across processes
         combined = None
 	for f in os.listdir("."):
@@ -28,6 +28,9 @@ def parse_wavefunction(iter_start=0, iter_end=None):
                         else:
                             for i, wfi in enumerate(wf):
                                 combined[i].extend(wfi)
+        if combined is None:
+                print "Error, no wavefunction files found!"
+                quit()
 	return combined
 
 def parse_wavefunction_file(filename, iter_start=0, iter_end=None):
@@ -38,6 +41,10 @@ def parse_wavefunction_file(filename, iter_start=0, iter_end=None):
         # xjs_i is the position of the j^th particle in the i^th walker
         # Note that the position is read as a vector, even if the
         # system is one dimensional (i.e x -> [x] for a 1d system)
+        if not os.path.isfile(filename):
+                print "Error parsing wavefunction from file "+filename+" does not exist!"
+                quit()
+
         f = open(filename)
         lines = f.read().split("\n")
         f.close()

@@ -67,15 +67,24 @@ def bin_2nif(start_iter, end_iter, RES=40):
 	xs = np.linspace(MIN, MAX, RES)
 	ys = np.linspace(MIN, MAX, RES)
 	xs, ys = np.meshgrid(xs, ys)
+
 	plt.subplot(221)
 	plt.contour(xs, ys, bins, 40)
+        plt.xlabel("Particle 1 position")
+        plt.ylabel("Particle 2 position")
+        plt.gca().title.set_text("DMC wavefunction")
+
 	plt.subplot(222)
 	plt.contour(xs, ys, analytic(xs, ys), 40)
+        plt.xlabel("Particle 1 position")
+        plt.ylabel("Particle 2 position")
+        plt.gca().title.set_text("Analytic wavefunction")
 
 def plot_2nif(start_iter, end_iter):
 	wfn = parser.parse_wavefunction(start_iter, end_iter)
         iterations = end_iter - start_iter
-
+        
+        print len(wfn[1])
 	xs = np.array([x[0] for x in wfn[1]])
 	ys = np.array([x[0] for x in wfn[2]])
 	zs = wfn[0]
