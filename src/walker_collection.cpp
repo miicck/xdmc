@@ -38,7 +38,7 @@ walker_collection :: walker_collection()
 
 		// Carry out initial diffusion to avoid
 		// exact particle overlap on first iteration
-		w->diffuse(0.1);
+		w->diffuse(1.0);
 
 		// Reflect the walker to the irreducible
 		// wedge of space defined by exchange symmetries
@@ -198,8 +198,19 @@ void walker_collection :: write_output(int iter)
         MPI_Reduce(&av_mod_weight, &av_mod_weight_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         av_mod_weight_red /= double(simulation.np);
 
+	// Calculate timing information
+	double time = simulation.time();
+	double time_per_iter = time/double(iter);
+	double seconds_remaining = time_per_iter * (simulation.dmc_iterations - iter);
+	double percent_complete  = double(100*iter)/simulation.dmc_iterations;
+
         // Output iteration information
-        simulation.progress_file << "\nIteration " << iter << "/" << simulation.dmc_iterations << "\n";
+        simulation.progress_file << "\nIteration " << iter << "/" << simulation.dmc_iterations
+				 << " (" << percent_complete << "%)\n";
+	simulation.progress_file << "    Time running   : " << simulation.time()
+				 << "s (" << simulation.time()/iter << "s/iter)\n";
+	simulation.progress_file << "    ETA            : "
+				 << seconds_remaining << "s \n";
         simulation.progress_file << "    Trial energy   : " << triale_red     << " Hartree\n";
         simulation.progress_file << "    Population     : " << population_red << "\n";
 

@@ -3,11 +3,16 @@ from parser import parse_evolution
 
 # Read in the evolution data
 y_axes, data = parse_evolution()
-sq_size = int(len(data)**0.5)+1
+y_size = int(len(data)**0.5)
+x_size = 0
+while x_size * y_size < len(data): x_size += 1
+
+x_size = 1
+y_size = len(data)
 
 # Plot each dataseries on its own subplot
 for i, d in enumerate(data):
-	plt.subplot(sq_size,sq_size,i+1)
+	plt.subplot(y_size,x_size,i+1)
 	plt.plot(d)
 	plt.xlabel("Iteration")
 	plt.ylabel(y_axes[i])

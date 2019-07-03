@@ -14,7 +14,7 @@ def parse_evolution():
                 if len(line.strip()) > 0:
                         data.append([float(i) for i in line.split(",")])
         data = zip(*data)
-	return np.array([y_axes, data])
+	return [y_axes, data]
 
 def parse_wavefunction(iter_start=0, iter_end=None):
 
