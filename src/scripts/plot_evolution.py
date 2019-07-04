@@ -17,6 +17,9 @@ for i, d in enumerate(data):
 	plt.xlabel("Iteration")
 	plt.ylabel(y_axes[i])
 
+	if y_axes[i] == "Cancelled weight":
+		plt.yscale("log")
+
 # Spread the subplots out, and show them
 plt.subplots_adjust(wspace=0.5, hspace=0.5)
 plt.show()
