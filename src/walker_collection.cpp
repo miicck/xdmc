@@ -38,11 +38,7 @@ walker_collection :: walker_collection()
 
 		// Carry out initial diffusion to avoid
 		// exact particle overlap on first iteration
-		w->diffuse(1.0);
-
-		// Reflect the walker to the irreducible
-		// wedge of space defined by exchange symmetries
-		//w->reflect_to_irr_wedge();
+		w->diffuse(simulation.pre_diffusion);
 	}
 }
 

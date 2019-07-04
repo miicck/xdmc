@@ -96,6 +96,10 @@ void simulation_spec :: read_input()
                 else if (tag == "tau")
                         tau = std::stod(split[1]);
 
+		// Read in the pre diffusion amount
+		else if (tag == "pre_diffusion")
+			pre_diffusion = std::stod(split[1]);
+
 		// Read in a particle
 		else if (tag == "particle")
 			parse_particle(split);

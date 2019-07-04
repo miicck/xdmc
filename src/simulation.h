@@ -67,6 +67,7 @@ public:
         int dmc_iterations      = 1000; // The number of DMC iterations to carry out
         double tau              = 0.01; // The DMC timestep
         double trial_energy     = 0;    // Energy used to control the DMC population
+	double pre_diffusion    = 1.0;  // The amount that we diffuse walkers before run
 	bool write_wavefunction = true; // True if we should write wavefunction files
 	bool exchange_moves     = true; // True if we should make exchange moves
 	bool make_cancellations = true; // True if we should make walker cancellations

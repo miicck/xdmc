@@ -114,40 +114,6 @@ void walker :: diffuse(double tau=simulation.tau)
 	potential_dirty = true;
 }
 
-void walker :: reflect_to_irr_wedge()
-{
-	// Exchange my particles until their coordinates
-	// increase monotonically
-	// For example:
-	// For a 1d system of three fermions this would
-	// swap them until x1 < x2 < x3
-	while(true)
-	{
-		bool swap_made = false;
-		for (unsigned n=0; n<simulation.exchange_values.size(); ++n)
-		{
-			particle* p1 = this->particles[simulation.exchange_pairs[2*n]];
-			particle* p2 = this->particles[simulation.exchange_pairs[2*n+1]];
-			
-			for (int c=0; c<simulation.dimensions; ++c)
-			{
-				if (p1->coords[c] < p2->coords[c])
-					break;
-				else if (p1->coords[c] == p2->coords[c])
-					continue;
-				else
-				{
-					swap_made = true;
-					p1->exchange(p2);
-				}
-			}
-		}
-
-		if (!swap_made)
-			break;
-	}
-}
-
 void walker :: exchange()
 {
 	// Apply random exchange moves to particles

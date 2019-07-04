@@ -36,7 +36,6 @@ public:
         void diffuse(double tau);
 	void exchange();
 	void cancel(walker* other);
-	void reflect_to_irr_wedge();
 
         walker* copy();
 	walker* branch_copy();
