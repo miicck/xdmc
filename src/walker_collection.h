@@ -41,6 +41,8 @@ public:
 
 	void write_output(int iter);
 
+	double cancellation_amount_last = 0;
+
 private:
 	std::vector<walker*> walkers;
 };

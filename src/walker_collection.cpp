@@ -163,10 +163,24 @@ void walker_collection :: make_exchange_moves()
 
 void walker_collection :: apply_cancellations()
 {
+	// Record weights before cancellation for diagnostics
+	double* weights_before = new double[size()];
+	for (int n=0; n<size(); ++n)
+		weights_before[n] = (*this)[n]->weight;
+
 	// Apply cancellations to walker weights
 	for (int n=0; n<size(); ++n)
 		for (int m=0; m<n; ++m)
 			(*this)[n]->cancel((*this)[m]);
+
+	// Evaluate a measure of the amount of cancellation
+	// that occured
+	cancellation_amount_last = 0;
+	for (int n=0; n<size(); ++n)
+	{
+		double delta = (*this)[n]->weight - weights_before[n];
+		cancellation_amount_last += fabs(delta);
+	}
 }
 
 void walker_collection :: write_output(int iter)
@@ -194,6 +208,11 @@ void walker_collection :: write_output(int iter)
         MPI_Reduce(&av_mod_weight, &av_mod_weight_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         av_mod_weight_red /= double(simulation.np);
 
+	// Sum cancellation amount across processes
+	double cancel = this->cancellation_amount_last;
+	double cancel_red;
+	MPI_Reduce(&cancel, &cancel_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+
 	// Calculate timing information
 	double time = simulation.time();
 	double time_per_iter = time/double(iter);
@@ -203,12 +222,14 @@ void walker_collection :: write_output(int iter)
         // Output iteration information
         simulation.progress_file << "\nIteration " << iter << "/" << simulation.dmc_iterations
 				 << " (" << percent_complete << "%)\n";
-	simulation.progress_file << "    Time running   : " << simulation.time()
+	simulation.progress_file << "    Time running    : " << simulation.time()
 				 << "s (" << simulation.time()/iter << "s/iter)\n";
-	simulation.progress_file << "    ETA            : "
+	simulation.progress_file << "    ETA             : "
 				 << seconds_remaining << "s \n";
-        simulation.progress_file << "    Trial energy   : " << triale_red     << " Hartree\n";
-        simulation.progress_file << "    Population     : " << population_red << "\n";
+        simulation.progress_file << "    Trial energy    : " << triale_red     << " Hartree\n";
+        simulation.progress_file << "    Population      : " << population_red << "\n";
+	simulation.progress_file << "    Canceled weight : " << cancel_red
+				 << " (" << 100.0*cancel_red/av_mod_weight_red << "% of all weight)\n";
 
         if (iter == 1)
         {
@@ -218,7 +239,8 @@ void walker_collection :: write_output(int iter)
                         << "Population,"
                         << "Trial energy (Hartree),"
                         << "Average weight,"
-                        << "Average |weight|\n";
+                        << "Average |weight|,"
+			<< "Cancelled weight\n";
         }
 
         // Output evolution information to file
@@ -226,7 +248,8 @@ void walker_collection :: write_output(int iter)
                         << population_red    << ","
                         << triale_red        << ","
                         << av_weight_red     << ","
-                        << av_mod_weight_red << "\n";
+                        << av_mod_weight_red << ","
+			<< cancel_red        << "\n";
 
         // Write the wavefunction to file
         if (simulation.write_wavefunction)

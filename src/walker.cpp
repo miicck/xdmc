@@ -105,8 +105,7 @@ double walker :: potential()
 
 void walker :: diffuse(double tau=simulation.tau)
 {
-	// Diffuse all of the particles (classical
-	// particles will automatically not diffuse)
+	// Diffuse all of the particles
 	for (unsigned i=0; i<particles.size(); ++i)
 		particles[i]->diffuse(tau);
 	
