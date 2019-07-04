@@ -17,7 +17,8 @@ def exp_fit():
 		residuals = [e - to_fit(n, *par) for n, e in enumerate(energies)]
 		print par[0] ,"+/-", np.std(residuals)
 
-		if plot:
+		if "plot" in sys.argv:
+			import matplotlib.pyplot as plt
 			
 			# Plot the data, fit and residuals
 			plt.subplot(211)
@@ -56,7 +57,9 @@ def multi_exp_fit(exponents=3):
 		model = lambda n : sum(to_fit(n, *p) for p in parameters)
 		print model(10e10)
 
-		if plot:
+		if "plot" in sys.argv:
+			import matplotlib.pyplot as plt
+
 			fit = [model(n) for n in range(0, len(energies))]
 			ext = [model(n) for n in range(0, len(energies)*10)]
 			plt.subplot(211)
@@ -74,23 +77,46 @@ def average():
 		start = int(sys.argv[2])
 
 		energies = energies[start:]
-		print np.mean(energies), " +/- ", np.std(energies)
-		if plot:
+		print np.mean(energies), " +/- ", np.std(energies)/np.sqrt(len(energies))
+		if "plot" in sys.argv:
+			import matplotlib.pyplot as plt
+
 			plt.plot(energies)
+			plt.axhline(np.mean(energies), color="black")
 			plt.show()
 
+def pi_weighted():
+	for name, energies in zip(*parse_evolution()):
+		if not "Trial energy" in name: continue
+		start = int(sys.argv[2])
+		corr  = int(sys.argv[3])
+		energies = energies[start:]
+		
+		f = open("progress")
+		lines = f.read().split("\n")
+		f.close()
+
+		for l in lines:
+			if "DMC timestep" in l:
+				tau = float(l.split(":")[-1])
+				break
+
+		mean_e = np.mean(energies)
+		pi = lambda m : np.product([np.exp(-tau*(e-mean_e)) for e in energies[m-corr:m]])
+		estimate  = sum([pi(m)*energies[m] for m in range(0, len(energies))])
+		estimate /= sum([pi(m) for m in range(0, len(energies))])
+		print estimate
+		
 methods = {
-"exp_fit" : exp_fit,
+"exp_fit"       : exp_fit,
 "multi_exp_fit" : multi_exp_fit,
-"average" : average
+"average"       : average,
+"pi_weighted"   : pi_weighted
 }
 
-if not sys.argv[1] in methods:
+if len(sys.argv) < 2 or not sys.argv[1] in methods:
 	new_argv = [sys.argv[0], "exp_fit"]
 	new_argv.extend(sys.argv[1:])
 	sys.argv = new_argv
-
-plot = "plot" in sys.argv[2:]
-if plot: import matplotlib.pyplot as plt
 
 methods[sys.argv[1]]()

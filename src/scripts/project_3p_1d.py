@@ -79,7 +79,7 @@ start = int(sys.argv[1])
 end   = int(sys.argv[2])
 
 plt.subplot(121)
-wfn = np.array(parser.parse_wavefunction(start, end)).T
+wfn = zip(*parser.parse_wavefunction(start, end))
 project_wavefunction(wfn)
 
 # Plot the analytic solution
@@ -87,7 +87,6 @@ awfn = []
 for n in range(0, len(wfn)):
 	x,y,z = np.random.rand(3)*(MAX-MIN) + MIN
 	awfn.append([psi(x,y,z),[x],[y],[z]])
-awfn = np.array(awfn)
 
 plt.subplot(122)
 project_wavefunction(awfn)

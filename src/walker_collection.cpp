@@ -214,8 +214,7 @@ void walker_collection :: write_output(int iter)
 	MPI_Reduce(&cancel, &cancel_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
 
 	// Calculate timing information
-	double time = simulation.time();
-	double time_per_iter = time/double(iter);
+	double time_per_iter     = simulation.time()/iter;
 	double seconds_remaining = time_per_iter * (simulation.dmc_iterations - iter);
 	double percent_complete  = double(100*iter)/simulation.dmc_iterations;
 
@@ -223,13 +222,14 @@ void walker_collection :: write_output(int iter)
         simulation.progress_file << "\nIteration " << iter << "/" << simulation.dmc_iterations
 				 << " (" << percent_complete << "%)\n";
 	simulation.progress_file << "    Time running    : " << simulation.time()
-				 << "s (" << simulation.time()/iter << "s/iter)\n";
+				 << "s (" << time_per_iter << "s/iter)\n";
 	simulation.progress_file << "    ETA             : "
 				 << seconds_remaining << "s \n";
         simulation.progress_file << "    Trial energy    : " << triale_red     << " Hartree\n";
         simulation.progress_file << "    Population      : " << population_red << "\n";
 	simulation.progress_file << "    Canceled weight : " << cancel_red
-				 << " (" << 100.0*cancel_red/av_mod_weight_red << "% of all weight)\n";
+				 << " (" << 100.0*cancel_red/(population_red*av_mod_weight_red)
+				 << "% of all weight)\n";
 
         if (iter == 1)
         {
