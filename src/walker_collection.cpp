@@ -228,9 +228,7 @@ void walker_collection :: write_output(int iter)
 				 << seconds_remaining << "s \n";
         simulation.progress_file << "    Trial energy    : " << triale_red     << " Hartree\n";
         simulation.progress_file << "    Population      : " << population_red << "\n";
-	simulation.progress_file << "    Canceled weight : " << cancel_red
-				 << " (" << 100.0*cancel_red/(population_red*av_mod_weight_red)
-				 << "% of all weight)\n";
+	simulation.progress_file << "    Canceled weight : " << cancel_red     << "\n";
 
         if (iter == 1)
         {

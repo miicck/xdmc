@@ -163,9 +163,10 @@ void walker :: cancel(walker* other)
 
 	// Cancel according to integrated overlap
 	double r2 = this->sq_distance_to(other);
-	double f = erf(0.5*sqrt(r2/(2*simulation.tau)));
-	this->weight  *= f;
-	other->weight *= f;
+	double f = erf(0.5*sqrt(r2/(2*simulation.tau*simulation.tau_c_ratio)));
+	double av_weight = 0.5*(this->weight + other->weight);
+	this->weight  = this->weight*f  + av_weight*(1-f);
+	other->weight = other->weight*f + av_weight*(1-f);
 }
 
 void walker :: write_wavefunction()

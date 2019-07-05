@@ -66,6 +66,7 @@ public:
         int target_population   = 500;  // The number of DMC walkers per process
         int dmc_iterations      = 1000; // The number of DMC iterations to carry out
         double tau              = 0.01; // The DMC timestep
+	double tau_c_ratio      = 1.0;  // The ratio for tau_c to tau
         double trial_energy     = 0;    // Energy used to control the DMC population
 	double pre_diffusion    = 1.0;  // The amount that we diffuse walkers before run
 	bool write_wavefunction = true; // True if we should write wavefunction files
