@@ -139,6 +139,16 @@ void walker :: exchange()
 	p1->exchange(p2);
 }
 
+double walker :: sq_distance_to(walker* other)
+{
+	// Return the squared distance in configuration space
+	// between these two walkers: |x_this - x_other|^2 
+	double r2 = 0;
+	for (unsigned i=0; i<particles.size(); ++i)
+		r2 += particles[i]->sq_distance_to(other->particles[i]);
+	return r2;
+}
+
 void walker :: cancel(walker* other)
 {
 	// Apply cancellation of two walkers
@@ -151,16 +161,11 @@ void walker :: cancel(walker* other)
 	// Don't cancel walkers of the same sign
 	if (sign(this->weight) == sign(other->weight)) return;
 
-	// Caclulate the probability that these 
-	// two walkers would overlap in the next iteration
-	double p = 1.0;
-	for (unsigned i=0; i<particles.size(); ++i)
-		p *= particles[i]->overlap_prob(other->particles[i]);
-
-	// Cancel the walkers
-	double av_weight = (this->weight + other->weight)/2.0;
-	this->weight  = this->weight*(1-p)  + p*av_weight;
-	other->weight = other->weight*(1-p) + p*av_weight;
+	// Cancel according to integrated overlap
+	double r2 = this->sq_distance_to(other);
+	double f = erf(0.5*sqrt(r2/(2*simulation.tau)));
+	this->weight  *= f;
+	other->weight *= f;
 }
 
 void walker :: write_wavefunction()

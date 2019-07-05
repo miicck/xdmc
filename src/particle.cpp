@@ -120,15 +120,6 @@ double particle::interaction(particle* other)
 	return coulomb(this, other);
 }
 
-double particle :: overlap_prob(particle* clone)
-{
-	// This is proportional to the probability that
-	// these two particles would diffuse into the
-	// same location next iteration.
-	double r2 = this->sq_distance_to(clone);
-	return exp(-r2/(4*simulation.tau));
-}
-
 void particle :: diffuse(double tau)
 {
 	// Diffuse the particle by moving each

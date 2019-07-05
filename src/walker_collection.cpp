@@ -169,6 +169,7 @@ void walker_collection :: apply_cancellations()
 		weights_before[n] = (*this)[n]->weight;
 
 	// Apply cancellations to walker weights
+	// Note: we only treat each pair once (no double counting)
 	for (int n=0; n<size(); ++n)
 		for (int m=0; m<n; ++m)
 			(*this)[n]->cancel((*this)[m]);

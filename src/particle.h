@@ -48,10 +48,6 @@ public:
 
         // The location of this particle
         double* coords;
-
-	// The probability that this particle
-	// will diffuse into the given copy of it
-	double overlap_prob(particle* clone);
 };
 
 #endif
