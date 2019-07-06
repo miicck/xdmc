@@ -121,8 +121,8 @@ void simulation_spec :: read_input()
 			parse_atomic_potential(split);
 
 		// Should we write the wavefunctions this run
-		else if (tag == "write_wavefunction")
-			write_wavefunction = split[1] == "true";
+		else if (tag == "no_wavefunction")
+			write_wavefunction = false;
 
 		// Turn off exchange moves
 		else if (tag == "no_exchange")
@@ -131,6 +131,10 @@ void simulation_spec :: read_input()
 		// Turn off walker cancellations
 		else if (tag == "no_cancellation")
 			make_cancellations = false;
+
+		// Turn of particle-particle interactions
+		else if (tag == "non_interacting")
+			particle_interactions = false;
         }
         input.close();
 
@@ -158,30 +162,41 @@ void simulation_spec :: read_input()
 	}
 }
 
+std::string b2s(bool b)
+{
+	// Convert a bool to a string
+	if (b) return "true";
+	else return "false";
+}
+
 void simulation_spec :: output_sim_details()
 {
 	// Output system information
 	progress_file << "System loaded\n";
-	progress_file << "    Dimensions         : " << dimensions               << "\n";
-	progress_file << "    Particles          : " << template_system.size()   << "\n";
-	progress_file << "    Exchange pairs     : " << exchange_values.size()   << "\n"; 
-	progress_file << "       Bosonic         : " << bosonic_exchange_pairs   << "\n";
-	progress_file << "       Fermionic       : " << fermionic_exchange_pairs << "\n";
-	progress_file << "    Total charge       : " << total_charge()           << "\n";
-	progress_file << "    DMC timestep       : " << tau                      << "\n";
+	progress_file << "    Dimensions            : " << dimensions                 << "\n";
+	progress_file << "    Particles             : " << template_system.size()     << "\n";
+	progress_file << "    Interactions          : " << b2s(particle_interactions) << "\n";
+	progress_file << "    Total charge          : " << total_charge()             << "\n";
+	progress_file << "    Exchange pairs        : " << exchange_values.size()     << "\n"; 
+	progress_file << "       Bosonic            : " << bosonic_exchange_pairs     << "\n";
+	progress_file << "       Fermionic          : " << fermionic_exchange_pairs   << "\n";
+	progress_file << "    Exchange moves        : " << b2s(exchange_moves)        << "\n";
+	progress_file << "    Cancellations         : " << b2s(make_cancellations)    << "\n";
+	progress_file << "    Pre diffusion         : " << pre_diffusion              << "\n";
+	progress_file << "    DMC timestep          : " << tau                        << "\n";
+	progress_file << "    Cancellation timestep : " << tau*tau_c_ratio
+		      << " = tau x " << tau_c_ratio << "\n";
 
-	progress_file << "    DMC walkers        : " 
+	progress_file << "    DMC walkers           : " 
 		      << target_population*np << " (total) "
 		      << target_population    << " (per process)\n";
 
-	progress_file << "    DMC iterations     : " 
+	progress_file << "    DMC iterations        : " 
 		      << dmc_iterations << " => Imaginary time in [0, " 
 		      << dmc_iterations*tau << "]\n";
 
-	progress_file << "    MPI processes      : " << np  << "\n";
-	progress_file << "    Write wavefunction : " << write_wavefunction << "\n";
-	progress_file << "    Exchange moves     : " << exchange_moves << "\n";
-	progress_file << "    Cancellations      : " << make_cancellations << "\n";
+	progress_file << "    MPI processes         : " << np  << "\n";
+	progress_file << "    Write wavefunction    : " << b2s(write_wavefunction) << "\n";
 
 	// Output a summary of potentials to the progress file
 	progress_file << "Potentials\n";

@@ -95,8 +95,9 @@ double walker :: potential()
 
 		// Particle-particle interactions
 		// note j<i => no double counting
-		for (unsigned j=0; j<i; ++j)
-			last_potential += particles[i]->interaction(particles[j]);
+		if (simulation.particle_interactions)
+			for (unsigned j=0; j<i; ++j)
+				last_potential += particles[i]->interaction(particles[j]);
 	}
 
 	potential_dirty = false;

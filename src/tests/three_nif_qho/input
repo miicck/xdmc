@@ -2,7 +2,7 @@ dimensions	   1       # The dimensionallity of the system
 walkers		   2500    # The number of DMC walkers
 iterations	   100000  # The number of DMC iterations to carry out 
 tau		   0.0001  # The DMC timestep
-#write_wavefunction false  # Dont write wavefunction files
+no_wavefunction            # Dont write wavefunction files
 
 # Create a harmonic well with two non interacting fermions in it
 harmonic_well 1
