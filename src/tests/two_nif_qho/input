@@ -1,7 +1,7 @@
 dimensions       1       # The dimensionallity of the system
-walkers		 4000    # The number of DMC walkers
+walkers		 5000    # The number of DMC walkers
 iterations	 10000   # The number of DMC iterations to carry out 
-tau		 0.001    # The DMC timestep
+tau		 0.01    # The DMC timestep
 #tau_c_ratio      10.0    # Ratio of tau_c to tau
 #no_wavefunction          # Dont write wavefunction files
 
