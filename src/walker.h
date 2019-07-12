@@ -33,6 +33,7 @@ public:
 	double weight;
         double potential();
 	double sq_distance_to(walker* other);
+        double sq_distance_to_origin();
         double cancel_prob(walker* other);
 
         void diffuse(double tau);
@@ -42,10 +43,11 @@ public:
 	walker* branch_copy();
 
 	void write_wavefunction();
-private:
 
         // The particles in this system snapshot
         std::vector<particle*> particles;
+
+private:
 
         // Create a walker from a given particle set 
         walker(std::vector<particle*> particles);

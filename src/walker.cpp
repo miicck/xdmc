@@ -109,7 +109,7 @@ void walker :: diffuse(double tau=simulation.tau)
 	// Diffuse all of the particles
 	for (unsigned i=0; i<particles.size(); ++i)
 		particles[i]->diffuse(tau);
-	
+
 	// Particles have moved => potential has changed
 	potential_dirty = true;
 }
@@ -135,7 +135,7 @@ void walker :: exchange()
 	particle* p1 = particles[simulation.exchange_pairs[2*i]];
 	particle* p2 = particles[simulation.exchange_pairs[2*i+1]];
 
-	// Exchange them 
+	// Exchange them
 	this->weight *= double(simulation.exchange_values[i]);
 	p1->exchange(p2);
 }
@@ -148,6 +148,16 @@ double walker :: sq_distance_to(walker* other)
 	for (unsigned i=0; i<particles.size(); ++i)
 		r2 += particles[i]->sq_distance_to(other->particles[i]);
 	return r2;
+}
+
+double walker :: sq_distance_to_origin()
+{
+        // returns |x|^2
+        double r2 = 0;
+        for (unsigned i=0; i<particles.size(); ++i)
+                for (unsigned j=0; j<simulation.dimensions; ++j)
+                        r2 += particles[i]->coords[j] * particles[i]->coords[j];
+        return r2;
 }
 
 double walker :: cancel_prob(walker* other)

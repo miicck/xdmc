@@ -32,9 +32,6 @@ void run_dmc()
 	simulation.progress_file << "Starting DMC simulation...\n";
 	for (int iter = 1; iter <= simulation.dmc_iterations; ++iter)
 	{
-		// Apply diffusion-branching step.
-		walkers.diffuse_and_branch();
-
 		// Carry out exchange moves on the walkers
 		if (simulation.exchange_moves)
 			walkers.make_exchange_moves();
@@ -42,6 +39,9 @@ void run_dmc()
 		// Apply cancellation of walkers
 		if (simulation.make_cancellations)
 			walkers.apply_cancellations();
+
+		// Apply diffusion-branching step.
+		walkers.diffuse_and_branch();
 
 		// Output information about the walkers
 		// at this iteration

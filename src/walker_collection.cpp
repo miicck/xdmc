@@ -49,15 +49,98 @@ walker_collection :: ~walker_collection()
 		delete (*this)[n];
 }
 
-double potential_greens_function(double pot_before, double pot_after)
+double walker_collection :: trial_wavefunction(walker* w)
+{
+        //double r02 = w->sq_distance_to_origin();
+        //return exp(-sqrt(r02/5.0));
+        //return exp(-r02/5.0);
+        //double rs  = sqrt(r02) - 1;
+        //return exp(-rs*rs/2);
+        return 1.0;
+        
+        // Evaluate the trial wavefunction at the configuration
+        // of the given walker
+        double wfn  = 0;
+        double norm = 0;
+        for (int n=0; n<size(); ++n)
+        {       
+                walker* wn = (*this)[n];
+                if (wn == w) continue;
+                double r2    = w->sq_distance_to(wn);
+                double decay = exp(-sqrt(r2)/(2*simulation.tau));
+                wfn  += wn->weight * decay;
+                norm += decay;
+        }
+        return wfn/norm;
+}
+
+double walker_collection :: trial_local_kinetic(walker* w)
+{
+        // Evaluate the local energy of the trial wavefunction
+        // at the configuration w
+
+        // Evaluate the kinetic energy of psi_t
+        // at my configuration using finite differences
+        const double EPS = 0.01;
+
+        double laplacian = 0;
+        double psi_x = trial_wavefunction(w);
+
+        // Use central finite differences to
+        // calculate the laplacian
+        for (unsigned i=0; i<w->particles.size(); ++i)
+                for (unsigned j=0; j<simulation.dimensions; ++j)
+                {
+                        // Set coordinate to + EPS and evaluate
+                        w->particles[i]->coords[j] += EPS;
+                        double psi_xplus  = trial_wavefunction(w);
+
+                        // Set coordinate to - EPS and evaluate
+                        w->particles[i]->coords[j] -= 2*EPS;
+                        double psi_xminus = trial_wavefunction(w);
+
+                        // Reset coorindate and accumulate laplacian
+                        w->particles[i]->coords[j] += EPS;
+                        laplacian += (psi_xplus - 2*psi_x + psi_xminus)/(EPS*EPS);
+                }
+        // Local K.E = \psi^{-1}(w)(-laplacian(\psi(w))/2)
+        return -laplacian/(2*psi_x);
+}
+
+void walker_collection :: apply_drift(walker* w)
+{
+        // Apply the drift velocity to the walker w
+        // by taking w -> w + \tau*v_d
+
+        const double EPS = 0.01;
+        double psi_w = trial_wavefunction(w);
+
+        // Use finite differences to evaluate drift
+        for (unsigned i=0; i<w->particles.size(); ++i)
+                for (unsigned j=0; j<simulation.dimensions; ++j)
+                {
+                        // Evaluate drift velocity of i^th particle
+                        // in the j^th direction as
+                        // v_{ij} = psi_T(w)^{-1} d/dx_{ij} psi_T(w)
+                        w->particles[i]->coords[j] += EPS;
+                        double psi_wplus = trial_wavefunction(w);
+                        w->particles[i]->coords[j] -= EPS;
+                        double vij = (psi_wplus - psi_w)/(EPS*psi_w);
+
+                        // Apply drift
+                        w->particles[i]->coords[j] += vij * simulation.tau;
+                }
+}
+
+double branching_greens_function(double local_e_before, double local_e_after)
 {
 	// Evaluate the potential-dependent part of the greens
 	// function G_v(x,x',tau) = exp(-tau*(v(x)+v(x')-2E_T)/2)
-        if (std::isinf(pot_after))  return 0;
-        if (std::isinf(pot_before)) return 0;
+        if (std::isinf(local_e_after))  return 0;
+        if (std::isinf(local_e_before)) return 0;
 
-        double av_potential = (pot_before + pot_after)/2;
-        double exponent     = -simulation.tau*(av_potential - simulation.trial_energy);
+        double av_energy = (local_e_before + local_e_after)/2;
+        double exponent  = -simulation.tau*(av_energy - simulation.trial_energy);
 	return exp(exponent);
 }
 
@@ -76,31 +159,42 @@ void walker_collection :: diffuse_and_branch()
 	// the potential before and after diffusion to apply
 	// the branching step)
 
-	// Set the trial energy to control population
-	double log_pop_ratio = log(sum_mod_weight()/double(simulation.target_population));
-	simulation.trial_energy = average_potential() - log_pop_ratio;
-
 	int nmax = size();
+        average_local_kinetic_last = 0;
+        average_local_potential_last = 0;
+
 	for (int n=0; n < nmax; ++n)
 	{
 		walker* w = (*this)[n];
 
 		// Diffuse according to the diffusive
-		// part of the greens function
-		// (recording the potential before/after)
-		double pot_before = w->potential();
+		// part of the greens function and apply 
+                // the drift velocity
+		// (recording the local energy before/after)
+                double local_k_before = trial_local_kinetic(w);
+		double local_v_before = w->potential();
+
 		w->diffuse(simulation.tau);
-		double pot_after  = w->potential();
+                apply_drift(w);
+
+		double local_k_after  = trial_local_kinetic(w);
+                double local_v_after  = w->potential();
 
 		// Multiply the weight by the potential-
-		// dependent part of the greens function
-		w->weight *= potential_greens_function(pot_before, pot_after);
+		// dependent branching part of the greens function
+		w->weight *= branching_greens_function(
+                        local_k_before + local_v_before,
+                        local_k_after  + local_v_after);
 
 		// Apply branching step, adding branched
 		// survivors to the end of the collection
 		int surviving = branch_from_weight(w->weight);
 		for (int s=0; s<surviving; ++s)
 			walkers.push_back(w->branch_copy());
+
+                // Accumulate average local energy
+                average_local_kinetic_last   += local_k_after * surviving;
+                average_local_potential_last += local_v_after * surviving;
 	}
 
 	// Delete the previous iterations walkers
@@ -114,6 +208,19 @@ void walker_collection :: diffuse_and_branch()
 		walkers[n] = walkers.back();
 		walkers.pop_back();
 	}
+
+        average_local_kinetic_last   /= double(walkers.size());
+        average_local_potential_last /= double(walkers.size());
+
+	// Set the trial energy to control population
+	double log_pop_ratio = 
+                log(double(walkers.size())/
+                    double(simulation.target_population));
+
+	simulation.trial_energy = 
+                average_local_kinetic_last +
+                average_local_potential_last - 
+                log_pop_ratio;
 }
 
 double walker_collection :: sum_mod_weight()
@@ -222,6 +329,18 @@ void walker_collection :: write_output(int iter)
         MPI_Reduce(&av_mod_weight, &av_mod_weight_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         av_mod_weight_red /= double(simulation.np);
 
+        // Average <T> across processes
+        double av_loc_k = this->average_local_kinetic_last;
+        double av_loc_k_red;
+        MPI_Reduce(&av_loc_k, &av_loc_k_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        av_loc_k_red /= double(simulation.np);
+
+        // Average <V> across processes
+        double av_loc_v = this->average_local_potential_last;
+        double av_loc_v_red;
+        MPI_Reduce(&av_loc_v, &av_loc_v_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        av_loc_v_red /= double(simulation.np);
+
 	// Sum cancellation amount across processes
 	double cancel = this->cancellation_amount_last;
 	double cancel_red;
@@ -240,6 +359,10 @@ void walker_collection :: write_output(int iter)
 	simulation.progress_file << "    ETA             : "
 				 << seconds_remaining << "s \n";
         simulation.progress_file << "    Trial energy    : " << triale_red     << " Hartree\n";
+        simulation.progress_file << "    <E_L>           : "
+                                 << av_loc_k_red + av_loc_v_red << " Hartree\n";
+        simulation.progress_file << "        Kinetic     : " << av_loc_k_red   << "\n";
+        simulation.progress_file << "        Potential   : " << av_loc_v_red   << "\n";
         simulation.progress_file << "    Population      : " << population_red << "\n";
 	simulation.progress_file << "    Canceled weight : " << cancel_red     << "\n";
 
@@ -250,6 +373,9 @@ void walker_collection :: write_output(int iter)
                 simulation.evolution_file
                         << "Population,"
                         << "Trial energy (Hartree),"
+                        << "<E_L> (Hartree),"
+                        << "<V> (Hartree),"
+                        << "<T> (Hartree),"
                         << "Average weight,"
                         << "Average |weight|,"
 			<< "Cancelled weight\n";
@@ -257,11 +383,14 @@ void walker_collection :: write_output(int iter)
 
         // Output evolution information to file
         simulation.evolution_file
-                        << population_red    << ","
-                        << triale_red        << ","
-                        << av_weight_red     << ","
-                        << av_mod_weight_red << ","
-			<< cancel_red        << "\n";
+                        << population_red              << ","
+                        << triale_red                  << ","
+                        << av_loc_v_red + av_loc_k_red << ","
+                        << av_loc_v_red                << ","
+                        << av_loc_k_red                << ","
+                        << av_weight_red               << ","
+                        << av_mod_weight_red           << ","
+			<< cancel_red                  << "\n";
 
         // Write the wavefunction to file
         if (simulation.write_wavefunction)
