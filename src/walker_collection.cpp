@@ -163,16 +163,26 @@ void walker_collection :: make_exchange_moves()
 
 void walker_collection :: apply_cancellations()
 {
-	// Record weights before cancellation for diagnostics
-	double* weights_before = new double[size()];
-	for (int n=0; n<size(); ++n)
-		weights_before[n] = (*this)[n]->weight;
+        // Record weights and cancellation probabilities
+	double*  weights_before = new double [size()];
+        for (int n=0; n<size(); ++n)
+                weights_before[n] = (*this)[n]->weight;
 
-	// Apply cancellations to walker weights
-	// Note: we only treat each pair once (no double counting)
+        // Apply all pair-wise cancellations
 	for (int n=0; n<size(); ++n)
-		for (int m=0; m<n; ++m)
-			(*this)[n]->cancel((*this)[m]);
+        {
+                walker* wn = (*this)[n];
+
+                for (int m=0; m<n; ++m)
+                {
+                        walker* wm = (*this)[m];
+                        double cp  = wn->cancel_prob(wm);
+                        
+                        // Cancel these walkers with probability cp
+                        wn->weight *= 1.0 - cp;
+                        wm->weight *= 1.0 - cp;
+                }
+        }
 
 	// Evaluate a measure of the amount of cancellation
 	// that occured
@@ -182,6 +192,9 @@ void walker_collection :: apply_cancellations()
 		double delta = (*this)[n]->weight - weights_before[n];
 		cancellation_amount_last += fabs(delta);
 	}
+
+        // Clean up memory
+        delete[] weights_before;
 }
 
 void walker_collection :: write_output(int iter)

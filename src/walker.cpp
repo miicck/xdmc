@@ -150,24 +150,22 @@ double walker :: sq_distance_to(walker* other)
 	return r2;
 }
 
-void walker :: cancel(walker* other)
+double walker :: cancel_prob(walker* other)
 {
 	// Apply cancellation of two walkers
 
 	// Cancellation is only necassary if there is
 	// a fermionic exchange in the system (as this is
 	// the only way that walker signs can change)
-	if (simulation.fermionic_exchange_pairs == 0) return;
+	if (simulation.fermionic_exchange_pairs == 0) return 0;
 
 	// Don't cancel walkers of the same sign
-	if (sign(this->weight) == sign(other->weight)) return;
+	if (sign(this->weight) == sign(other->weight)) return 0;
 
 	// Cancel according to integrated overlap
 	double r2 = this->sq_distance_to(other);
 	double f = erf(0.5*sqrt(r2/(2*simulation.tau*simulation.tau_c_ratio)));
-	double av_weight = 0.5*(this->weight + other->weight);
-	this->weight  = this->weight*f  + av_weight*(1-f);
-	other->weight = other->weight*f + av_weight*(1-f);
+        return 1.0 - f;
 }
 
 void walker :: write_wavefunction()

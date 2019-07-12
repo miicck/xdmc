@@ -33,10 +33,10 @@ public:
 	double weight;
         double potential();
 	double sq_distance_to(walker* other);
+        double cancel_prob(walker* other);
 
         void diffuse(double tau);
 	void exchange();
-	void cancel(walker* other);
 
         walker* copy();
 	walker* branch_copy();
