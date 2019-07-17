@@ -100,10 +100,6 @@ void simulation_spec :: read_input()
 		else if (tag == "tau_c_ratio")
 			tau_c_ratio = std::stod(split[1]);
 
-		// Read in the pre diffusion amount
-		else if (tag == "pre_diffusion")
-			pre_diffusion = std::stod(split[1]);
-
 		// Read in a particle
 		else if (tag == "particle")
 			parse_particle(split);
@@ -186,7 +182,6 @@ void simulation_spec :: output_sim_details()
 	progress_file << "       Fermionic          : " << fermionic_exchange_pairs   << "\n";
 	progress_file << "    Exchange moves        : " << b2s(exchange_moves)        << "\n";
 	progress_file << "    Cancellations         : " << b2s(make_cancellations)    << "\n";
-	progress_file << "    Pre diffusion         : " << pre_diffusion              << "\n";
 	progress_file << "    DMC timestep          : " << tau                        << "\n";
 	progress_file << "    Cancellation timestep : " << tau*tau_c_ratio
 		      << " = tau x " << tau_c_ratio << "\n";

@@ -68,7 +68,6 @@ public:
         double tau                 = 0.01; // The DMC timestep
 	double tau_c_ratio         = 1.0;  // The ratio for tau_c to tau
         double trial_energy        = 0;    // Energy used to control the DMC population
-	double pre_diffusion       = 1.0;  // The amount that we diffuse walkers before run
 	bool write_wavefunction    = true; // True if we should write wavefunction files
 	bool exchange_moves        = true; // True if we should make exchange moves
 	bool make_cancellations    = true; // True if we should make walker cancellations

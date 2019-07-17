@@ -25,7 +25,6 @@
 void run_dmc()
 {
 	// Our DMC walkers
-	simulation.progress_file << "Initializing walkers...\n";
 	walker_collection walkers;
 	
 	// Run our DMC iterations

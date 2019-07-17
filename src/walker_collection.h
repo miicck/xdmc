@@ -20,6 +20,16 @@
 
 #include "walker.h"
 
+// All of the expectation values 
+// that can be calculated for a
+// collection of walkers
+class expectation_values
+{
+public:
+        void reset();
+        double local_energy;
+};
+
 // A collection of walkers
 class walker_collection
 {
@@ -33,10 +43,7 @@ public:
 	void diffuse_and_branch();
 	void make_exchange_moves();
 	void apply_cancellations();
-        void apply_drift(walker* w);
 
-        double trial_wavefunction(walker* w);
-        double trial_local_kinetic(walker* w);
 	double average_weight();
 	double average_mod_weight();
 	double average_potential();
@@ -44,14 +51,11 @@ public:
 
 	void write_output(int iter);
 
-	double cancellation_amount_last     = 0;
-        double average_local_kinetic_last   = 0;
-        double average_local_potential_last = 0;
-
+	double cancellation_amount_last = 0;
+        expectation_values expect_vals;
 private:
 	std::vector<walker*> walkers;
 };
 
 #endif
-
 

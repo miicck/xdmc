@@ -45,6 +45,17 @@ def plot_2nif_fast(start_iter, end_iter):
         plt.ylim([-4,4])
         label_plot()
 
+def expectation_r2(xs, ys, bins):
+        sum_r2s    = 0
+        sum_weight = 0
+        for i in range(0, len(xs)):
+                for j in range(0, len(xs[i])):
+                        r2 = xs[i][j]**2 + ys[i][j]**2         
+                        w  = bins[i][j]**2
+                        sum_weight += w
+                        sum_r2s    += w * r2
+        return sum_r2s / sum_weight
+
 def bin_2nif(start_iter, end_iter, RES=40):
         wfn = parser.parse_wavefunction(start_iter, end_iter)
         xs = np.array([x[0] for x in wfn[1]])
@@ -72,13 +83,16 @@ def bin_2nif(start_iter, end_iter, RES=40):
         plt.contour(xs, ys, bins, 40)
         plt.xlabel("Particle 1 position")
         plt.ylabel("Particle 2 position")
-        plt.gca().title.set_text("DMC wavefunction")
+        r2 = expectation_r2(xs,ys,bins)
+        plt.gca().title.set_text("DMC wavefunction\n<r^2> = {0}".format(r2))
 
         plt.subplot(222)
-        plt.contour(xs, ys, analytic(xs, ys), 40)
+        bins = analytic(xs,ys)
+        plt.contour(xs, ys, bins, 40)
         plt.xlabel("Particle 1 position")
         plt.ylabel("Particle 2 position")
-        plt.gca().title.set_text("Analytic wavefunction")
+        r2 = expectation_r2(xs, ys, bins)
+        plt.gca().title.set_text("Analytic wavefunction\n<r^2> = {0}".format(r2))
 
 def plot_2nif(start_iter, end_iter):
         wfn = parser.parse_wavefunction(start_iter, end_iter)
