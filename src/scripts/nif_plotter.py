@@ -45,6 +45,18 @@ def plot_2nif_fast(start_iter, end_iter):
         plt.ylim([-4,4])
         label_plot()
 
+def average_r2(xs, ys, bins):
+        
+        tot_r2 = 0
+        tot_w  = 0
+        for i in range(0, len(xs)):
+                for j in range(0, len(xs[i])):
+                        w = bins[i][j]**2
+                        tot_r2 += w*(xs[i][j]**2 + ys[i][j]**2)
+                        tot_w  += w
+        return tot_r2/tot_w
+                        
+
 def bin_2nif(start_iter, end_iter, RES=40):
         wfn = parser.parse_wavefunction(start_iter, end_iter)
         xs = np.array([x[0] for x in wfn[1]])
@@ -72,13 +84,14 @@ def bin_2nif(start_iter, end_iter, RES=40):
         plt.contour(xs, ys, bins, 40)
         plt.xlabel("Particle 1 position")
         plt.ylabel("Particle 2 position")
-        plt.gca().title.set_text("DMC wavefunction")
+        plt.gca().title.set_text("DMC wavefunction\n<r^2> = {0}".format(average_r2(xs,ys,bins)))
 
         plt.subplot(222)
-        plt.contour(xs, ys, analytic(xs, ys), 40)
+        anal_sol = analytic(xs,ys)
+        plt.contour(xs, ys, anal_sol, 40)
         plt.xlabel("Particle 1 position")
         plt.ylabel("Particle 2 position")
-        plt.gca().title.set_text("Analytic wavefunction")
+        plt.gca().title.set_text("Analytic wavefunction\n<r^2> = {0}".format(average_r2(xs,ys,anal_sol)))
 
 def plot_2nif(start_iter, end_iter):
         wfn = parser.parse_wavefunction(start_iter, end_iter)
