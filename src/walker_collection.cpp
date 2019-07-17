@@ -25,9 +25,9 @@
 
 double trial_wavefunction(walker* w, walker_collection* walkers)
 {
-        double r02 = w->sq_distance_to_origin();
+        //double r02 = w->sq_distance_to_origin();
         //return exp(-r02/2.0); // Harmonic oscillator
-        return exp(-sqrt(r02)); // Hydrogen
+        //return exp(-sqrt(r02)); // Hydrogen
         //return exp(-r02/5.0);
         //double rs  = sqrt(r02) - 1;
         //return exp(-rs*rs/2);
