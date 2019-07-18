@@ -37,6 +37,7 @@ public:
 
         void diffuse(double tau);
 	void exchange();
+        void drift_away_from(walker* other);
 
         walker* copy();
 	walker* branch_copy();

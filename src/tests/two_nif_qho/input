@@ -1,10 +1,10 @@
-dimensions       1       # The dimensionallity of the system
-walkers		 10000   # The number of DMC walkers
-iterations	 10000   # The number of DMC iterations to carry out 
-tau		 0.001   # The DMC timestep
-#tau_c_ratio      10.0   # Ratio of tau_c to tau
-#no_wavefunction         # Dont write wavefunction files
+dimensions       1  
+walkers		 1000
+iterations	 10000
+tau		 0.01   
 pre_diffusion    2.0
+non_interacting
+no_seperation_correction
 
 # Create a harmonic well with two non interacting fermions in it
 harmonic_well 1

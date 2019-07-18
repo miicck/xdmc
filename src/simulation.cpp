@@ -132,6 +132,10 @@ void simulation_spec :: read_input()
 		else if (tag == "no_cancellation")
 			make_cancellations = false;
 
+                // Turn of seperation corrections
+                else if (tag == "no_seperation_correction")
+                        correct_seperations = false;
+
 		// Turn of particle-particle interactions
 		else if (tag == "non_interacting")
 			particle_interactions = false;
@@ -186,6 +190,7 @@ void simulation_spec :: output_sim_details()
 	progress_file << "    DMC timestep          : " << tau                        << "\n";
 	progress_file << "    Cancellation timestep : " << tau*tau_c_ratio
 		      << " = tau x " << tau_c_ratio << "\n";
+        progress_file << "    Seperation correction : " << b2s(correct_seperations)   << "\n";
 
 	progress_file << "    DMC walkers           : " 
 		      << target_population*np << " (total) "

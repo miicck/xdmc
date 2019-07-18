@@ -34,6 +34,7 @@ public:
         double interaction(particle* other);    // The interaction energy with some other particle
 	int exchange_symmetry(particle* other); // 1, 0 or -1 depending on spin statistics
 	void exchange(particle* other);         // Swap my coordinates with those of other
+        void drift_apart(particle* other, double multiplier); // Drift apart so |d|_new = mult*|d|  
 
         void sample_wavefunction();   // Called when a request is sent to sample a walker wvfn.
         void diffuse(double tau);     // Called when a config diffuses in DMC

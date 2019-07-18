@@ -32,6 +32,9 @@ void run_dmc()
 	simulation.progress_file << "Starting DMC simulation...\n";
 	for (int iter = 1; iter <= simulation.dmc_iterations; ++iter)
 	{
+                // Reset expectation values
+                walkers.expect_vals.reset();
+
 		// Apply diffusion-branching step.
 		walkers.diffuse_and_branch();
 
@@ -42,6 +45,17 @@ void run_dmc()
 		// Apply cancellation of walkers
 		if (simulation.make_cancellations)
 			walkers.apply_cancellations();
+
+                // Apply walker seperation-correction
+                if (simulation.correct_seperations)
+                        walkers.correct_seperations();
+
+                // Normalize expectation values
+                walkers.expect_vals.normalize(walkers.size());
+
+                // Set trial energy to control population
+                double log_pop_ratio = log(double(walkers.size())/double(simulation.target_population));
+                simulation.trial_energy = walkers.expect_vals.average_potential - log_pop_ratio;
 
 		// Output information about the walkers
 		// at this iteration

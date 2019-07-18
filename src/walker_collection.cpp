@@ -23,6 +23,22 @@
 #include "walker_collection.h"
 #include "simulation.h"
 
+void expectation_values :: reset()
+{
+        // Reset the expectation values ready
+        // for accumulation
+        cancellation_amount = 0;
+        average_potential = 0;
+}
+
+void expectation_values :: normalize(unsigned walker_count)
+{
+        // After accumulating expectation values
+        // renormalize them
+        double wc = double(walker_count);
+        average_potential /= wc;
+}
+
 walker_collection :: walker_collection()
 {
 	// Reserve a reasonable amount of space to deal efficiently
@@ -72,14 +88,6 @@ int branch_from_weight(double weight)
 void walker_collection :: diffuse_and_branch()
 {
 	// Carry out diffusion and branching of the walkers
-	// (this is done as one step because we need to know
-	// the potential before and after diffusion to apply
-	// the branching step)
-
-	// Set the trial energy to control population
-	double log_pop_ratio = log(sum_mod_weight()/double(simulation.target_population));
-	simulation.trial_energy = average_potential() - log_pop_ratio;
-
 	int nmax = size();
 	for (int n=0; n < nmax; ++n)
 	{
@@ -101,6 +109,9 @@ void walker_collection :: diffuse_and_branch()
 		int surviving = branch_from_weight(w->weight);
 		for (int s=0; s<surviving; ++s)
 			walkers.push_back(w->branch_copy());
+
+                // Accumulate expectation values
+                expect_vals.average_potential += pot_after * surviving;
 	}
 
 	// Delete the previous iterations walkers
@@ -186,46 +197,53 @@ void walker_collection :: apply_cancellations()
 
 	// Evaluate a measure of the amount of cancellation
 	// that occured
-	cancellation_amount_last = 0;
+	expect_vals.cancellation_amount = 0;
 	for (int n=0; n<size(); ++n)
 	{
 		double delta = (*this)[n]->weight - weights_before[n];
-		cancellation_amount_last += fabs(delta);
+		expect_vals.cancellation_amount += fabs(delta);
 	}
 
         // Clean up memory
         delete[] weights_before;
 }
 
+void walker_collection :: correct_seperations()
+{
+        // Correct walker seperations in a pairwise manner
+        for (int n=0; n<size(); ++n)
+                for (int m=0; m<n; ++m)
+                        (*this)[n]->drift_away_from((*this)[m]);
+}
+
+double mpi_average(double val)
+{
+        // Get the average of val across proccesses on pid 0
+        double res;
+        MPI_Reduce(&val, &res, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        res /= double(simulation.np);
+        return res;
+}
+
+double mpi_sum(double val)
+{
+        // Get the sum of val across proccesses on pid 0
+        double res;
+        MPI_Reduce(&val, &res, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        return res;
+}
+
 void walker_collection :: write_output(int iter)
 {
-        // Sum up walkers across processes
-        int population = this->size();
-        int population_red;
-        MPI_Reduce(&population, &population_red, 1, MPI_INT, MPI_SUM, 0, MPI_COMM_WORLD);
+        // Sum various things across processes
+        double population_red = mpi_sum(double(this->size()));
+        double cancel_red     = mpi_sum(this->expect_vals.cancellation_amount);
 
-        // Average trial energy across processes
-        double triale = simulation.trial_energy;
-        double triale_red;
-        MPI_Reduce(&triale, &triale_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        triale_red /= double(simulation.np);
-
-        // Avarage <weight> across processes
-        double av_weight = this->average_weight();
-        double av_weight_red;
-        MPI_Reduce(&av_weight, &av_weight_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        av_weight_red /= double(simulation.np);
-
-        // Average <|weight|> across processes
-        double av_mod_weight = this->average_mod_weight();
-        double av_mod_weight_red;
-        MPI_Reduce(&av_mod_weight, &av_mod_weight_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-        av_mod_weight_red /= double(simulation.np);
-
-	// Sum cancellation amount across processes
-	double cancel = this->cancellation_amount_last;
-	double cancel_red;
-	MPI_Reduce(&cancel, &cancel_red, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        // Average various things across processes
+        double triale_red        = mpi_average(simulation.trial_energy);
+        double av_pot_red        = mpi_average(this->expect_vals.average_potential);
+        double av_weight_red     = mpi_average(this->average_weight());
+        double av_mod_weight_red = mpi_average(this->average_mod_weight());
 
 	// Calculate timing information
 	double time_per_iter     = simulation.time()/iter;
@@ -240,6 +258,7 @@ void walker_collection :: write_output(int iter)
 	simulation.progress_file << "    ETA             : "
 				 << seconds_remaining << "s \n";
         simulation.progress_file << "    Trial energy    : " << triale_red     << " Hartree\n";
+        simulation.progress_file << "    <V>             : " << av_pot_red     << " Hartree\n";
         simulation.progress_file << "    Population      : " << population_red << "\n";
 	simulation.progress_file << "    Canceled weight : " << cancel_red     << "\n";
 
@@ -250,6 +269,7 @@ void walker_collection :: write_output(int iter)
                 simulation.evolution_file
                         << "Population,"
                         << "Trial energy (Hartree),"
+                        << "<V> (Hartree),"
                         << "Average weight,"
                         << "Average |weight|,"
 			<< "Cancelled weight\n";
@@ -259,6 +279,7 @@ void walker_collection :: write_output(int iter)
         simulation.evolution_file
                         << population_red    << ","
                         << triale_red        << ","
+                        << av_pot_red        << ","
                         << av_weight_red     << ","
                         << av_mod_weight_red << ","
 			<< cancel_red        << "\n";

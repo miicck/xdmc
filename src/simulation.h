@@ -72,6 +72,7 @@ public:
 	bool write_wavefunction    = true; // True if we should write wavefunction files
 	bool exchange_moves        = true; // True if we should make exchange moves
 	bool make_cancellations    = true; // True if we should make walker cancellations
+        bool correct_seperations   = true; // True if walker seperation correction is carried out
 	bool particle_interactions = true; // True if particle-particle interactions are on
 
         // The external potentials applied to the system (additive)

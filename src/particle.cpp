@@ -94,6 +94,19 @@ void particle :: exchange(particle* other)
 	}
 }
 
+void particle :: drift_apart(particle* other, double multiplier)
+{
+        // Move these particles apart so that |this - other|
+        // --> multiplier*|this - other|
+        for (int i=0; i<simulation.dimensions; ++i)
+        {
+                double di = this->coords[i] - other->coords[i];
+                di *= (multiplier - 1.0)/2.0;
+                this->coords[i]  += di;
+                other->coords[i] -= di;
+        }
+}
+
 double particle :: sq_distance_to(particle* other)
 {
 	// Returns | this->coords - other->coords |^2
