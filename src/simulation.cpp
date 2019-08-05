@@ -128,9 +128,9 @@ void simulation_spec :: read_input()
 		else if (tag == "no_exchange")
 			exchange_moves = false;
 
-		// Turn off walker cancellations
-		else if (tag == "no_cancellation")
-			make_cancellations = false;
+		// Set the cancellation scheme
+		else if (tag == "cancel_scheme")
+			cancel_scheme = split[1];
 
                 // Turn of seperation corrections
                 else if (tag == "seperation_correction")
@@ -185,7 +185,7 @@ void simulation_spec :: output_sim_details()
 	progress_file << "       Bosonic            : " << bosonic_exchange_pairs     << "\n";
 	progress_file << "       Fermionic          : " << fermionic_exchange_pairs   << "\n";
 	progress_file << "    Exchange moves        : " << b2s(exchange_moves)        << "\n";
-	progress_file << "    Cancellations         : " << b2s(make_cancellations)    << "\n";
+	progress_file << "    Cancel scheme         : " << cancel_scheme              << "\n";
 	progress_file << "    Pre diffusion         : " << pre_diffusion              << "\n";
 	progress_file << "    DMC timestep          : " << tau                        << "\n";
 	progress_file << "    Cancellation timestep : " << tau*tau_c_ratio

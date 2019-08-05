@@ -54,6 +54,9 @@ public:
 	void write_output(int iter);
         expectation_values expect_vals;
 private:
+	void apply_pairwise_cancellations();
+	void apply_voronoi_cancellations();
+
 	std::vector<walker*> walkers;
 };
 

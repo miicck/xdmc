@@ -43,8 +43,7 @@ void run_dmc()
 			walkers.make_exchange_moves();
 
 		// Apply cancellation of walkers
-		if (simulation.make_cancellations)
-			walkers.apply_cancellations();
+		walkers.apply_cancellations();
 
                 // Apply walker seperation-correction
                 if (simulation.correct_seperations)

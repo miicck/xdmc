@@ -87,6 +87,13 @@ int branch_from_weight(double weight)
 
 void walker_collection :: diffuse_and_branch()
 {
+	// Adjust weights if expected population after
+	// branching is unacceptable
+	double amw = this->average_mod_weight();
+	if (size() * amw < simulation.target_population * 0.5)
+		for (int n=0; n<size(); ++n)
+			(*this)[n]->weight /= amw;
+
 	// Carry out diffusion and branching of the walkers
 	int nmax = size();
 	for (int n=0; n < nmax; ++n)
@@ -173,6 +180,94 @@ void walker_collection :: make_exchange_moves()
 }
 
 void walker_collection :: apply_cancellations()
+{
+	// Apply the selected cancellation scheme
+	if      (simulation.cancel_scheme == "voronoi")
+		this->apply_voronoi_cancellations();
+	else if (simulation.cancel_scheme == "pairwize")
+		this->apply_pairwise_cancellations();
+	else if (simulation.cancel_scheme == "none")
+		return;
+	else
+		simulation.error_file << "Unknown cancellation scheme: "
+				      << simulation.cancel_scheme << "\n";
+
+}
+
+void walker_collection :: apply_voronoi_cancellations()
+{
+	// Allocate space for new weights
+	double* new_weights = new double[size()];
+
+	// Calculate new weights
+	int nn = simulation.dimensions + 1;
+	if (size() < 1 + nn)
+	{
+		simulation.error_file << "Error in voronoi: population very small!\n";
+		return;
+	}
+
+	for (int n=0; n<size(); ++n)
+	{
+		walker* wn = (*this)[n];
+
+		// Find the d+1 nearest neighbours
+		double* sq_distances = new double[nn];
+		int*    nn_indicies  = new int[nn];
+
+		for (int i=0; i<nn; ++i)
+			sq_distances[i] = INFINITY;
+
+		for (int m=0; m<size(); ++m)
+		{
+			if (m == n) continue;
+
+			walker* wm = (*this)[m];
+			double sq_dis = wn->sq_distance_to(wm);
+			
+			for (int i=0; i<nn; ++i)
+				if (sq_dis < sq_distances[i])
+				{
+					// Shift records along by one to make
+					// space for new entry
+					for (int j=nn-1; j>i; --j)
+					{
+						nn_indicies[j]  = nn_indicies[j-1];
+						sq_distances[j] = sq_distances[j-1];
+					}
+
+					// Fill space with new entry
+					nn_indicies[i]  = m;
+					sq_distances[i] = sq_dis;
+					break;
+				}
+		}
+
+		// Average nearest neighbour weights
+		new_weights[n] = 0;
+		for (int i=0; i<nn; ++i)
+			new_weights[n] += (*this)[nn_indicies[i]]->weight;
+		new_weights[n] /= double(nn);
+
+		// Free memory
+		delete[] sq_distances;
+		delete[] nn_indicies;
+	}
+
+	// Apply new weights, tracking the amount cancelled
+	expect_vals.cancellation_amount = 0;
+	for (int n=0; n<size(); ++n)
+	{
+		walker* wn = (*this)[n];
+		expect_vals.cancellation_amount += fabs(wn->weight - new_weights[n]);
+		wn->weight = new_weights[n];
+	}
+
+	// Free memory
+	delete[] new_weights;
+}
+
+void walker_collection :: apply_pairwise_cancellations()
 {
         // Record weights and cancellation probabilities
 	double*  weights_before = new double [size()];
