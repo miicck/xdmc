@@ -133,8 +133,8 @@ void simulation_spec :: read_input()
 			make_cancellations = false;
 
                 // Turn of seperation corrections
-                else if (tag == "no_seperation_correction")
-                        correct_seperations = false;
+                else if (tag == "seperation_correction")
+                        correct_seperations = true;
 
 		// Turn of particle-particle interactions
 		else if (tag == "non_interacting")

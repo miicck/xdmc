@@ -60,20 +60,20 @@ class simulation_spec
 {
 public:
         // Program parameters
-        int pid                    = 0;    // The MPI PID of this process
-        int np                     = 1;    // The number of MPI processes
-        int dimensions             = 3;    // The dimensionality of our system
-        int target_population      = 500;  // The number of DMC walkers per process
-        int dmc_iterations         = 1000; // The number of DMC iterations to carry out
-        double tau                 = 0.01; // The DMC timestep
-	double tau_c_ratio         = 1.0;  // The ratio for tau_c to tau
-        double trial_energy        = 0;    // Energy used to control the DMC population
-	double pre_diffusion       = 1.0;  // The amount that we diffuse walkers before run
-	bool write_wavefunction    = true; // True if we should write wavefunction files
-	bool exchange_moves        = true; // True if we should make exchange moves
-	bool make_cancellations    = true; // True if we should make walker cancellations
-        bool correct_seperations   = true; // True if walker seperation correction is carried out
-	bool particle_interactions = true; // True if particle-particle interactions are on
+        int pid                    = 0;     // The MPI PID of this process
+        int np                     = 1;     // The number of MPI processes
+        int dimensions             = 3;     // The dimensionality of our system
+        int target_population      = 500;   // The number of DMC walkers per process
+        int dmc_iterations         = 1000;  // The number of DMC iterations to carry out
+        double tau                 = 0.01;  // The DMC timestep
+	double tau_c_ratio         = 1.0;   // The ratio for tau_c to tau
+        double trial_energy        = 0;     // Energy used to control the DMC population
+	double pre_diffusion       = 1.0;   // The amount that we diffuse walkers before run
+	bool write_wavefunction    = true;  // True if we should write wavefunction files
+	bool exchange_moves        = true;  // True if we should make exchange moves
+	bool make_cancellations    = true;  // True if we should make walker cancellations
+        bool correct_seperations   = false; // True if walker seperation correction is carried out
+	bool particle_interactions = true;  // True if particle-particle interactions are on
 
         // The external potentials applied to the system (additive)
         std::vector<external_potential*> potentials;
