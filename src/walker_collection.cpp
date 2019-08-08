@@ -184,7 +184,7 @@ void walker_collection :: apply_cancellations()
 	// Apply the selected cancellation scheme
 	if      (simulation.cancel_scheme == "voronoi")
 		this->apply_voronoi_cancellations();
-	else if (simulation.cancel_scheme == "pairwize")
+	else if (simulation.cancel_scheme == "pairwise")
 		this->apply_pairwise_cancellations();
 	else if (simulation.cancel_scheme == "none")
 		return;
@@ -243,16 +243,46 @@ void walker_collection :: apply_voronoi_cancellations()
 				}
 		}
 
-		// Average nearest neighbour weights
-		new_weights[n] = 0;
+		// Record amount of +ve and -ve
+		// weight nearby
+		double positive_weight = 0;
+		double negative_weight = 0;
+
 		for (int i=0; i<nn; ++i)
-			new_weights[n] += (*this)[nn_indicies[i]]->weight;
-		new_weights[n] /= double(nn);
+		{
+			double nnw = (*this)[nn_indicies[i]]->weight;
+			if (nnw < 0) negative_weight -= nnw;
+			else positive_weight += nnw;
+		}
+
+		// Kill the walker if his team is outnumbered
+		new_weights[n] = wn->weight;
+		if (wn->weight < 0)
+		{
+			// Walker is -ve, kill it if +ve is winning
+			if (positive_weight > negative_weight + 1)
+				new_weights[n] = 0;
+		}
+		else
+		{
+			// Walker is +ve, kill it if -ve is winning
+			if (negative_weight > positive_weight + 1)
+				new_weights[n] = 0;
+		}
 
 		// Free memory
 		delete[] sq_distances;
 		delete[] nn_indicies;
 	}
+
+	// Don't apply cancellations if a large fraction
+	// of the walkers will die
+	double total_weight = 0;
+	for (int n=0; n<size(); ++n)
+		total_weight += fabs(new_weights[n]);
+	double frac_lost = 1 - total_weight/double(size());
+	simulation.error_file << frac_lost << "\n";
+	if (frac_lost > 0.5) return;
 
 	// Apply new weights, tracking the amount cancelled
 	expect_vals.cancellation_amount = 0;

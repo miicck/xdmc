@@ -73,7 +73,6 @@ public:
 	bool exchange_moves        = true;      // True if we should make exchange moves
 	std::string cancel_scheme  = "voronoi"; // Cancellation scheme to use
         bool correct_seperations   = false;     // True if walker seperation correction is carried out
-	bool particle_interactions = true;      // True if particle-particle interactions are on
 
         // The external potentials applied to the system (additive)
         std::vector<external_potential*> potentials;

@@ -135,10 +135,6 @@ void simulation_spec :: read_input()
                 // Turn of seperation corrections
                 else if (tag == "seperation_correction")
                         correct_seperations = true;
-
-		// Turn of particle-particle interactions
-		else if (tag == "non_interacting")
-			particle_interactions = false;
         }
         input.close();
 
@@ -179,7 +175,6 @@ void simulation_spec :: output_sim_details()
 	progress_file << "System loaded\n";
 	progress_file << "    Dimensions            : " << dimensions                 << "\n";
 	progress_file << "    Particles             : " << template_system.size()     << "\n";
-	progress_file << "    Interactions          : " << b2s(particle_interactions) << "\n";
 	progress_file << "    Total charge          : " << total_charge()             << "\n";
 	progress_file << "    Exchange pairs        : " << exchange_values.size()     << "\n"; 
 	progress_file << "       Bosonic            : " << bosonic_exchange_pairs     << "\n";
