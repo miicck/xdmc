@@ -284,7 +284,6 @@ void walker_collection :: apply_voronoi_cancellations()
     for (int n=0; n<size(); ++n)
         total_weight += fabs(new_weights[n]);
     double frac_lost = 1 - total_weight/double(size());
-    simulation.error_file << frac_lost << "\n";
     if (frac_lost > 0.5) return;
 
     // Apply new weights, tracking the amount cancelled
@@ -387,7 +386,7 @@ void walker_collection :: write_output(int iter)
     simulation.progress_file << "    Trial energy    : " << triale_red     << " Hartree\n";
     simulation.progress_file << "    <V>             : " << av_pot_red     << " Hartree\n";
     simulation.progress_file << "    Population      : " << population_red
-                             << "(" << population_red/simulation.np << " per process) "<< "\n";
+                             << " (" << population_red/simulation.np << " per process) "<< "\n";
     simulation.progress_file << "    Canceled weight : " << cancel_red     << "\n";
 
     if (iter == 1)

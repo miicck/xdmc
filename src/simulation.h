@@ -29,28 +29,28 @@
 class output_file
 {
 public:
-	output_file() { filename = "/dev/null"; }
-	output_file(std::string fn) { filename = fn; }
+    output_file() { filename = "/dev/null"; }
+    output_file(std::string fn) { filename = fn; }
 
-	template<class T>
-	output_file& operator<<(T t)
-	{
-		if (!file.is_open()) file.open(filename);
-		file << t;
-		if (auto_flush) flush();
-		return (*this);
-	}
+    template<class T>
+    output_file& operator<<(T t)
+    {
+        if (!file.is_open()) file.open(filename);
+        file << t;
+        if (auto_flush) flush();
+        return (*this);
+    }
 
-	void open(std::string fn) { filename = fn; }
-	void close() { if(file.is_open()) file.close(); }
-	void flush() { if(file.is_open()) file.flush(); }
+    void open(std::string fn) { filename = fn; }
+    void close() { if(file.is_open()) file.close(); }
+    void flush() { if(file.is_open()) file.flush(); }
 
-	// Set to true to automatically flush the file after each write
-	bool auto_flush = false; 
+    // Set to true to automatically flush the file after each write
+    bool auto_flush = false; 
 
 private:
-	std::string filename;
-	std::ofstream file;
+    std::string filename;
+    std::ofstream file;
 };
 
 // This class represents a complete specification for
@@ -68,12 +68,12 @@ public:
     double min_pop_ratio       = 0.5;       // The min allowed population as fraction of target
     int dmc_iterations         = 1000;      // The number of DMC iterations to carry out
     double tau                 = 0.01;      // The DMC timestep
-	double tau_c_ratio         = 1.0;       // The ratio for tau_c to tau
+    double tau_c_ratio         = 1.0;       // The ratio for tau_c to tau
     double trial_energy        = 0;         // Energy used to control the DMC population
-	double pre_diffusion       = 1.0;       // The amount that we diffuse walkers before run
-	bool write_wavefunction    = true;      // True if we should write wavefunction files
-	bool exchange_moves        = true;      // True if we should make exchange moves
-	std::string cancel_scheme  = "voronoi"; // Cancellation scheme to use
+    double pre_diffusion       = 1.0;       // The amount that we diffuse walkers before run
+    bool write_wavefunction    = true;      // True if we should write wavefunction files
+    bool exchange_moves        = true;      // True if we should make exchange moves
+    std::string cancel_scheme  = "voronoi"; // Cancellation scheme to use
     bool correct_seperations   = false;     // True if walker seperation correction is carried out
 
     // The external potentials applied to the system (additive)
@@ -82,49 +82,49 @@ public:
     // The system which will be copied to generate walkers
     std::vector<particle*> template_system;
 
-	// Exchange information about the system
-	std::vector<int> exchange_pairs;
-	std::vector<int> exchange_values;
-	int fermionic_exchange_pairs = 0;
-	int bosonic_exchange_pairs   = 0;
+    // Exchange information about the system
+    std::vector<int> exchange_pairs;
+    std::vector<int> exchange_values;
+    int fermionic_exchange_pairs = 0;
+    int bosonic_exchange_pairs   = 0;
 
-	// Derived information about the system
-	double total_charge();
+    // Derived information about the system
+    double total_charge();
 
     // Output files
     output_file wavefunction_file;
     output_file evolution_file;
-	output_file progress_file;
-	output_file error_file;
+    output_file progress_file;
+    output_file error_file;
 
-	// Flush output files so we have information if a run terminates
-	void flush();
+    // Flush output files so we have information if a run terminates
+    void flush();
 
-	// Output details of the simulation to the progress file
-	void output_sim_details();
+    // Output details of the simulation to the progress file
+    void output_sim_details();
 
-	// Loads system from input, initializes MPI, opens output files etc.
+    // Loads system from input, initializes MPI, opens output files etc.
     void load(int argc, char** argv);
 
-	// Closes output files and frees template_system and potentials
-	void free_memory();
+    // Closes output files and frees template_system and potentials
+    void free_memory();
 
-	// Get the time since startup
-	double time();
+    // Get the time since startup
+    double time();
 
 private:
-	
-	// Reads/parses the input file
-	void read_input();
+    
+    // Reads/parses the input file
+    void read_input();
 
-	// Parse a particle from an input line
-	void parse_particle(std::vector<std::string> split);
+    // Parse a particle from an input line
+    void parse_particle(std::vector<std::string> split);
 
-	// Parse an atomic potential from an input file
-	void parse_atomic_potential(std::vector<std::string> split);
+    // Parse an atomic potential from an input file
+    void parse_atomic_potential(std::vector<std::string> split);
 
-	// The result of clock() called at load
-	int start_clock;
+    // The result of clock() called at load
+    int start_clock;
 };
 
 extern simulation_spec simulation;
