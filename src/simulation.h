@@ -59,26 +59,28 @@ private:
 class simulation_spec
 {
 public:
-        // Program parameters
-        int pid                    = 0;         // The MPI PID of this process
-        int np                     = 1;         // The number of MPI processes
-        int dimensions             = 3;         // The dimensionality of our system
-        int target_population      = 500;       // The number of DMC walkers per process
-        int dmc_iterations         = 1000;      // The number of DMC iterations to carry out
-        double tau                 = 0.01;      // The DMC timestep
+    // Program parameters
+    int pid                    = 0;         // The MPI PID of this process
+    int np                     = 1;         // The number of MPI processes
+    int dimensions             = 3;         // The dimensionality of our system
+    int target_population      = 500;       // The number of DMC walkers per process
+    double max_pop_ratio       = 4.0;       // The max allowed population as fraction of target
+    double min_pop_ratio       = 0.5;       // The min allowed population as fraction of target
+    int dmc_iterations         = 1000;      // The number of DMC iterations to carry out
+    double tau                 = 0.01;      // The DMC timestep
 	double tau_c_ratio         = 1.0;       // The ratio for tau_c to tau
-        double trial_energy        = 0;         // Energy used to control the DMC population
+    double trial_energy        = 0;         // Energy used to control the DMC population
 	double pre_diffusion       = 1.0;       // The amount that we diffuse walkers before run
 	bool write_wavefunction    = true;      // True if we should write wavefunction files
 	bool exchange_moves        = true;      // True if we should make exchange moves
 	std::string cancel_scheme  = "voronoi"; // Cancellation scheme to use
-        bool correct_seperations   = false;     // True if walker seperation correction is carried out
+    bool correct_seperations   = false;     // True if walker seperation correction is carried out
 
-        // The external potentials applied to the system (additive)
-        std::vector<external_potential*> potentials;
+    // The external potentials applied to the system (additive)
+    std::vector<external_potential*> potentials;
 
-        // The system which will be copied to generate walkers
-        std::vector<particle*> template_system;
+    // The system which will be copied to generate walkers
+    std::vector<particle*> template_system;
 
 	// Exchange information about the system
 	std::vector<int> exchange_pairs;
@@ -89,9 +91,9 @@ public:
 	// Derived information about the system
 	double total_charge();
 
-        // Output files
-        output_file wavefunction_file;
-        output_file evolution_file;
+    // Output files
+    output_file wavefunction_file;
+    output_file evolution_file;
 	output_file progress_file;
 	output_file error_file;
 
@@ -102,7 +104,7 @@ public:
 	void output_sim_details();
 
 	// Loads system from input, initializes MPI, opens output files etc.
-        void load(int argc, char** argv);
+    void load(int argc, char** argv);
 
 	// Closes output files and frees template_system and potentials
 	void free_memory();

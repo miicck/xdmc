@@ -1,7 +1,7 @@
 dimensions       1  
-walkers		 1000
-iterations	 10000
-tau		 0.001   
+walkers		     1000
+iterations	     10000
+tau		         0.01   
 pre_diffusion    2.0
 # cancel_scheme    pairwise
 

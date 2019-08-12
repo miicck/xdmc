@@ -67,34 +67,42 @@ void simulation_spec :: parse_atomic_potential(std::vector<std::string> split)
 // Parse the input file.
 void simulation_spec :: read_input()
 {
-        std::ifstream input("input");
-        for (std::string line; getline(input, line); )
-        {
-                auto split = split_whitespace(line);
-                if (split.size() == 0) continue;
-                std::string tag = split[0];
+    std::ifstream input("input");
+    for (std::string line; getline(input, line); )
+    {
+        auto split = split_whitespace(line);
+        if (split.size() == 0) continue;
+        std::string tag = split[0];
 
-                // Ignore comments
-                if (tag.rfind("!" , 0) == 0) continue;
-                if (tag.rfind("#" , 0) == 0) continue;
-                if (tag.rfind("//", 0) == 0) continue;
+        // Ignore comments
+        if (tag.rfind("!" , 0) == 0) continue;
+        if (tag.rfind("#" , 0) == 0) continue;
+        if (tag.rfind("//", 0) == 0) continue;
 
-                // Read in the dimensionality
-                if (tag == "dimensions")
-                        dimensions = std::stoi(split[1]);
+        // Read in the dimensionality
+        if (tag == "dimensions")
+            dimensions = std::stoi(split[1]);
 
-                // Read in the number of DMC walkers and convert
-                // to walkers-per-process
-                else if (tag == "walkers")
-                        target_population = std::stoi(split[1])/np;
+        // Read in the number of DMC walkers and convert
+        // to walkers-per-process
+        else if (tag == "walkers")
+            target_population = std::stoi(split[1])/np;
 
-                // Read in the number of DMC iterations
-                else if (tag == "iterations")
-                        dmc_iterations = std::stoi(split[1]);
+        // Read in maximum population ratio
+        else if (tag == "max_pop_ratio")
+            max_pop_ratio = std::stod(split[1]);
 
-                // Read in the DMC timestep
-                else if (tag == "tau")
-                        tau = std::stod(split[1]);
+        // Read in minimum population ratio
+        else if (tag == "min_pop_ratio")
+            min_pop_ratio = std::stod(split[1]);
+
+        // Read in the number of DMC iterations
+        else if (tag == "iterations")
+            dmc_iterations = std::stoi(split[1]);
+
+        // Read in the DMC timestep
+        else if (tag == "tau")
+            tau = std::stod(split[1]);
 
 		// Read in ratio of tau_c to tau
 		else if (tag == "tau_c_ratio")
@@ -112,9 +120,9 @@ void simulation_spec :: read_input()
 		else if (tag == "grid_potential")
 			potentials.push_back(new grid_potential(split[1]));
 
-                // Add a harmonic well to the system
-                else if (tag == "harmonic_well")
-                        potentials.push_back(new harmonic_well(std::stod(split[1])));
+        // Add a harmonic well to the system
+        else if (tag == "harmonic_well")
+            potentials.push_back(new harmonic_well(std::stod(split[1])));
 
 		// Add an atomic potential to the system
 		else if (tag == "atomic_potential")
@@ -132,11 +140,12 @@ void simulation_spec :: read_input()
 		else if (tag == "cancel_scheme")
 			cancel_scheme = split[1];
 
-                // Turn of seperation corrections
-                else if (tag == "seperation_correction")
-                        correct_seperations = true;
-        }
-        input.close();
+        // Turn on seperation corrections
+        else if (tag == "seperation_correction")
+            correct_seperations = true;
+    }
+
+    input.close();
 
 	// Work out exchange properties of the system
 	for (unsigned i=0; i<template_system.size(); ++i)

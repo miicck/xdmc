@@ -25,10 +25,10 @@
 class expectation_values
 {
 public: 
-        void reset();
-        void normalize(unsigned walker_count);
-        double cancellation_amount;
-        double average_potential;
+    void reset();
+    void normalize(unsigned walker_count);
+    double cancellation_amount;
+    double average_potential;
 };
 
 // A collection of walkers
@@ -44,7 +44,7 @@ public:
 	void diffuse_and_branch();
 	void make_exchange_moves();
 	void apply_cancellations();
-        void correct_seperations();
+    void correct_seperations();
 
 	double average_weight();
 	double average_mod_weight();
@@ -52,7 +52,8 @@ public:
 	double sum_mod_weight();
 
 	void write_output(int iter);
-        expectation_values expect_vals;
+    expectation_values expect_vals;
+
 private:
 	void apply_pairwise_cancellations();
 	void apply_voronoi_cancellations();

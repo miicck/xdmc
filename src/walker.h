@@ -26,34 +26,34 @@
 class walker
 {
 public:
-        walker();
-        ~walker();
-        static int constructed_count;
+    walker();
+    ~walker();
+    static int constructed_count;
 
-	double weight;
-        double potential();
-	double sq_distance_to(walker* other);
-        double cancel_prob(walker* other);
+    double weight;
+    double potential();
+    double sq_distance_to(walker* other);
+    double cancel_prob(walker* other);
 
-        void diffuse(double tau);
-	void exchange();
-        void drift_away_from(walker* other);
+    void diffuse(double tau);
+    void exchange();
+    void drift_away_from(walker* other);
 
-        walker* copy();
-	walker* branch_copy();
+    walker* copy();
+    walker* branch_copy();
 
-	void write_wavefunction();
+    void write_wavefunction();
 private:
 
-        // The particles in this system snapshot
-        std::vector<particle*> particles;
+    // The particles in this system snapshot
+    std::vector<particle*> particles;
 
-        // Create a walker from a given particle set 
-        walker(std::vector<particle*> particles);
+    // Create a walker from a given particle set 
+    walker(std::vector<particle*> particles);
 
-	// True if the potential needs re-evaluating
-	bool potential_dirty = true;
-	double last_potential = 0;
+    // True if the potential needs re-evaluating
+    bool potential_dirty = true;
+    double last_potential = 0;
 };
 
 #endif
