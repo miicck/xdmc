@@ -149,6 +149,14 @@ double walker :: sq_distance_to(walker* other)
 	return r2;
 }
 
+double walker :: diffusive_greens_function(walker* other)
+{
+    // Evaluate the diffusive greens function of this walker
+    // at the configuration of the other walker
+    double r2 = this->sq_distance_to(other);
+    return exp(-r2/(2*simulation.tau));
+}
+
 double walker :: cancel_prob(walker* other)
 {
 	// Apply cancellation of two walkers

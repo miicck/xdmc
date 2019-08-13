@@ -43,7 +43,8 @@ walker_collection :: walker_collection()
 {
     // Reserve a reasonable amount of space to deal efficiently
     // with the fact that the population can fluctuate.
-    walkers.reserve(simulation.target_population*4);
+    walkers.reserve(int(simulation.target_population*
+                        simulation.max_pop_ratio)+10);
 
     // Initialize the set of walkers to the target
     // population size.
@@ -69,11 +70,11 @@ double potential_greens_function(double pot_before, double pot_after)
 {
     // Evaluate the potential-dependent part of the greens
     // function G_v(x,x',tau) = exp(-tau*(v(x)+v(x')-2E_T)/2)
-        if (std::isinf(pot_after))  return 0;
-        if (std::isinf(pot_before)) return 0;
+    if (std::isinf(pot_after))  return 0;
+    if (std::isinf(pot_before)) return 0;
 
-        double av_potential = (pot_before + pot_after)/2;
-        double exponent     = -simulation.tau*(av_potential - simulation.trial_energy);
+    double av_potential = (pot_before + pot_after)/2;
+    double exponent     = -simulation.tau*(av_potential - simulation.trial_energy);
     return exp(exponent);
 }
 
@@ -120,8 +121,8 @@ void walker_collection :: diffuse_and_branch()
         for (int s=0; s<surviving; ++s)
             walkers.push_back(w->branch_copy());
 
-                // Accumulate expectation values
-                expect_vals.average_potential += pot_after * surviving;
+        // Accumulate expectation values
+        expect_vals.average_potential += pot_after * surviving;
     }
 
     // Delete the previous iterations walkers
@@ -189,12 +190,54 @@ void walker_collection :: apply_cancellations()
         this->apply_voronoi_cancellations();
     else if (simulation.cancel_scheme == "pairwise")
         this->apply_pairwise_cancellations();
+    else if (simulation.cancel_scheme == "diffusive")
+        this->apply_diffusive_cancellations();
     else if (simulation.cancel_scheme == "none")
         return;
     else
         simulation.error_file << "Unknown cancellation scheme: "
                               << simulation.cancel_scheme << "\n";
 
+}
+
+void walker_collection :: apply_diffusive_cancellations()
+{
+    double* new_weights = new double[size()];
+
+    for (int n=0; n<size(); ++n)
+    {
+        walker* wn = (*this)[n];
+
+        // Evaluate total diffusive Greens function
+        // at the configuration of wn
+        // gf = \sum_m w_m G_D(x_n, x_m, dt)
+        double gf = 0;
+        for (int m=0; m<size(); ++m)
+        {
+            if (m == n) continue;
+            walker* wm = (*this)[n];
+            gf += wm->diffusive_greens_function(wn) * wm->weight;
+        }
+
+        // Kill the walker if it ended up
+        // in an opposite-sign region
+        if (sign(wn->weight) == sign(gf))
+            new_weights[n] = 1.0;
+        else
+            new_weights[n] = 0.0;
+    }
+
+    // Apply new weights, tracking the amount cancelled
+    expect_vals.cancellation_amount = 0;
+    for (int n=0; n<size(); ++n)
+    {
+        walker* wn = (*this)[n];
+        expect_vals.cancellation_amount += fabs(wn->weight - new_weights[n]);
+        wn->weight = new_weights[n];
+    }
+
+    // Free memory
+    delete[] new_weights;
 }
 
 void walker_collection :: apply_voronoi_cancellations()
@@ -219,7 +262,10 @@ void walker_collection :: apply_voronoi_cancellations()
         int*    nn_indicies  = new int[nn];
 
         for (int i=0; i<nn; ++i)
+        {
+            nn_indicies[i]  = -1;
             sq_distances[i] = INFINITY;
+        }
 
         for (int m=0; m<size(); ++m)
         {
@@ -253,6 +299,12 @@ void walker_collection :: apply_voronoi_cancellations()
 
         for (int i=0; i<nn; ++i)
         {
+            if (nn_indicies[i] < 0) 
+            {
+                simulation.error_file << "Neg nn ind @ " << n << ", " << i << "\n";
+                continue;
+            }
+
             double nnw = (*this)[nn_indicies[i]]->weight;
             if (nnw < 0) negative_weight -= nnw;
             else positive_weight += nnw;

@@ -55,6 +55,7 @@ public:
     expectation_values expect_vals;
 
 private:
+    void apply_diffusive_cancellations();
 	void apply_pairwise_cancellations();
 	void apply_voronoi_cancellations();
 

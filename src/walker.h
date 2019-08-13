@@ -33,6 +33,7 @@ public:
     double weight;
     double potential();
     double sq_distance_to(walker* other);
+    double diffusive_greens_function(walker* other);
     double cancel_prob(walker* other);
 
     void diffuse(double tau);
