@@ -28,6 +28,7 @@ void expectation_values :: reset()
     // Reset the expectation values ready
     // for accumulation
     cancellation_amount = 0;
+    clipped_weight    = 0;
     average_potential = 0;
 }
 
@@ -96,7 +97,15 @@ void walker_collection :: diffuse_and_branch()
     double min_weight = simulation.target_population * simulation.min_pop_ratio;
     if (ex_weight < min_weight || ex_weight > max_weight)
         for (int n=0; n<size(); ++n)
-            (*this)[n]->weight /= amw;
+        {
+            // Record the amount of weight "clipped" to keep the
+            // population between target_population * min_pop_ratio
+            // and target_population * max_pop_ratio
+            walker* wn        = (*this)[n];
+            double  w_before  = wn->weight;
+            wn->weight       /= amw;
+            this->expect_vals.clipped_weight += w_before - wn->weight;
+        }
 
     // Carry out diffusion and branching of the walkers
     int nmax = size();
@@ -415,8 +424,8 @@ double mpi_sum(double val)
 void walker_collection :: write_output(int iter)
 {
     // Sum various things across processes
-    double population_red = mpi_sum(double(this->size()));
-    double cancel_red     = mpi_sum(this->expect_vals.cancellation_amount);
+    double population_red    = mpi_sum(double(this->size()));
+    double cancel_red        = mpi_sum(this->expect_vals.cancellation_amount);
 
     // Average various things across processes
     double triale_red        = mpi_average(simulation.trial_energy);
@@ -426,7 +435,7 @@ void walker_collection :: write_output(int iter)
 
     // Calculate timing information
     double time_per_iter     = simulation.time()/iter;
-    double secs_remain = time_per_iter * (simulation.dmc_iterations - iter);
+    double secs_remain       = time_per_iter * (simulation.dmc_iterations - iter);
     double percent_complete  = double(100*iter)/simulation.dmc_iterations;
 
     // Output iteration information
@@ -450,7 +459,6 @@ void walker_collection :: write_output(int iter)
                 << "Trial energy (Hartree),"
                 << "<V> (Hartree),"
                 << "Average weight,"
-                << "Average |weight|,"
                 << "Cancelled weight\n";
     }
 
@@ -460,7 +468,6 @@ void walker_collection :: write_output(int iter)
         << triale_red        << ","
         << av_pot_red        << ","
         << av_weight_red     << ","
-        << av_mod_weight_red << ","
         << cancel_red        << "\n";
 
     // Write the wavefunction to file

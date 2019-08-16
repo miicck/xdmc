@@ -136,6 +136,10 @@ void simulation_spec :: read_input()
 		else if (tag == "no_exchange")
 			exchange_moves = false;
 
+        // Read in the exchange probability
+        else if (tag == "exchange_prob")
+            simulation.exchange_prob = std::stod(split[1]);
+
 		// Set the cancellation scheme
 		else if (tag == "cancel_scheme")
 			cancel_scheme = split[1];
@@ -189,6 +193,7 @@ void simulation_spec :: output_sim_details()
 	progress_file << "       Bosonic            : " << bosonic_exchange_pairs     << "\n";
 	progress_file << "       Fermionic          : " << fermionic_exchange_pairs   << "\n";
 	progress_file << "    Exchange moves        : " << b2s(exchange_moves)        << "\n";
+    progress_file << "    Exchange prob         : " << exchange_prob              << "\n";
 	progress_file << "    Cancel scheme         : " << cancel_scheme              << "\n";
 	progress_file << "    Pre diffusion         : " << pre_diffusion              << "\n";
 	progress_file << "    DMC timestep          : " << tau                        << "\n";

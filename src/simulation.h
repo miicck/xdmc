@@ -73,6 +73,7 @@ public:
     double pre_diffusion       = 1.0;       // The amount that we diffuse walkers before run
     bool write_wavefunction    = true;      // True if we should write wavefunction files
     bool exchange_moves        = true;      // True if we should make exchange moves
+    double exchange_prob       = 1.0;       // The probability of making an exchange move
     std::string cancel_scheme  = "voronoi"; // Cancellation scheme to use
     bool correct_seperations   = false;     // True if walker seperation correction is carried out
 

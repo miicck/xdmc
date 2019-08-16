@@ -25,10 +25,12 @@
 class expectation_values
 {
 public: 
-    void reset();
-    void normalize(unsigned walker_count);
-    double cancellation_amount;
-    double average_potential;
+    void reset();                           // Reset expectation vals
+    void normalize(unsigned walker_count);  // Normalize expectation vals
+
+    double cancellation_amount; // The amount of weight cancelled this iter
+    double clipped_weight;      // The amount of weight clipped this iter
+    double average_potential;   // The average potential this iter
 };
 
 // A collection of walkers

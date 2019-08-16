@@ -21,6 +21,7 @@ COMP_FLAGS="-c -Wall -O3 -g -p"
 LINK_FLAGS="-p -o xdmc"
 
 # Create the build directory
+rm -r $BUILD 2> /dev/null
 mkdir $BUILD 2> /dev/null
 
 # Compile the .cpp files

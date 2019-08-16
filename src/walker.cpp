@@ -124,19 +124,18 @@ void walker :: exchange()
 	// No exchanges possible
 	if (simulation.exchange_values.size() == 0) return;
 
-        // Make each type of exchange with
-        // equal probability (including no exchange)
-        double ne = (double)simulation.exchange_values.size();
-        if (rand_uniform() < 1/(ne+1)) return;
+    // Make each type of exchange with equal probability
+    if (rand_uniform() < simulation.exchange_prob)
+    {
+        // Pick a random exchangable pair
+        int i = rand() % simulation.exchange_values.size();
+        particle* p1 = particles[simulation.exchange_pairs[2*i]];
+        particle* p2 = particles[simulation.exchange_pairs[2*i+1]];
 
-	// Pick a random exchangable pair
-	int i = rand() % simulation.exchange_values.size();
-	particle* p1 = particles[simulation.exchange_pairs[2*i]];
-	particle* p2 = particles[simulation.exchange_pairs[2*i+1]];
-
-	// Exchange them 
-	this->weight *= double(simulation.exchange_values[i]);
-	p1->exchange(p2);
+        // Exchange them 
+        this->weight *= double(simulation.exchange_values[i]);
+        p1->exchange(p2);
+    }
 }
 
 double walker :: sq_distance_to(walker* other)

@@ -13,7 +13,9 @@ def exp_fit():
                 p0 = [energies[-1], energies[0] - energies[-1], len(energies)/4]
                 bounds = [[min(energies), -np.inf, 1],
                           [max(energies),  np.inf, 10*len(energies)]]
-                par, cov = curve_fit(to_fit, range(0, len(energies)), energies, p0, bounds=bounds)
+                
+                x = np.array([float(i) for i in range(0, len(energies))])
+                par, cov = curve_fit(to_fit, x, energies, p0, bounds=bounds)
                 residuals = [e - to_fit(n, *par) for n, e in enumerate(energies)]
                 print(par[0] ,"+/-", np.std(residuals))
 

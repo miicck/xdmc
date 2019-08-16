@@ -20,6 +20,7 @@
 #include "walker_collection.h"
 #include "random.h"
 #include "constants.h"
+#include "parameters.h"
 
 // Run the DMC calculation
 void run_dmc()
@@ -32,8 +33,8 @@ void run_dmc()
 	simulation.progress_file << "Starting DMC simulation...\n";
 	for (int iter = 1; iter <= simulation.dmc_iterations; ++iter)
 	{
-                // Reset expectation values
-                walkers.expect_vals.reset();
+        // Reset expectation values
+        walkers.expect_vals.reset();
 
 		// Apply diffusion-branching step.
 		walkers.diffuse_and_branch();
@@ -43,18 +44,18 @@ void run_dmc()
 			walkers.make_exchange_moves();
 
 		// Apply cancellation of walkers
-		walkers.apply_cancellations();
+        walkers.apply_cancellations();
 
-                // Apply walker seperation-correction
-                if (simulation.correct_seperations)
-                        walkers.correct_seperations();
+        // Apply walker seperation-correction
+        if (simulation.correct_seperations)
+                walkers.correct_seperations();
 
-                // Normalize expectation values
-                walkers.expect_vals.normalize(walkers.size());
+        // Normalize expectation values
+        walkers.expect_vals.normalize(walkers.size());
 
-                // Set trial energy to control population
-                double log_pop_ratio = log(double(walkers.size())/double(simulation.target_population));
-                simulation.trial_energy = walkers.expect_vals.average_potential - log_pop_ratio;
+        // Set trial energy to control population
+        double log_pop_ratio = log(double(walkers.size())/double(simulation.target_population));
+        simulation.trial_energy = walkers.expect_vals.average_potential - log_pop_ratio;
 
 		// Output information about the walkers
 		// at this iteration
@@ -68,6 +69,8 @@ void run_dmc()
 // Program entrypoint
 int main(int argc, char** argv)
 {
+    params.load(argc, argv);
+
 	// Read input files, ready output files, initialize MPI etc.
 	simulation.load(argc, argv);
 
