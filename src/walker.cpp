@@ -28,101 +28,101 @@ int walker :: constructed_count = 0;
 
 walker :: walker()
 {
-	// Default constructor:
-	// Setup the walker with the particles
-	// that describe the system.
-	++ constructed_count;
-	this->weight = 1;
-	this->particles.clear();
-	for (unsigned i=0; i<params::template_system.size(); ++i)
-		this->particles.push_back(params::template_system[i]->copy());
+    // Default constructor:
+    // Setup the walker with the particles
+    // that describe the system.
+    ++ constructed_count;
+    this->weight = 1;
+    this->particles.clear();
+    for (unsigned i=0; i<params::template_system.size(); ++i)
+        this->particles.push_back(params::template_system[i]->copy());
 }
 
 walker :: walker(std::vector<particle*> particles)
 {
-	// Constructor to create a walker explicitly from
-	// a collection of particles
-	++ constructed_count;
-	this->weight = 1;
-	this->particles = particles;
+    // Constructor to create a walker explicitly from
+    // a collection of particles
+    ++ constructed_count;
+    this->weight = 1;
+    this->particles = particles;
 }
 
 walker :: ~walker()
 {
-	// Clear up memory (delete all the particles).
-	-- constructed_count;
-	for (unsigned i=0; i<particles.size(); ++i)
-		delete(particles[i]);
+    // Clear up memory (delete all the particles).
+    -- constructed_count;
+    for (unsigned i=0; i<particles.size(); ++i)
+        delete(particles[i]);
 }
 
 
 walker* walker :: copy()
 {
-	// Return an exact copy of this walker
-	// (copy each of the particles and the weight)
-	std::vector<particle*> copied_particles;
-	for (unsigned i=0; i<particles.size(); ++i)
-		copied_particles.push_back(particles[i]->copy());
-	walker* copy = new walker(copied_particles);
-	copy->weight = this->weight;
-	return copy;
+    // Return an exact copy of this walker
+    // (copy each of the particles and the weight)
+    std::vector<particle*> copied_particles;
+    for (unsigned i=0; i<particles.size(); ++i)
+        copied_particles.push_back(particles[i]->copy());
+    walker* copy = new walker(copied_particles);
+    copy->weight = this->weight;
+    return copy;
 }
 
 walker* walker :: branch_copy()
 {
-	// Return a branched version of this walker
-	// (weight is already accounted for by branching
-	// step, the sign is all that continues)
-	walker* bcopy = this->copy();
-	bcopy->weight = sign(bcopy->weight);
-	return bcopy;
+    // Return a branched version of this walker
+    // (weight is already accounted for by branching
+    // step, the sign is all that continues)
+    walker* bcopy = this->copy();
+    bcopy->weight = sign(bcopy->weight);
+    return bcopy;
 }
 
 double walker :: potential()
 {
-	// No need to reevaluate the potential
-	if (!potential_dirty)
-		return last_potential;
-	
-	// Evaluate the potential of the system
-	// in the configuration described by this walker
-	last_potential = 0;
-	for (unsigned i = 0; i < particles.size(); ++i)
-	{
-		// Sum up external potential contributions
-		for (unsigned j=0; j<params::potentials.size(); ++j)
-			last_potential += params::potentials[j]->potential(particles[i]);
+    // No need to reevaluate the potential
+    if (!potential_dirty)
+        return last_potential;
+    
+    // Evaluate the potential of the system
+    // in the configuration described by this walker
+    last_potential = 0;
+    for (unsigned i = 0; i < particles.size(); ++i)
+    {
+        // Sum up external potential contributions
+        for (unsigned j=0; j<params::potentials.size(); ++j)
+            last_potential += params::potentials[j]->potential(particles[i]);
 
-		// Particle-particle interactions
-		// note j<i => no double counting
-		for (unsigned j=0; j<i; ++j)
-			last_potential += particles[i]->interaction(particles[j]);
-	}
+        // Particle-particle interactions
+        // note j<i => no double counting
+        for (unsigned j=0; j<i; ++j)
+            last_potential += particles[i]->interaction(particles[j]);
+    }
 
-	potential_dirty = false;
-	return last_potential;
+    potential_dirty = false;
+    return last_potential;
 }
 
 void walker :: diffuse(double tau=params::tau)
 {
-	// Diffuse all of the particles
-	for (unsigned i=0; i<particles.size(); ++i)
-		particles[i]->diffuse(tau);
-	
-	// Particles have moved => potential has changed
-	potential_dirty = true;
+    // Diffuse all of the particles
+    for (unsigned i=0; i<particles.size(); ++i)
+        particles[i]->diffuse(tau);
+    
+    // Particles have moved => potential has changed
+    potential_dirty = true;
 }
 
 void walker :: exchange()
 {
-	// Apply random exchange moves to particles
-	// Note: because only identical particles
-	// are exchanged, the potential remains the
-	// same => we do not need to set the potential_dirty
-	// flag.
+    // Apply random exchange moves to particles
+    // Note: because only identical particles
+    // are exchanged, the potential remains the
+    // same => we do not need to set the potential_dirty
+    // flag.
 
-	// No exchanges possible
-	if (params::exchange_values.size() == 0) return;
+    // No exchanges possible
+    if (params::exchange_values.size() == 0) return;
 
     // Make each type of exchange with equal probability
     if (rand_uniform() < params::exchange_prob)
@@ -140,12 +140,12 @@ void walker :: exchange()
 
 double walker :: sq_distance_to(walker* other)
 {
-	// Return the squared distance in configuration space
-	// between these two walkers: |x_this - x_other|^2 
-	double r2 = 0;
-	for (unsigned i=0; i<particles.size(); ++i)
-		r2 += particles[i]->sq_distance_to(other->particles[i]);
-	return r2;
+    // Return the squared distance in configuration space
+    // between these two walkers: |x_this - x_other|^2 
+    double r2 = 0;
+    for (unsigned i=0; i<particles.size(); ++i)
+        r2 += particles[i]->sq_distance_to(other->particles[i]);
+    return r2;
 }
 
 double walker :: diffusive_greens_function(walker* other)
@@ -158,14 +158,14 @@ double walker :: diffusive_greens_function(walker* other)
 
 double walker :: cancel_prob(walker* other)
 {
-	// Apply cancellation of two walkers
+    // Apply cancellation of two walkers
 
-	// Don't cancel walkers of the same sign
-	if (sign(this->weight) == sign(other->weight)) return 0;
+    // Don't cancel walkers of the same sign
+    if (sign(this->weight) == sign(other->weight)) return 0;
 
-	// Cancel according to integrated overlap
-	double r2 = this->sq_distance_to(other);
-	double f = erf(0.5*sqrt(r2/(2*params::tau*params::tau_c_ratio)));
+    // Cancel according to integrated overlap
+    double r2 = this->sq_distance_to(other);
+    double f = erf(0.5*sqrt(r2/(2*params::tau*params::tau_c_ratio)));
         return 1.0 - f;
 }
 
@@ -187,20 +187,20 @@ void walker :: drift_away_from(walker* other)
 
 void walker :: write_wavefunction()
 {
-	// Write the walker wavefunction in the form
-	// [weight: x1, y1, z1 ...; x2, y2, z2 ...; ...]
-	// where x1 is the x coord of the first particle etc
-	params::wavefunction_file << this->weight << ":";
-	for (unsigned i=0; i<particles.size(); ++i)
-	{
-		for (int j=0; j<params::dimensions; ++j)
-		{
-			params::wavefunction_file
-				<< particles[i]->coords[j];
-			if (j != params::dimensions - 1)
-				params::wavefunction_file << ",";
-		}
-		if (i != particles.size() - 1)
-			params::wavefunction_file << ";";
-	}
+    // Write the walker wavefunction in the form
+    // [weight: x1, y1, z1 ...; x2, y2, z2 ...; ...]
+    // where x1 is the x coord of the first particle etc
+    params::wavefunction_file << this->weight << ":";
+    for (unsigned i=0; i<particles.size(); ++i)
+    {
+        for (int j=0; j<params::dimensions; ++j)
+        {
+            params::wavefunction_file
+                << particles[i]->coords[j];
+            if (j != params::dimensions - 1)
+                params::wavefunction_file << ",";
+        }
+        if (i != particles.size() - 1)
+            params::wavefunction_file << ";";
+    }
 }

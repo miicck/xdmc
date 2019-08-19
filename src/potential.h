@@ -24,53 +24,53 @@
 class external_potential
 {
 public:
-        virtual double potential(particle* p)=0;
-	virtual std::string one_line_description()=0;
-	virtual ~external_potential() { }
+    virtual double potential(particle* p)=0;
+    virtual std::string one_line_description()=0;
+    virtual ~external_potential() { }
 };
 
 class grid_potential : public external_potential
 {
 public:
-	grid_potential(std::string filename);
-	virtual double potential(particle* p);
-	virtual std::string one_line_description();
-	virtual ~grid_potential() { delete[] this->data; }
+    grid_potential(std::string filename);
+    virtual double potential(particle* p);
+    virtual std::string one_line_description();
+    virtual ~grid_potential() { delete[] this->data; }
 private:
-	int grid_size;
-	double extent;
-	double* data;
+    int grid_size;
+    double extent;
+    double* data;
 };
 
 class harmonic_well : public external_potential
 {
 public:
-        harmonic_well(double omega) { this->omega = omega; }
-        virtual double potential(particle* p);
-	virtual std::string one_line_description();
+    harmonic_well(double omega) { this->omega = omega; }
+    virtual double potential(particle* p);
+    virtual std::string one_line_description();
 private:
-        double omega = 1;
+    double omega = 1;
 };
 
 class atomic_potential : public external_potential
 {
 public:
-	atomic_potential(double charge, double* coords)
-	{
-		this->coords = coords;
-		this->charge = charge;
-	}
-	
-	virtual ~atomic_potential()
-	{
-		delete[] this->coords;
-	}
+    atomic_potential(double charge, double* coords)
+    {
+        this->coords = coords;
+        this->charge = charge;
+    }
+    
+    virtual ~atomic_potential()
+    {
+        delete[] this->coords;
+    }
 
-	virtual double potential(particle* p);
-	virtual std::string one_line_description();
+    virtual double potential(particle* p);
+    virtual std::string one_line_description();
 private:
-	double  charge;
-	double* coords;
+    double  charge;
+    double* coords;
 };
 
 #endif

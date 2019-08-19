@@ -26,29 +26,29 @@
 class particle
 {
 public:
-        particle();
-        ~particle();
-        static int constructed_count;
+    particle();
+    ~particle();
+    static int constructed_count;
 
-	double sq_distance_to(particle* other); // Returns | this->coords - other->coords |^2
-        double interaction(particle* other);    // The interaction energy with some other particle
-	int exchange_symmetry(particle* other); // 1, 0 or -1 depending on spin statistics
-	void exchange(particle* other);         // Swap my coordinates with those of other
-        void drift_apart(particle* other, double multiplier); // Drift apart so |d|_new = mult*|d|  
+    double sq_distance_to(particle* other); // Returns | this->coords - other->coords |^2
+    double interaction(particle* other);    // The interaction energy with some other particle
+    int exchange_symmetry(particle* other); // 1, 0 or -1 depending on spin statistics
+    void exchange(particle* other);         // Swap my coordinates with those of other
+    void drift_apart(particle* other, double multiplier); // Drift apart so |d|_new = mult*|d|  
 
-        void sample_wavefunction();   // Called when a request is sent to sample a walker wvfn.
-        void diffuse(double tau);     // Called when a config diffuses in DMC
-        particle* copy();             // Should return a (deep) copy of this particle
+    void sample_wavefunction();   // Called when a request is sent to sample a walker wvfn.
+    void diffuse(double tau);     // Called when a config diffuses in DMC
+    particle* copy();             // Should return a (deep) copy of this particle
 
-        double charge  = 0;           // The charge of this particle (electron charge = -1)
-        double mass    = 0;           // The mass of this particle (electron mass = 1)
-	int half_spins = 0;           // This spin of this particle (+/- 1 => spin = +/- 1/2)
+    double charge  = 0;           // The charge of this particle (electron charge = -1)
+    double mass    = 0;           // The mass of this particle (electron mass = 1)
+    int half_spins = 0;           // This spin of this particle (+/- 1 => spin = +/- 1/2)
 
-	std::string name = "Particle";
-	std::string one_line_description();
+    std::string name = "Particle";
+    std::string one_line_description();
 
-        // The location of this particle
-        double* coords;
+    // The location of this particle
+    double* coords;
 };
 
 #endif

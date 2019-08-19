@@ -37,31 +37,31 @@ public:
 class walker_collection
 {
 public:
-	walker_collection();
-	~walker_collection();
+    walker_collection();
+    ~walker_collection();
 
-	int size() { return walkers.size(); }
-	walker* operator[](int i) { return walkers[i]; }
+    int size() { return walkers.size(); }
+    walker* operator[](int i) { return walkers[i]; }
 
-	void diffuse_and_branch();
-	void make_exchange_moves();
-	void apply_cancellations();
+    void diffuse_and_branch();
+    void make_exchange_moves();
+    void apply_cancellations();
     void correct_seperations();
 
-	double average_weight();
-	double average_mod_weight();
-	double average_potential();
-	double sum_mod_weight();
+    double average_weight();
+    double average_mod_weight();
+    double average_potential();
+    double sum_mod_weight();
 
-	void write_output(int iter);
+    void write_output(int iter);
     expectation_values expect_vals;
 
 private:
     void apply_diffusive_cancellations();
-	void apply_pairwise_cancellations();
-	void apply_voronoi_cancellations();
+    void apply_pairwise_cancellations();
+    void apply_voronoi_cancellations();
 
-	std::vector<walker*> walkers;
+    std::vector<walker*> walkers;
 };
 
 #endif

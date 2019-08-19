@@ -24,25 +24,25 @@
 // Run the DMC calculation
 void run_dmc()
 {
-	// Our DMC walkers
-	params::progress_file << "Initializing walkers...\n";
-	walker_collection walkers;
-	
-	// Run our DMC iterations
-	params::progress_file << "Starting DMC simulation...\n";
-	for (int iter = 1; iter <= params::dmc_iterations; ++iter)
-	{
+    // Our DMC walkers
+    params::progress_file << "Initializing walkers...\n";
+    walker_collection walkers;
+    
+    // Run our DMC iterations
+    params::progress_file << "Starting DMC simulation...\n";
+    for (int iter = 1; iter <= params::dmc_iterations; ++iter)
+    {
         // Reset expectation values
         walkers.expect_vals.reset();
 
-		// Apply diffusion-branching step.
-		walkers.diffuse_and_branch();
+        // Apply diffusion-branching step.
+        walkers.diffuse_and_branch();
 
-		// Carry out exchange moves on the walkers
-		if (params::exchange_moves)
-			walkers.make_exchange_moves();
+        // Carry out exchange moves on the walkers
+        if (params::exchange_moves)
+            walkers.make_exchange_moves();
 
-		// Apply cancellation of walkers
+        // Apply cancellation of walkers
         walkers.apply_cancellations();
 
         // Apply walker seperation-correction
@@ -56,24 +56,24 @@ void run_dmc()
         double log_pop_ratio = log(double(walkers.size())/double(params::target_population));
         params::trial_energy = walkers.expect_vals.average_potential - log_pop_ratio;
 
-		// Output information about the walkers
-		// at this iteration
-		walkers.write_output(iter);
-	}
+        // Output information about the walkers
+        // at this iteration
+        walkers.write_output(iter);
+    }
 
-	// Output success message
-	params::progress_file << "\nDone, total time: " << params::time() << "s.\n";
+    // Output success message
+    params::progress_file << "\nDone, total time: " << params::time() << "s.\n";
 }
 
 // Program entrypoint
 int main(int argc, char** argv)
 {
-	// Read input files, ready output files, initialize MPI etc.
-	params::load(argc, argv);
+    // Read input files, ready output files, initialize MPI etc.
+    params::load(argc, argv);
 
-	// Run the DMC simulation
-	run_dmc();
+    // Run the DMC simulation
+    run_dmc();
 
-	// Free memory used in the simulation specification
-	params::free_memory();
+    // Free memory used in the simulation specification
+    params::free_memory();
 }
