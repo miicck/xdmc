@@ -15,23 +15,22 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 */
 
-#include "simulation.h"
+#include "params.h"
 #include "particle.h"
 #include "walker_collection.h"
 #include "random.h"
 #include "constants.h"
-#include "parameters.h"
 
 // Run the DMC calculation
 void run_dmc()
 {
 	// Our DMC walkers
-	simulation.progress_file << "Initializing walkers...\n";
+	params::progress_file << "Initializing walkers...\n";
 	walker_collection walkers;
 	
 	// Run our DMC iterations
-	simulation.progress_file << "Starting DMC simulation...\n";
-	for (int iter = 1; iter <= simulation.dmc_iterations; ++iter)
+	params::progress_file << "Starting DMC simulation...\n";
+	for (int iter = 1; iter <= params::dmc_iterations; ++iter)
 	{
         // Reset expectation values
         walkers.expect_vals.reset();
@@ -40,22 +39,22 @@ void run_dmc()
 		walkers.diffuse_and_branch();
 
 		// Carry out exchange moves on the walkers
-		if (simulation.exchange_moves)
+		if (params::exchange_moves)
 			walkers.make_exchange_moves();
 
 		// Apply cancellation of walkers
         walkers.apply_cancellations();
 
         // Apply walker seperation-correction
-        if (simulation.correct_seperations)
+        if (params::correct_seperations)
                 walkers.correct_seperations();
 
         // Normalize expectation values
         walkers.expect_vals.normalize(walkers.size());
 
         // Set trial energy to control population
-        double log_pop_ratio = log(double(walkers.size())/double(simulation.target_population));
-        simulation.trial_energy = walkers.expect_vals.average_potential - log_pop_ratio;
+        double log_pop_ratio = log(double(walkers.size())/double(params::target_population));
+        params::trial_energy = walkers.expect_vals.average_potential - log_pop_ratio;
 
 		// Output information about the walkers
 		// at this iteration
@@ -63,20 +62,18 @@ void run_dmc()
 	}
 
 	// Output success message
-	simulation.progress_file << "\nDone, total time: " << simulation.time() << "s.\n";
+	params::progress_file << "\nDone, total time: " << params::time() << "s.\n";
 }
 
 // Program entrypoint
 int main(int argc, char** argv)
 {
-    params.load(argc, argv);
-
 	// Read input files, ready output files, initialize MPI etc.
-	simulation.load(argc, argv);
+	params::load(argc, argv);
 
 	// Run the DMC simulation
 	run_dmc();
 
 	// Free memory used in the simulation specification
-	simulation.free_memory();
+	params::free_memory();
 }

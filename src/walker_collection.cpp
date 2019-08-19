@@ -21,7 +21,7 @@
 #include "random.h"
 #include "math.h"
 #include "walker_collection.h"
-#include "simulation.h"
+#include "params.h"
 
 void expectation_values :: reset()
 {
@@ -44,19 +44,19 @@ walker_collection :: walker_collection()
 {
     // Reserve a reasonable amount of space to deal efficiently
     // with the fact that the population can fluctuate.
-    walkers.reserve(int(simulation.target_population*
-                        simulation.max_pop_ratio)+10);
+    walkers.reserve(int(params::target_population*
+                        params::max_pop_ratio)+10);
 
     // Initialize the set of walkers to the target
     // population size.
-    for (int i=0; i<simulation.target_population; ++i)
+    for (int i=0; i<params::target_population; ++i)
     {
         walker* w = new walker();
         walkers.push_back(w);
 
         // Carry out initial diffusion to avoid
         // exact particle overlap on first iteration
-        w->diffuse(simulation.pre_diffusion);
+        w->diffuse(params::pre_diffusion);
     }
 }
 
@@ -75,7 +75,7 @@ double potential_greens_function(double pot_before, double pot_after)
     if (std::isinf(pot_before)) return 0;
 
     double av_potential = (pot_before + pot_after)/2;
-    double exponent     = -simulation.tau*(av_potential - simulation.trial_energy);
+    double exponent     = -params::tau*(av_potential - params::trial_energy);
     return exp(exponent);
 }
 
@@ -93,8 +93,8 @@ void walker_collection :: diffuse_and_branch()
     // branching is unacceptable
     double amw        = this->average_mod_weight();
     double ex_weight  = amw*size();
-    double max_weight = simulation.target_population * simulation.max_pop_ratio;
-    double min_weight = simulation.target_population * simulation.min_pop_ratio;
+    double max_weight = params::target_population * params::max_pop_ratio;
+    double min_weight = params::target_population * params::min_pop_ratio;
     if (ex_weight < min_weight || ex_weight > max_weight)
         for (int n=0; n<size(); ++n)
         {
@@ -117,7 +117,7 @@ void walker_collection :: diffuse_and_branch()
         // part of the greens function
         // (recording the potential before/after)
         double pot_before = w->potential();
-        w->diffuse(simulation.tau);
+        w->diffuse(params::tau);
         double pot_after  = w->potential();
 
         // Multiply the weight by the potential-
@@ -195,17 +195,17 @@ void walker_collection :: make_exchange_moves()
 void walker_collection :: apply_cancellations()
 {
     // Apply the selected cancellation scheme
-    if      (simulation.cancel_scheme == "voronoi")
+    if      (params::cancel_scheme == "voronoi")
         this->apply_voronoi_cancellations();
-    else if (simulation.cancel_scheme == "pairwise")
+    else if (params::cancel_scheme == "pairwise")
         this->apply_pairwise_cancellations();
-    else if (simulation.cancel_scheme == "diffusive")
+    else if (params::cancel_scheme == "diffusive")
         this->apply_diffusive_cancellations();
-    else if (simulation.cancel_scheme == "none")
+    else if (params::cancel_scheme == "none")
         return;
     else
-        simulation.error_file << "Unknown cancellation scheme: "
-                              << simulation.cancel_scheme << "\n";
+        params::error_file << "Unknown cancellation scheme: "
+                              << params::cancel_scheme << "\n";
 
 }
 
@@ -255,10 +255,10 @@ void walker_collection :: apply_voronoi_cancellations()
     double* new_weights = new double[size()];
 
     // Calculate new weights
-    int nn = simulation.dimensions + 1;
+    int nn = params::dimensions + 1;
     if (size() < 1 + nn)
     {
-        simulation.error_file << "Error in voronoi: population very small!\n";
+        params::error_file << "Error in voronoi: population very small!\n";
         return;
     }
 
@@ -310,7 +310,7 @@ void walker_collection :: apply_voronoi_cancellations()
         {
             if (nn_indicies[i] < 0) 
             {
-                simulation.error_file << "Neg nn ind @ " << n << ", " << i << "\n";
+                params::error_file << "Neg nn ind @ " << n << ", " << i << "\n";
                 continue;
             }
 
@@ -409,7 +409,7 @@ double mpi_average(double val)
     // Get the average of val across proccesses on pid 0
     double res;
     MPI_Reduce(&val, &res, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    res /= double(simulation.np);
+    res /= double(params::np);
     return res;
 }
 
@@ -428,33 +428,32 @@ void walker_collection :: write_output(int iter)
     double cancel_red        = mpi_sum(this->expect_vals.cancellation_amount);
 
     // Average various things across processes
-    double triale_red        = mpi_average(simulation.trial_energy);
+    double triale_red        = mpi_average(params::trial_energy);
     double av_pot_red        = mpi_average(this->expect_vals.average_potential);
     double av_weight_red     = mpi_average(this->average_weight());
-    double av_mod_weight_red = mpi_average(this->average_mod_weight());
 
     // Calculate timing information
-    double time_per_iter     = simulation.time()/iter;
-    double secs_remain       = time_per_iter * (simulation.dmc_iterations - iter);
-    double percent_complete  = double(100*iter)/simulation.dmc_iterations;
+    double time_per_iter     = params::time()/iter;
+    double secs_remain       = time_per_iter * (params::dmc_iterations - iter);
+    double percent_complete  = double(100*iter)/params::dmc_iterations;
 
     // Output iteration information
-    simulation.progress_file << "\nIteration " << iter << "/" << simulation.dmc_iterations
+    params::progress_file << "\nIteration " << iter << "/" << params::dmc_iterations
                              << " (" << percent_complete << "%)\n";
-    simulation.progress_file << "    Time running    : " << simulation.time()
+    params::progress_file << "    Time running    : " << params::time()
                              << "s (" << time_per_iter << "s/iter)\n";
-    simulation.progress_file << "    ETA             : " << secs_remain    << "s \n";
-    simulation.progress_file << "    Trial energy    : " << triale_red     << " Hartree\n";
-    simulation.progress_file << "    <V>             : " << av_pot_red     << " Hartree\n";
-    simulation.progress_file << "    Population      : " << population_red
-                             << " (" << population_red/simulation.np << " per process) "<< "\n";
-    simulation.progress_file << "    Canceled weight : " << cancel_red     << "\n";
+    params::progress_file << "    ETA             : " << secs_remain    << "s \n";
+    params::progress_file << "    Trial energy    : " << triale_red     << " Hartree\n";
+    params::progress_file << "    <V>             : " << av_pot_red     << " Hartree\n";
+    params::progress_file << "    Population      : " << population_red
+                             << " (" << population_red/params::np << " per process) "<< "\n";
+    params::progress_file << "    Canceled weight : " << cancel_red     << "\n";
 
     if (iter == 1)
     {
         // Before the first iteration, output names of the
         // evolution file columns
-        simulation.evolution_file
+        params::evolution_file
                 << "Population,"
                 << "Trial energy (Hartree),"
                 << "<V> (Hartree),"
@@ -463,7 +462,7 @@ void walker_collection :: write_output(int iter)
     }
 
     // Output evolution information to file
-    simulation.evolution_file
+    params::evolution_file
         << population_red    << ","
         << triale_red        << ","
         << av_pot_red        << ","
@@ -471,16 +470,16 @@ void walker_collection :: write_output(int iter)
         << cancel_red        << "\n";
 
     // Write the wavefunction to file
-    if (simulation.write_wavefunction)
+    if (params::write_wavefunction)
     {
-        simulation.wavefunction_file << "# Iteration " << iter << "\n";
+        params::wavefunction_file << "# Iteration " << iter << "\n";
         for (int n=0; n<size(); ++n)
         {
             (*this)[n]->write_wavefunction();
-            simulation.wavefunction_file << "\n";
+            params::wavefunction_file << "\n";
         }
     }
 
     // Flush output files after every call
-    simulation.flush();
+    params::flush();
 }

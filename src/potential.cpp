@@ -19,7 +19,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include "simulation.h"
+#include "params.h"
 #include "potential.h"
 #include "constants.h"
 
@@ -39,9 +39,9 @@ grid_potential :: grid_potential(std::string filename)
 	file >> read_dimensions >> this->grid_size >> this->extent;
 
 	// Check dimensionality is correct
-	if (read_dimensions != simulation.dimensions)
+	if (read_dimensions != params::dimensions)
 	{
-		simulation.error_file << "Incorrect dimensionality in grid_potential!\n";
+		params::error_file << "Incorrect dimensionality in grid_potential!\n";
 		throw "Incorrect dimensionality in grid_potential!";
 	}
 
@@ -55,7 +55,7 @@ grid_potential :: grid_potential(std::string filename)
 		++n;
 		if (n >= read_dimensions * this->grid_size)
 		{
-			simulation.error_file 
+			params::error_file 
 				<< "Warning: grid_potential file has more lines than expected "
 				<< "please check it is correct.";
 			break;
@@ -68,7 +68,7 @@ double grid_potential :: potential(particle* p)
 	int coord = 0;
 	int stride = 1;
 
-	for (int i=0; i<simulation.dimensions; ++i)
+	for (int i=0; i<params::dimensions; ++i)
 	{
 		// Work out the coordinate I'm at
 		double frac = (p->coords[i] + extent)/(2*extent);
@@ -96,7 +96,7 @@ std::string harmonic_well :: one_line_description()
 double harmonic_well::potential(particle* p)
 {
 	double r2 = 0;
-	for (int i=0; i<simulation.dimensions; ++i)
+	for (int i=0; i<params::dimensions; ++i)
 		r2 += p->coords[i]*p->coords[i];
 	return 0.5*r2*omega*omega;
 }
@@ -105,7 +105,7 @@ std::string atomic_potential :: one_line_description()
 {
 	std::stringstream des;
 	des << "Atomic potential (charge = " << charge << ") position: ";
-	for (int i=0; i<simulation.dimensions; ++i)
+	for (int i=0; i<params::dimensions; ++i)
 		des << coords[i] << " ";
 	return des.str();
 }
@@ -113,7 +113,7 @@ std::string atomic_potential :: one_line_description()
 double atomic_potential :: potential(particle* p)
 {
 	double r = 0;
-	for (int i=0; i<simulation.dimensions; ++i)
+	for (int i=0; i<params::dimensions; ++i)
 	{
 		double dxi = p->coords[i] - this->coords[i];
 		r += dxi * dxi;

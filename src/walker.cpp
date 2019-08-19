@@ -20,7 +20,7 @@
 #include "random.h"
 #include "math.h"
 #include "walker.h"
-#include "simulation.h"
+#include "params.h"
 
 // Used to track the number of constructred walkers
 // to ensure that we delete them all again properly
@@ -34,8 +34,8 @@ walker :: walker()
 	++ constructed_count;
 	this->weight = 1;
 	this->particles.clear();
-	for (unsigned i=0; i<simulation.template_system.size(); ++i)
-		this->particles.push_back(simulation.template_system[i]->copy());
+	for (unsigned i=0; i<params::template_system.size(); ++i)
+		this->particles.push_back(params::template_system[i]->copy());
 }
 
 walker :: walker(std::vector<particle*> particles)
@@ -90,8 +90,8 @@ double walker :: potential()
 	for (unsigned i = 0; i < particles.size(); ++i)
 	{
 		// Sum up external potential contributions
-		for (unsigned j=0; j<simulation.potentials.size(); ++j)
-			last_potential += simulation.potentials[j]->potential(particles[i]);
+		for (unsigned j=0; j<params::potentials.size(); ++j)
+			last_potential += params::potentials[j]->potential(particles[i]);
 
 		// Particle-particle interactions
 		// note j<i => no double counting
@@ -103,7 +103,7 @@ double walker :: potential()
 	return last_potential;
 }
 
-void walker :: diffuse(double tau=simulation.tau)
+void walker :: diffuse(double tau=params::tau)
 {
 	// Diffuse all of the particles
 	for (unsigned i=0; i<particles.size(); ++i)
@@ -122,18 +122,18 @@ void walker :: exchange()
 	// flag.
 
 	// No exchanges possible
-	if (simulation.exchange_values.size() == 0) return;
+	if (params::exchange_values.size() == 0) return;
 
     // Make each type of exchange with equal probability
-    if (rand_uniform() < simulation.exchange_prob)
+    if (rand_uniform() < params::exchange_prob)
     {
         // Pick a random exchangable pair
-        int i = rand() % simulation.exchange_values.size();
-        particle* p1 = particles[simulation.exchange_pairs[2*i]];
-        particle* p2 = particles[simulation.exchange_pairs[2*i+1]];
+        int i = rand() % params::exchange_values.size();
+        particle* p1 = particles[params::exchange_pairs[2*i]];
+        particle* p2 = particles[params::exchange_pairs[2*i+1]];
 
         // Exchange them 
-        this->weight *= double(simulation.exchange_values[i]);
+        this->weight *= double(params::exchange_values[i]);
         p1->exchange(p2);
     }
 }
@@ -153,24 +153,19 @@ double walker :: diffusive_greens_function(walker* other)
     // Evaluate the diffusive greens function of this walker
     // at the configuration of the other walker
     double r2 = this->sq_distance_to(other);
-    return exp(-r2/(2*simulation.tau));
+    return exp(-r2/(2*params::tau));
 }
 
 double walker :: cancel_prob(walker* other)
 {
 	// Apply cancellation of two walkers
 
-	// Cancellation is only necassary if there is
-	// a fermionic exchange in the system (as this is
-	// the only way that walker signs can change)
-	if (simulation.fermionic_exchange_pairs == 0) return 0;
-
 	// Don't cancel walkers of the same sign
 	if (sign(this->weight) == sign(other->weight)) return 0;
 
 	// Cancel according to integrated overlap
 	double r2 = this->sq_distance_to(other);
-	double f = erf(0.5*sqrt(r2/(2*simulation.tau*simulation.tau_c_ratio)));
+	double f = erf(0.5*sqrt(r2/(2*params::tau*params::tau_c_ratio)));
         return 1.0 - f;
 }
 
@@ -181,7 +176,7 @@ void walker :: drift_away_from(walker* other)
 
         // Work out how much to increase the seperation by
         double r2 = this->sq_distance_to(other);
-        double arg = 0.5*sqrt(r2/(2*simulation.tau));
+        double arg = 0.5*sqrt(r2/(2*params::tau));
         double mult = 1.0 / erf(arg);
 
         // Drift each particle apart to obtain
@@ -195,17 +190,17 @@ void walker :: write_wavefunction()
 	// Write the walker wavefunction in the form
 	// [weight: x1, y1, z1 ...; x2, y2, z2 ...; ...]
 	// where x1 is the x coord of the first particle etc
-	simulation.wavefunction_file << this->weight << ":";
+	params::wavefunction_file << this->weight << ":";
 	for (unsigned i=0; i<particles.size(); ++i)
 	{
-		for (int j=0; j<simulation.dimensions; ++j)
+		for (int j=0; j<params::dimensions; ++j)
 		{
-			simulation.wavefunction_file
+			params::wavefunction_file
 				<< particles[i]->coords[j];
-			if (j != simulation.dimensions - 1)
-				simulation.wavefunction_file << ",";
+			if (j != params::dimensions - 1)
+				params::wavefunction_file << ",";
 		}
 		if (i != particles.size() - 1)
-			simulation.wavefunction_file << ";";
+			params::wavefunction_file << ";";
 	}
 }
