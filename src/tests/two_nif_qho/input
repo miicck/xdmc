@@ -1,8 +1,9 @@
 dimensions    1  
 walkers		  1000
-iterations	  500
+iterations	  10000
 tau		      0.01   
 pre_diffusion 2.0
+#cancel_scheme diffusive
 
 # Create a harmonic well with two non interacting fermions in it
 harmonic_well 1

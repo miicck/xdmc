@@ -18,6 +18,10 @@ licence = """/*
 
 import sys
 import os
+
+if len(sys.argv) < 2:
+    print("Error, I require files as arguments!")
+
 for f in sys.argv[1:]:
 	
 	if not os.path.isfile(f):

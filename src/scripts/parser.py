@@ -12,7 +12,10 @@ def parse_evolution():
         data   = []
         for line in lines[1:]:
                 if len(line.strip()) > 0:
-                        data.append([float(i) for i in line.split(",")])
+                        try:
+                            data.append([float(i) for i in line.split(",")])
+                        except Exception as e:
+                            print(e)
         data = list(zip(*data))
         return [y_axes, data]
 

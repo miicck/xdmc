@@ -219,7 +219,7 @@ void walker_collection :: apply_diffusive_cancellations()
 
         // Evaluate total diffusive Greens function
         // at the configuration of wn
-        // gf = \sum_m w_m G_D(x_n, x_m, dt)
+        // gf = \sum_{m!=n} w_m G_D(x_n, x_m, dt)
         double gf = 0;
         for (int m=0; m<size(); ++m)
         {
