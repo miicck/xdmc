@@ -26,6 +26,7 @@ rm -r $BUILD 2> /dev/null
 mkdir $BUILD 2> /dev/null
 
 # Generate code
+echo "Generating code ..."
 cd $GEN
 python gen_params.py
 
@@ -45,4 +46,4 @@ cd $GEN
 ./remove_generated.sh
 
 # Remove the build directory
-rm $BUILD 2> /dev/null
+rm -r $BUILD 2> /dev/null
