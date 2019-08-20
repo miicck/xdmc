@@ -186,14 +186,6 @@ void params::load(int argc, char** argv)
     // Seed random number generator
     srand(pid*clock());
 
-    // Read our input and setup parameters accordingly 
-    // do for each process sequentially to avoid access issues
-    for (int pid_read = 0; pid_read < np; ++ pid_read)
-    {
-            if (pid == pid_read) read_input();
-            MPI_Barrier(MPI_COMM_WORLD);
-    }
-
     // Open various output files
     if (pid == 0)
     {
@@ -206,6 +198,14 @@ void params::load(int argc, char** argv)
     error_file.open("error_"+std::to_string(pid));
     error_file.auto_flush = true;
     wavefunction_file.open("wavefunction_"+std::to_string(pid));
+
+    // Read our input and setup parameters accordingly 
+    // do for each process sequentially to avoid access issues
+    for (int pid_read = 0; pid_read < np; ++ pid_read)
+    {
+            if (pid == pid_read) read_input();
+            MPI_Barrier(MPI_COMM_WORLD);
+    }
     
     // Output parameters to the progress file
     output_sim_details();

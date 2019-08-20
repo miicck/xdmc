@@ -4,7 +4,6 @@ iterations	       10000
 tau		           0.01   
 pre_diffusion      2.0
 write_wavefunction false
-np 4
 
 # Create a harmonic well with two non interacting fermions in it
 harmonic_well 1
