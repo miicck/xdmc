@@ -1,5 +1,11 @@
+# Ignore build files
 xdmc
+src/build
+
+# Ignore these filetypes
 *.swp
 *.pyc
-src/build
-*previous_runs*
+
+# Ignore generated code
+params.cpp
+params.h
