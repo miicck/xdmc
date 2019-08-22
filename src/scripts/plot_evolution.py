@@ -1,17 +1,10 @@
 import sys
 import numpy as np
 import matplotlib.pyplot as plt
+from matplotlib.gridspec import GridSpec
 from parser import parse_evolution
 
-# Read in the evolution data
-y_axes, data = parse_evolution()
-y_size = int(len(data)**0.5)
-x_size = 0
-while x_size * y_size < len(data): x_size += 1
-
-x_size = 1
-y_size = len(data)
-
+# Parse command line args
 e_targ = None
 for arg in sys.argv:
     if arg.startswith("-e="):
@@ -24,38 +17,55 @@ for arg in sys.argv:
         v_targ = float(arg.split("=")[-1])
         break
 
+# Read in the evolution data
+y_axes, data = parse_evolution()
+
 log_scales = ["Cancelled weight"]
+
+fig, axes = plt.subplots(len(data),2, gridspec_kw = {"width_ratios":[8,1]})
 
 # Plot each dataseries on its own subplot
 for i, d in enumerate(data):
-    plt.subplot(y_size,x_size,i+1)
-    plt.plot(d)
-    plt.xlabel("Iteration")
-    plt.ylabel(y_axes[i])
+
+    # Plot dataseries
+    axes[i,0].plot(d)
+    axes[i,0].set_xlabel("Iteration")
+
+    half = int(len(d)/2)
+    mean = round(np.mean(d[half:]), 4)
+    std  = round(np.std(d[half:]),  4)
+
+    axes[i,0].set_ylabel(y_axes[i]+"\n{0} +/- {1}".format(mean,std))
 
     # Set the axis scales
     if y_axes[i] in log_scales:
-        plt.yscale("log")
+        axes[i,0].set_yscale("log")
+        axes[i,1].set_yscale("log")
 
     elif "norm" in sys.argv:
         equil_n = int(len(d)/2)
         mean = np.mean(d[equil_n:])
         std  = np.std(d[equil_n:])
-        plt.ylim([mean - 4*std, mean + 4*std])
-
+        axes[i,0].set_ylim([mean - 4*std, mean + 4*std])
 
     # Plot additional things
     if "Average weight" in y_axes[i]:
-        plt.axhline(0, color="black")
+        axes[i,0].axhline(0, color="black")
 
     elif "Trial energy" in y_axes[i]:
         if e_targ != None:
-            plt.axhline(e_targ, color="red")
+            axes[i,0].axhline(e_targ, color="red")
 
     elif "<V>" in y_axes[i]:
         if v_targ != None:
-            plt.axhline(v_targ, color="red")
+            axes[i,0].axhline(v_targ, color="red")
+
+    # Histogram distribution
+    d = [di for di in d if di > axes[i,0].get_ylim()[0] and di < axes[i,0].get_ylim()[1]]
+    axes[i,1].hist(d, bins=int(len(d)/100), orientation="horizontal")
+    axes[i,1].set_ylim(axes[i,0].get_ylim())
+    axes[i,1].set_yticks([])
 
 # Spread the subplots out, and show them
-plt.subplots_adjust(wspace=0.5, hspace=0.5)
+plt.subplots_adjust(wspace=0, hspace=0.5)
 plt.show()
