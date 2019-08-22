@@ -17,6 +17,7 @@
 
 #include <sstream>
 
+#include "constants.h"
 #include "random.h"
 #include "math.h"
 #include "walker.h"
@@ -101,6 +102,30 @@ double walker :: potential()
 
     potential_dirty = false;
     return last_potential;
+}
+
+double walker :: kinetic()
+{
+    // Evalueate the kinetic energy of this
+    // walker using the virial theorem
+    // <T> = 0.5 sum_n <x_n dv/dx_n>
+
+    double v0 = potential();
+    double kinetic = 0;
+    for (unsigned i=0; i<particles.size(); ++i)
+    {
+        particle* p = particles[i];
+        for (unsigned j=0; j<params::dimensions; ++j)
+        {
+            p->coords[j] += EPS_X;
+            potential_dirty = true;
+            double dv_dxij = (potential() - v0)/EPS_X;
+            kinetic += 0.5 * p->coords[j] * dv_dxij;
+            p->coords[j] -= EPS_X;
+        }
+    }
+    potential_dirty = false;
+    return kinetic;
 }
 
 void walker :: diffuse(double tau=params::tau)

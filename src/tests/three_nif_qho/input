@@ -1,9 +1,8 @@
 dimensions	    1
-walkers		    10000
+walkers		    4000
 iterations	    10000
 tau		        0.001
-pre_diffusion   1.0
-cancel_scheme   pairwise
+pre_diffusion   2.5
 min_pop_ratio   0
 exchange_prob   0.5
 

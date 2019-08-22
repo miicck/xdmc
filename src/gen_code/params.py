@@ -160,7 +160,7 @@ params["exchange_prob"] = [
 params["cancel_scheme"] = [
     "std::string",
     "cancel_scheme",
-    '"voronoi"',
+    '"diffusive"',
     "The cancellation scheme used.",
     True
 ]

@@ -22,8 +22,11 @@
 const double PI  = 3.141592653589793; // You should know this one
 const double AMU = 1822.88486193;     // Unified atomic mass unit / electron mass
 
+// Finite difference amounts
+const double EPS_X = 0.01;  // Epsilon for distances
+
 // Error codes
-const int MPI_ERROR = 1;              // Thrown when an MPI call fails
+const int MPI_ERROR = 1;    // Thrown when an MPI call fails
 
 #endif
 

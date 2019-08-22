@@ -39,6 +39,7 @@ public:
     double average_weight();
     double average_mod_weight();
     double average_potential();
+    double average_kinetic();
     double sum_mod_weight();
 
     void write_output();

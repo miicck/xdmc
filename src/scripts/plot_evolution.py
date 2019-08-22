@@ -1,6 +1,7 @@
+import sys
+import numpy as np
 import matplotlib.pyplot as plt
 from parser import parse_evolution
-import sys
 
 # Read in the evolution data
 y_axes, data = parse_evolution()
@@ -17,6 +18,14 @@ for arg in sys.argv:
         e_targ = float(arg.split("=")[-1])
         break
 
+v_targ = None
+for arg in sys.argv:
+    if arg.startswith("-v="):
+        v_targ = float(arg.split("=")[-1])
+        break
+
+log_scales = ["Cancelled weight"]
+
 # Plot each dataseries on its own subplot
 for i, d in enumerate(data):
     plt.subplot(y_size,x_size,i+1)
@@ -24,15 +33,28 @@ for i, d in enumerate(data):
     plt.xlabel("Iteration")
     plt.ylabel(y_axes[i])
 
-    if y_axes[i] == "Cancelled weight":
+    # Set the axis scales
+    if y_axes[i] in log_scales:
         plt.yscale("log")
 
-    elif "Average weight" in y_axes[i]:
+    elif "norm" in sys.argv:
+        equil_n = int(len(d)/2)
+        mean = np.mean(d[equil_n:])
+        std  = np.std(d[equil_n:])
+        plt.ylim([mean - 4*std, mean + 4*std])
+
+
+    # Plot additional things
+    if "Average weight" in y_axes[i]:
         plt.axhline(0, color="black")
 
     elif "Trial energy" in y_axes[i]:
         if e_targ != None:
             plt.axhline(e_targ, color="red")
+
+    elif "<V>" in y_axes[i]:
+        if v_targ != None:
+            plt.axhline(v_targ, color="red")
 
 # Spread the subplots out, and show them
 plt.subplots_adjust(wspace=0.5, hspace=0.5)

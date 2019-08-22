@@ -33,7 +33,8 @@ walker_collection :: walker_collection()
     // Initialize the set of walkers to the target
     // population size.
     walker* w = new walker();
-    w->diffuse(params::pre_diffusion);
+    double diff_amt = params::pre_diffusion/2.0;
+    w->diffuse(diff_amt);
 
     for (int i=0; i<params::target_population; ++i)
     {
@@ -42,7 +43,7 @@ walker_collection :: walker_collection()
         // fermionic exchanges.
         w->exchange();
         walker* wcopy = w->branch_copy();
-        wcopy->diffuse(params::tau);
+        wcopy->diffuse(diff_amt);
         walkers.push_back(wcopy);
     }
 
@@ -126,7 +127,20 @@ void walker_collection :: apply_renormalization()
     // so that the population fluctuates around the 
     // target population
 
-    params::trial_energy = average_potential() - log(sum_mod_weight()/params::target_population);
+    // The population at the start of the iteration
+    double pop_before_propagation = double(size());
+
+    // The effective population now, after the cumulative
+    // effect of this iterations greens functions
+    // (i.e cancellation, diffusion, potential etc...)
+    double pop_after_propagation  = sum_mod_weight();
+
+    // Set trial energy to minimize fluctuations
+    // (Noisy, potentially mix over iterations?)
+    params::trial_energy  = log(pop_before_propagation / pop_after_propagation)/params::tau;
+
+    // Bias towards target population (good idea? how much?)
+    params::trial_energy -= log(pop_before_propagation / params::target_population);
 
     // Apply normalization greens function
     double gn = exp(params::trial_energy * params::tau);
@@ -197,9 +211,10 @@ double walker_collection :: average_weight()
 
 double walker_collection :: average_potential()
 {
-    // Returns (1/N) * sum_i |w_i|*v_i
+    // Returns (1/W) * sum_i |w_i|*v_i.
     // Where v_i is the potential energy 
-    // of the i^th walker.
+    // of the i^th walker (which has
+    // weight w_i) and W = sum_i |w_i|
     double pot = 0;
     double weight = 0;
     for (int n=0; n<size(); ++n)
@@ -209,6 +224,23 @@ double walker_collection :: average_potential()
     }
     pot /= weight;
     return pot;
+}
+
+double walker_collection :: average_kinetic()
+{
+    // Returns (1/W) * sum_i |w_i|*k_i.
+    // Where k_i is the kinetic energy 
+    // of the i^th walker (which has
+    // weight w_i) and W = sum_i |w_i|
+    double kin = 0;
+    double weight = 0;
+    for (int n=0; n<size(); ++n)
+    {
+        kin    += (*this)[n]->kinetic() * fabs((*this)[n]->weight);
+        weight += fabs((*this)[n]->weight);
+    }
+    kin /= weight;
+    return kin;
 }
 
 void walker_collection :: make_exchange_moves()
@@ -242,7 +274,6 @@ void walker_collection :: apply_cancellations()
 void walker_collection :: apply_diffusive_cancellations()
 {
     double* new_weights = new double[size()];
-    double  av_mod_weight = 0;
 
     for (int n=0; n<size(); ++n)
     {
@@ -262,17 +293,10 @@ void walker_collection :: apply_diffusive_cancellations()
         // Kill the walker if it ended up
         // in an opposite-sign region
         if (sign(wn->weight) == sign(gf))
-            new_weights[n] = sign(wn->weight);
+            new_weights[n] = wn->weight;
         else
             new_weights[n] = 0.0;
-
-        av_mod_weight += abs(new_weights[n]);
     }
-
-    // Renormalize
-    av_mod_weight /= double(size());
-    for (int n=0; n<size(); ++n)
-        new_weights[n] /= av_mod_weight;
 
     // Apply new weights
     for (int n=0; n<size(); ++n)
