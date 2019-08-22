@@ -20,19 +20,6 @@
 
 #include "walker.h"
 
-// A class for storing expectation values
-// for a collection of walkers
-class expectation_values
-{
-public: 
-    void reset();                           // Reset expectation vals
-    void normalize(unsigned walker_count);  // Normalize expectation vals
-
-    double cancellation_amount; // The amount of weight cancelled this iter
-    double clipped_weight;      // The amount of weight clipped this iter
-    double average_potential;   // The average potential this iter
-};
-
 // A collection of walkers
 class walker_collection
 {
@@ -43,23 +30,26 @@ public:
     int size() { return walkers.size(); }
     walker* operator[](int i) { return walkers[i]; }
 
-    void diffuse_and_branch();
     void make_exchange_moves();
     void apply_cancellations();
     void correct_seperations();
+    void diffuse();
+    void branch();
 
     double average_weight();
     double average_mod_weight();
     double average_potential();
     double sum_mod_weight();
 
-    void write_output(int iter);
-    expectation_values expect_vals;
+    void write_output();
 
 private:
+    void clip_weight();
+
     void apply_diffusive_cancellations();
     void apply_pairwise_cancellations();
     void apply_voronoi_cancellations();
+    void apply_renormalization();
 
     std::vector<walker*> walkers;
 };

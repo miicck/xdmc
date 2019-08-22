@@ -125,17 +125,18 @@ void walker :: exchange()
     if (params::exchange_values.size() == 0) return;
 
     // Make each type of exchange with equal probability
-    if (rand_uniform() < params::exchange_prob)
-    {
-        // Pick a random exchangable pair
-        int i = rand() % params::exchange_values.size();
-        particle* p1 = particles[params::exchange_pairs[2*i]];
-        particle* p2 = particles[params::exchange_pairs[2*i+1]];
+    //double ne = (double)params::exchange_values.size();
+    //if (rand_uniform() < 1/(ne+1)) return;
+    if (rand_uniform() > params::exchange_prob) return;
 
-        // Exchange them 
-        this->weight *= double(params::exchange_values[i]);
-        p1->exchange(p2);
-    }
+    // Pick a random exchangable pair
+    int i = rand() % params::exchange_values.size();
+    particle* p1 = particles[params::exchange_pairs[2*i]];
+    particle* p2 = particles[params::exchange_pairs[2*i+1]];
+
+    // Exchange them 
+    this->weight *= double(params::exchange_values[i]);
+    p1->exchange(p2);
 }
 
 double walker :: sq_distance_to(walker* other)
@@ -163,10 +164,23 @@ double walker :: cancel_prob(walker* other)
     // Don't cancel walkers of the same sign
     if (sign(this->weight) == sign(other->weight)) return 0;
 
-    // Cancel according to integrated overlap
+    // Cancel according to the cancellation function chosen
     double r2 = this->sq_distance_to(other);
-    double f = erf(0.5*sqrt(r2/(2*params::tau*params::tau_c_ratio)));
-        return 1.0 - f;
+
+    if (params::cancel_function == "integrated_weight")
+        return 1.0-erf(0.5*sqrt(r2/(2*params::tau*params::tau_c_ratio)));
+
+    else if (params::cancel_function == "greens_function_overlap")
+        return exp(-r2/(4*params::tau*params::tau_c_ratio));
+
+    else
+    {
+        // Throw error for an unkown cancellation function
+        std::string err = "Unkown cancellation function: ";
+        err += params::cancel_function;
+        params::error_file << err << "\n";
+        throw std::runtime_error(err);
+    }
 }
 
 void walker :: drift_away_from(walker* other)

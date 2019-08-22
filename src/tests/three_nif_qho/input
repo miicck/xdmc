@@ -1,9 +1,12 @@
-dimensions	   1       # The dimensionallity of the system
-walkers		   2500    # The number of DMC walkers
-iterations	   100000  # The number of DMC iterations to carry out 
-tau		   0.0001  # The DMC timestep
+dimensions	    1
+walkers		    10000
+iterations	    10000
+tau		        0.001
+pre_diffusion   1.0
+cancel_scheme   pairwise
+min_pop_ratio   0
+exchange_prob   0.5
 
-# Create a harmonic well with three non interacting fermions in it
 harmonic_well 1
 particle non_interacting_fermion 0 0 1 0
 particle non_interacting_fermion 0 0 1 0

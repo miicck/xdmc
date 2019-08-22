@@ -23,23 +23,6 @@
 #include "walker_collection.h"
 #include "params.h"
 
-void expectation_values :: reset()
-{
-    // Reset the expectation values ready
-    // for accumulation
-    cancellation_amount = 0;
-    clipped_weight    = 0;
-    average_potential = 0;
-}
-
-void expectation_values :: normalize(unsigned walker_count)
-{
-    // After accumulating expectation values
-    // renormalize them
-    double wc = double(walker_count);
-    average_potential /= wc;
-}
-
 walker_collection :: walker_collection()
 {
     // Reserve a reasonable amount of space to deal efficiently
@@ -49,15 +32,21 @@ walker_collection :: walker_collection()
 
     // Initialize the set of walkers to the target
     // population size.
+    walker* w = new walker();
+    w->diffuse(params::pre_diffusion);
+
     for (int i=0; i<params::target_population; ++i)
     {
-        walker* w = new walker();
-        walkers.push_back(w);
-
-        // Carry out initial diffusion to avoid
-        // exact particle overlap on first iteration
-        w->diffuse(params::pre_diffusion);
+        // Initialize walkers with a large
+        // antisymmetric componenet if we have
+        // fermionic exchanges.
+        w->exchange();
+        walker* wcopy = w->branch_copy();
+        wcopy->diffuse(params::tau);
+        walkers.push_back(wcopy);
     }
+
+    delete w;
 }
 
 walker_collection :: ~walker_collection()
@@ -73,43 +62,13 @@ double potential_greens_function(double pot_before, double pot_after)
     // function G_v(x,x',tau) = exp(-tau*(v(x)+v(x')-2E_T)/2)
     if (std::isinf(pot_after))  return 0;
     if (std::isinf(pot_before)) return 0;
-
-    double av_potential = (pot_before + pot_after)/2;
-    double exponent     = -params::tau*(av_potential - params::trial_energy);
-    return exp(exponent);
+    return exp( -params::tau * (pot_before + pot_after)/2.0 );
 }
 
-int branch_from_weight(double weight)
+void walker_collection :: diffuse()
 {
-    // Returns how many walkers should be produced
-    // from one walker of the given weight
-    int num = (int)floor(fabs(weight) + rand_uniform());
-    return std::min(num, 3);
-}
-
-void walker_collection :: diffuse_and_branch()
-{
-    // Adjust weights if expected population after
-    // branching is unacceptable
-    double amw        = this->average_mod_weight();
-    double ex_weight  = amw*size();
-    double max_weight = params::target_population * params::max_pop_ratio;
-    double min_weight = params::target_population * params::min_pop_ratio;
-    if (ex_weight < min_weight || ex_weight > max_weight)
-        for (int n=0; n<size(); ++n)
-        {
-            // Record the amount of weight "clipped" to keep the
-            // population between target_population * min_pop_ratio
-            // and target_population * max_pop_ratio
-            walker* wn        = (*this)[n];
-            double  w_before  = wn->weight;
-            wn->weight       /= amw;
-            this->expect_vals.clipped_weight += w_before - wn->weight;
-        }
-
     // Carry out diffusion and branching of the walkers
-    int nmax = size();
-    for (int n=0; n < nmax; ++n)
+    for (int n=0; n < size(); ++n)
     {
         walker* w = (*this)[n];
 
@@ -123,15 +82,78 @@ void walker_collection :: diffuse_and_branch()
         // Multiply the weight by the potential-
         // dependent part of the greens function
         w->weight *= potential_greens_function(pot_before, pot_after);
+    }
+}
+
+int branch_from_weight(double weight)
+{
+    // Returns how many walkers should be produced
+    // from one walker of the given weight
+    int num = (int)floor(fabs(weight) + rand_uniform());
+    return std::min(num, 3);
+}
+
+void walker_collection :: clip_weight()
+{
+    // Adjust weights if expected population after
+    // branching is unacceptable
+    double amw        = this->average_mod_weight();
+    double ex_weight  = amw*size();
+    double max_weight = params::target_population * params::max_pop_ratio;
+    double min_weight = params::target_population * params::min_pop_ratio;
+    if (ex_weight < min_weight || ex_weight > max_weight)
+    {
+        // Warn the user this has happened
+        params::error_file << "Warning: clipping applied at iteration "
+                           << params::dmc_iteration 
+                           << " this will introduce bias!\n";
+
+        for (int n=0; n<size(); ++n)
+        {
+            // Record the amount of weight "clipped" to keep the
+            // population between target_population * min_pop_ratio
+            // and target_population * max_pop_ratio
+            walker* wn        = (*this)[n];
+            double  w_before  = wn->weight;
+            wn->weight       /= amw;
+        }
+    }
+}
+
+void walker_collection :: apply_renormalization()
+{
+    // Set the trial energy and apply renormalization
+    // so that the population fluctuates around the 
+    // target population
+
+    params::trial_energy = average_potential() - log(sum_mod_weight()/params::target_population);
+
+    // Apply normalization greens function
+    double gn = exp(params::trial_energy * params::tau);
+    for (int n=0; n<size(); ++n)
+        (*this)[n]->weight *= gn;
+
+    // Clip weight so that the population
+    // remains between the min and max allowed values
+    clip_weight();
+}
+
+void walker_collection :: branch()
+{
+    // Update trial energy/renormalize weights
+    this->apply_renormalization();
+
+    // Carry out branching of the walkers
+    int nmax = size();
+    for (int n=0; n < nmax; ++n)
+    {
+        walker* w = (*this)[n];
 
         // Apply branching step, adding branched
         // survivors to the end of the collection
         int surviving = branch_from_weight(w->weight);
         for (int s=0; s<surviving; ++s)
             walkers.push_back(w->branch_copy());
-
-        // Accumulate expectation values
-        expect_vals.average_potential += pot_after * surviving;
     }
 
     // Delete the previous iterations walkers
@@ -178,11 +200,15 @@ double walker_collection :: average_potential()
     // Returns (1/N) * sum_i |w_i|*v_i
     // Where v_i is the potential energy 
     // of the i^th walker.
-    double energy = 0;
+    double pot = 0;
+    double weight = 0;
     for (int n=0; n<size(); ++n)
-        energy += (*this)[n]->potential() * fabs((*this)[n]->weight);
-    energy /= double(size());
-    return energy;
+    {
+        pot    += (*this)[n]->potential() * fabs((*this)[n]->weight);
+        weight += fabs((*this)[n]->weight);
+    }
+    pot /= weight;
+    return pot;
 }
 
 void walker_collection :: make_exchange_moves()
@@ -194,6 +220,8 @@ void walker_collection :: make_exchange_moves()
 
 void walker_collection :: apply_cancellations()
 {
+    double weight_before = sum_mod_weight();
+
     // Apply the selected cancellation scheme
     if      (params::cancel_scheme == "voronoi")
         this->apply_voronoi_cancellations();
@@ -207,11 +235,14 @@ void walker_collection :: apply_cancellations()
         params::error_file << "Unknown cancellation scheme: "
                               << params::cancel_scheme << "\n";
 
+    // Record the amount of cancelled weight
+    params::cancelled_weight = weight_before - sum_mod_weight();
 }
 
 void walker_collection :: apply_diffusive_cancellations()
 {
     double* new_weights = new double[size()];
+    double  av_mod_weight = 0;
 
     for (int n=0; n<size(); ++n)
     {
@@ -224,26 +255,28 @@ void walker_collection :: apply_diffusive_cancellations()
         for (int m=0; m<size(); ++m)
         {
             if (m == n) continue;
-            walker* wm = (*this)[n];
+            walker* wm = (*this)[m];
             gf += wm->diffusive_greens_function(wn) * wm->weight;
         }
 
         // Kill the walker if it ended up
         // in an opposite-sign region
         if (sign(wn->weight) == sign(gf))
-            new_weights[n] = 1.0;
+            new_weights[n] = sign(wn->weight);
         else
             new_weights[n] = 0.0;
+
+        av_mod_weight += abs(new_weights[n]);
     }
 
-    // Apply new weights, tracking the amount cancelled
-    expect_vals.cancellation_amount = 0;
+    // Renormalize
+    av_mod_weight /= double(size());
     for (int n=0; n<size(); ++n)
-    {
-        walker* wn = (*this)[n];
-        expect_vals.cancellation_amount += fabs(wn->weight - new_weights[n]);
-        wn->weight = new_weights[n];
-    }
+        new_weights[n] /= av_mod_weight;
+
+    // Apply new weights
+    for (int n=0; n<size(); ++n)
+        (*this)[n]->weight = new_weights[n];
 
     // Free memory
     delete[] new_weights;
@@ -347,14 +380,9 @@ void walker_collection :: apply_voronoi_cancellations()
     double frac_lost = 1 - total_weight/double(size());
     if (frac_lost > 0.5) return;
 
-    // Apply new weights, tracking the amount cancelled
-    expect_vals.cancellation_amount = 0;
+    // Apply new weights
     for (int n=0; n<size(); ++n)
-    {
-        walker* wn = (*this)[n];
-        expect_vals.cancellation_amount += fabs(wn->weight - new_weights[n]);
-        wn->weight = new_weights[n];
-    }
+        (*this)[n]->weight = new_weights[n];
 
     // Free memory
     delete[] new_weights;
@@ -362,11 +390,6 @@ void walker_collection :: apply_voronoi_cancellations()
 
 void walker_collection :: apply_pairwise_cancellations()
 {
-    // Record weights and cancellation probabilities
-    double*  weights_before = new double [size()];
-        for (int n=0; n<size(); ++n)
-                weights_before[n] = (*this)[n]->weight;
-
     // Apply all pair-wise cancellations
     for (int n=0; n<size(); ++n)
     {
@@ -382,18 +405,6 @@ void walker_collection :: apply_pairwise_cancellations()
             wm->weight *= 1.0 - cp;
         }
     }
-
-    // Evaluate a measure of the amount of cancellation
-    // that occured
-    expect_vals.cancellation_amount = 0;
-    for (int n=0; n<size(); ++n)
-    {
-        double delta = (*this)[n]->weight - weights_before[n];
-        expect_vals.cancellation_amount += fabs(delta);
-    }
-
-    // Clean up memory
-    delete[] weights_before;
 }
 
 void walker_collection :: correct_seperations()
@@ -421,35 +432,36 @@ double mpi_sum(double val)
     return res;
 }
 
-void walker_collection :: write_output(int iter)
+void walker_collection :: write_output()
 {
     // Sum various things across processes
     double population_red    = mpi_sum(double(this->size()));
-    double cancel_red        = mpi_sum(this->expect_vals.cancellation_amount);
+    double cancelled_weight  = mpi_sum(params::cancelled_weight);
 
     // Average various things across processes
     double triale_red        = mpi_average(params::trial_energy);
-    double av_pot_red        = mpi_average(this->expect_vals.average_potential);
     double av_weight_red     = mpi_average(this->average_weight());
+    double potential_red     = mpi_average(this->average_potential());
 
     // Calculate timing information
-    double time_per_iter     = params::time()/iter;
-    double secs_remain       = time_per_iter * (params::dmc_iterations - iter);
-    double percent_complete  = double(100*iter)/params::dmc_iterations;
+    double time_per_iter     = params::time()/params::dmc_iteration;
+    double secs_remain       = time_per_iter * (params::dmc_iterations - params::dmc_iteration);
+    double percent_complete  = double(100*params::dmc_iteration)/params::dmc_iterations;
 
     // Output iteration information
-    params::progress_file << "\nIteration " << iter << "/" << params::dmc_iterations
-                             << " (" << percent_complete << "%)\n";
-    params::progress_file << "    Time running    : " << params::time()
-                             << "s (" << time_per_iter << "s/iter)\n";
-    params::progress_file << "    ETA             : " << secs_remain    << "s \n";
-    params::progress_file << "    Trial energy    : " << triale_red     << " Hartree\n";
-    params::progress_file << "    <V>             : " << av_pot_red     << " Hartree\n";
-    params::progress_file << "    Population      : " << population_red
-                             << " (" << population_red/params::np << " per process) "<< "\n";
-    params::progress_file << "    Canceled weight : " << cancel_red     << "\n";
+    params::progress_file << "\nIteration " << params::dmc_iteration 
+                          << "/" << params::dmc_iterations
+                          << " (" << percent_complete << "%)\n";
+    params::progress_file << "    Time running       : " << params::time()
+                          << "s (" << time_per_iter << "s/iter)\n";
+    params::progress_file << "    ETA                : " << secs_remain    << "s \n";
+    params::progress_file << "    Trial energy       : " << triale_red     << " Hartree\n";
+    params::progress_file << "    <V>                : " << potential_red  << " Hartree\n";
+    params::progress_file << "    Population         : " << population_red
+                          << " (" << population_red/params::np << " per process) "<< "\n";
+    params::progress_file << "    Cancelled weight   : " << cancelled_weight << "\n";
 
-    if (iter == 1)
+    if (params::dmc_iteration == 1)
     {
         // Before the first iteration, output names of the
         // evolution file columns
@@ -457,22 +469,22 @@ void walker_collection :: write_output(int iter)
                 << "Population,"
                 << "Trial energy (Hartree),"
                 << "<V> (Hartree),"
-                << "Average weight,"
-                << "Cancelled weight\n";
+                << "Cancelled weight,"
+                << "Average weight\n";
     }
 
     // Output evolution information to file
     params::evolution_file
         << population_red    << ","
         << triale_red        << ","
-        << av_pot_red        << ","
-        << av_weight_red     << ","
-        << cancel_red        << "\n";
+        << potential_red     << ","
+        << cancelled_weight  << ","
+        << av_weight_red     << "\n";
 
     // Write the wavefunction to file
     if (params::write_wavefunction)
     {
-        params::wavefunction_file << "# Iteration " << iter << "\n";
+        params::wavefunction_file << "# Iteration " << params::dmc_iteration << "\n";
         for (int n=0; n<size(); ++n)
         {
             (*this)[n]->write_wavefunction();

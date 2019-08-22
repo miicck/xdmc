@@ -30,13 +30,12 @@ void run_dmc()
     
     // Run our DMC iterations
     params::progress_file << "Starting DMC simulation...\n";
-    for (int iter = 1; iter <= params::dmc_iterations; ++iter)
+    for (params::dmc_iteration = 1;
+         params::dmc_iteration <= params::dmc_iterations;
+         params::dmc_iteration ++)
     {
-        // Reset expectation values
-        walkers.expect_vals.reset();
-
         // Apply diffusion-branching step.
-        walkers.diffuse_and_branch();
+        walkers.diffuse();
 
         // Carry out exchange moves on the walkers
         if (params::exchange_moves)
@@ -49,16 +48,12 @@ void run_dmc()
         if (params::correct_seperations)
                 walkers.correct_seperations();
 
-        // Normalize expectation values
-        walkers.expect_vals.normalize(walkers.size());
-
-        // Set trial energy to control population
-        double log_pop_ratio = log(double(walkers.size())/double(params::target_population));
-        params::trial_energy = walkers.expect_vals.average_potential - log_pop_ratio;
+        // Apply branching
+        walkers.branch();
 
         // Output information about the walkers
         // at this iteration
-        walkers.write_output(iter);
+        walkers.write_output();
     }
 
     // Output success message
