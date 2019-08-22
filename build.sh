@@ -41,9 +41,5 @@ echo "Linking with    :" $COMPILER $LINK_FLAGS
 echo "Using libraries :" $LIBS
 $COMPILER $LINK_FLAGS $BUILD/*.o $LIBS
 
-# Remove generated code
-cd $GEN
-./remove_generated.sh
-
 # Remove the build directory
 rm -r $BUILD 2> /dev/null
