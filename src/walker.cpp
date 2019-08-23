@@ -179,7 +179,7 @@ double walker :: diffusive_greens_function(walker* other)
     // Evaluate the diffusive greens function of this walker
     // at the configuration of the other walker
     double r2 = this->sq_distance_to(other);
-    return exp(-r2/(2*params::tau));
+    return fexp(-r2/(2*params::tau));
 }
 
 double walker :: cancel_prob(walker* other)
@@ -196,7 +196,7 @@ double walker :: cancel_prob(walker* other)
         return 1.0-erf(0.5*sqrt(r2/(2*params::tau*params::tau_c_ratio)));
 
     else if (params::cancel_function == "greens_function_overlap")
-        return exp(-r2/(4*params::tau*params::tau_c_ratio));
+        return fexp(-r2/(4*params::tau*params::tau_c_ratio));
 
     else
     {

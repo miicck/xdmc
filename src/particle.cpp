@@ -109,6 +109,27 @@ void particle :: drift_apart(particle* other, double multiplier)
 
 double particle :: sq_distance_to(particle* other)
 {
+    // Unpacking for speed
+    // (about twice as fast by my tests)
+    if (params::dimensions == 1)
+    {
+        double dx = this->coords[0] - other->coords[0];
+        return dx*dx;
+    }
+    else if (params::dimensions == 2)
+    {
+        double dx0 = this->coords[0] - other->coords[0];
+        double dx1 = this->coords[1] - other->coords[1];
+        return dx0*dx0 + dx1*dx1;
+    }
+    else if (params::dimensions == 3)
+    {
+        double dx0 = this->coords[0] - other->coords[0];
+        double dx1 = this->coords[1] - other->coords[1];
+        double dx2 = this->coords[2] - other->coords[2];
+        return dx0*dx0 + dx1*dx1 + dx2*dx2;
+    }
+
     // Returns | this->coords - other->coords |^2
     double r2 = 0;
     for (int i=0; i<params::dimensions; ++i)

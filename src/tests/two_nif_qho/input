@@ -1,5 +1,5 @@
 dimensions         1  
-walkers		       1000
+walkers		       2000
 iterations	       10000
 tau		           0.01   
 pre_diffusion      2.0

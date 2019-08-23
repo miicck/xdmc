@@ -18,8 +18,9 @@ done
 
 # Set libraries, compiler flags and linker flags
 LIBS="-lstdc++ -lm"
-COMP_FLAGS="-c -Wall -O3 -g -p"
-LINK_FLAGS="-p -o xdmc"
+INCLUDE=""
+COMP_FLAGS="-c -Wall -Ofast -g -p $INCLUDE"
+LINK_FLAGS="-p -o xdmc $INCLUDE"
 
 # Create the build directory
 rm -r $BUILD 2> /dev/null

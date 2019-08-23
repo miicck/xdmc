@@ -63,7 +63,7 @@ double potential_greens_function(double pot_before, double pot_after)
     // function G_v(x,x',tau) = exp(-tau*(v(x)+v(x')-2E_T)/2)
     if (std::isinf(pot_after))  return 0;
     if (std::isinf(pot_before)) return 0;
-    return exp( -params::tau * (pot_before + pot_after)/2.0 );
+    return fexp( -params::tau * (pot_before + pot_after)/2.0 );
 }
 
 void walker_collection :: diffuse()
@@ -143,7 +143,7 @@ void walker_collection :: apply_renormalization()
     params::trial_energy -= log(pop_before_propagation / params::target_population);
 
     // Apply normalization greens function
-    double gn = exp(params::trial_energy * params::tau);
+    double gn = fexp(params::trial_energy * params::tau);
     for (int n=0; n<size(); ++n)
         (*this)[n]->weight *= gn;
 
