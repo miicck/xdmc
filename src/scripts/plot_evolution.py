@@ -36,6 +36,7 @@ for i, d in enumerate(data):
     std  = round(np.std(d[half:]),  4)
 
     axes[i,0].set_ylabel(y_axes[i]+"\n{0} +/- {1}".format(mean,std))
+    axes[i,0].axhline(mean, color="green", linestyle=":")
 
     # Set the axis scales
     if y_axes[i] in log_scales:
@@ -43,9 +44,6 @@ for i, d in enumerate(data):
         axes[i,1].set_yscale("log")
 
     elif "norm" in sys.argv:
-        equil_n = int(len(d)/2)
-        mean = np.mean(d[equil_n:])
-        std  = np.std(d[equil_n:])
         axes[i,0].set_ylim([mean - 4*std, mean + 4*std])
 
     # Plot additional things
@@ -62,7 +60,8 @@ for i, d in enumerate(data):
 
     # Histogram distribution
     d = [di for di in d if di > axes[i,0].get_ylim()[0] and di < axes[i,0].get_ylim()[1]]
-    axes[i,1].hist(d, bins=int(len(d)/100), orientation="horizontal")
+    bins = int(min(100, int(len(d))/10))
+    axes[i,1].hist(d, bins=bins, orientation="horizontal")
     axes[i,1].set_ylim(axes[i,0].get_ylim())
     axes[i,1].set_yticks([])
 

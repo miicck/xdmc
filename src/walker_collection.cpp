@@ -308,11 +308,16 @@ void walker_collection :: apply_diffusive_cancellations()
 
 void walker_collection :: apply_voronoi_cancellations()
 {
+    // Kill walkers who have more nearest-neighbours of
+    // the opposite sign than their own sign
+    // Uses enough nearest neighbours to construct an
+    // n-simplex in configuration space.
+
     // Allocate space for new weights
     double* new_weights = new double[size()];
 
-    // Calculate new weights
-    int nn = params::dimensions + 1;
+    // Work out number of nearest neighbours
+    int nn = params::dimensions*params::template_system.size() + 1;
     if (size() < 1 + nn)
     {
         params::error_file << "Error in voronoi: population very small!\n";
@@ -323,7 +328,7 @@ void walker_collection :: apply_voronoi_cancellations()
     {
         walker* wn = (*this)[n];
 
-        // Find the d+1 nearest neighbours
+        // Find the nn nearest neighbours
         double* sq_distances = new double[nn];
         int*    nn_indicies  = new int[nn];
 
@@ -381,13 +386,13 @@ void walker_collection :: apply_voronoi_cancellations()
         if (wn->weight < 0)
         {
             // Walker is -ve, kill it if +ve is winning
-            if (positive_weight > negative_weight + 1)
+            if (positive_weight > negative_weight)
                 new_weights[n] = 0;
         }
         else
         {
             // Walker is +ve, kill it if -ve is winning
-            if (negative_weight > positive_weight + 1)
+            if (negative_weight > positive_weight)
                 new_weights[n] = 0;
         }
 
