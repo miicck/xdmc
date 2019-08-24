@@ -62,7 +62,7 @@ void parse_particle(std::vector<std::string> split)
     p->mass       = std::stod(split[2]);
     p->charge     = std::stod(split[3]);
     p->half_spins = std::stoi(split[4]);
-    for (int i=0; i<dimensions; ++i)
+    for (unsigned i=0; i<dimensions; ++i)
         p->coords[i] = std::stod(split[5+i]);
     template_system.push_back(p);
 }
@@ -74,7 +74,7 @@ void parse_atomic_potential(std::vector<std::string> split)
     
     double charge  = std::stod(split[1]);
     double* coords = new double[dimensions];
-    for (int i=0; i<dimensions; ++i)
+    for (unsigned i=0; i<dimensions; ++i)
         coords[i] = std::stod(split[2+i]);
     potentials.push_back(new atomic_potential(charge, coords));
 }

@@ -36,7 +36,7 @@ walker_collection :: walker_collection()
     double diff_amt = params::pre_diffusion/2.0;
     w->diffuse(diff_amt);
 
-    for (int i=0; i<params::target_population; ++i)
+    for (unsigned i=0; i<params::target_population; ++i)
     {
         // Initialize walkers with a large
         // antisymmetric componenet if we have
@@ -110,14 +110,7 @@ void walker_collection :: clip_weight()
                            << " this will introduce bias!\n";
 
         for (int n=0; n<size(); ++n)
-        {
-            // Record the amount of weight "clipped" to keep the
-            // population between target_population * min_pop_ratio
-            // and target_population * max_pop_ratio
-            walker* wn        = (*this)[n];
-            double  w_before  = wn->weight;
-            wn->weight       /= amw;
-        }
+            (*this)[n]->weight /= amw;
     }
 }
 

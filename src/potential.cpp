@@ -35,7 +35,7 @@ grid_potential :: grid_potential(std::string filename)
     std::ifstream file(filename);
 
     // Read the number of dimensions, the grid size and the extent from file
-    int read_dimensions;
+    unsigned read_dimensions;
     file >> read_dimensions >> this->grid_size >> this->extent;
 
     // Check dimensionality is correct
@@ -48,7 +48,7 @@ grid_potential :: grid_potential(std::string filename)
     // Read data from file
     this->data = new double[read_dimensions * this->grid_size];
     double val;
-    int n = 0;
+    unsigned n = 0;
     while(file >> val)
     {
         this->data[n] = val;
@@ -68,7 +68,7 @@ double grid_potential :: potential(particle* p)
     int coord = 0;
     int stride = 1;
 
-    for (int i=0; i<params::dimensions; ++i)
+    for (unsigned i=0; i<params::dimensions; ++i)
     {
         // Work out the coordinate I'm at
         double frac = (p->coords[i] + extent)/(2*extent);
@@ -96,7 +96,7 @@ std::string harmonic_well :: one_line_description()
 double harmonic_well::potential(particle* p)
 {
     double r2 = 0;
-    for (int i=0; i<params::dimensions; ++i)
+    for (unsigned i=0; i<params::dimensions; ++i)
         r2 += p->coords[i]*p->coords[i];
     return 0.5*r2*omega*omega;
 }
@@ -105,7 +105,7 @@ std::string atomic_potential :: one_line_description()
 {
     std::stringstream des;
     des << "Atomic potential (charge = " << charge << ") position: ";
-    for (int i=0; i<params::dimensions; ++i)
+    for (unsigned i=0; i<params::dimensions; ++i)
         des << coords[i] << " ";
     return des.str();
 }
@@ -113,7 +113,7 @@ std::string atomic_potential :: one_line_description()
 double atomic_potential :: potential(particle* p)
 {
     double r = 0;
-    for (int i=0; i<params::dimensions; ++i)
+    for (unsigned i=0; i<params::dimensions; ++i)
     {
         double dxi = p->coords[i] - this->coords[i];
         r += dxi * dxi;

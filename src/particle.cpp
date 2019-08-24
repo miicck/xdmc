@@ -48,7 +48,7 @@ particle* particle :: copy()
     p->charge     = this->charge;
     p->mass       = this->mass;
 
-    for (int i=0; i<params::dimensions; ++i)
+    for (unsigned i=0; i<params::dimensions; ++i)
         p->coords[i] = this->coords[i];
 
     return p;
@@ -86,7 +86,7 @@ int particle :: exchange_symmetry(particle* other)
 void particle :: exchange(particle* other)
 {
     // Swap the coordinates of this with other
-    for (int i=0; i<params::dimensions; ++i)
+    for (unsigned i=0; i<params::dimensions; ++i)
     {
         double tmp = this->coords[i];
         this->coords[i]  = other->coords[i];
@@ -98,7 +98,7 @@ void particle :: drift_apart(particle* other, double multiplier)
 {
         // Move these particles apart so that |this - other|
         // --> multiplier*|this - other|
-        for (int i=0; i<params::dimensions; ++i)
+        for (unsigned i=0; i<params::dimensions; ++i)
         {
                 double di = this->coords[i] - other->coords[i];
                 di *= (multiplier - 1.0)/2.0;
@@ -132,7 +132,7 @@ double particle :: sq_distance_to(particle* other)
 
     // Returns | this->coords - other->coords |^2
     double r2 = 0;
-    for (int i=0; i<params::dimensions; ++i)
+    for (unsigned i=0; i<params::dimensions; ++i)
     {
         double dxi = this->coords[i] - other->coords[i];
         r2 += dxi * dxi;
@@ -159,7 +159,7 @@ void particle :: diffuse(double tau)
     // Diffuse the particle by moving each
     // coordinate by an amount sampled from
     // a normal distribution with variance tau.
-    for (int i=0; i<params::dimensions; ++i)
+    for (unsigned i=0; i<params::dimensions; ++i)
         this->coords[i] += rand_normal(tau);
 }
 
@@ -167,7 +167,7 @@ void particle :: sample_wavefunction()
 {
     // Output my coordinates in the form x1,x2, ... xn
     // (with no trailing comma)
-    for (int  i=0; i<params::dimensions; ++i)
+    for (unsigned i=0; i<params::dimensions; ++i)
     {
         params::wavefunction_file << this->coords[i];
         if (i < params::dimensions - 1)

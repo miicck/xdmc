@@ -32,7 +32,7 @@ params["np"] = [
 ]
 
 params["dimensions"] = [
-    "int",
+    "unsigned",
     "dimensions",
     "3",
     "The spatial dimensions of the system.",
@@ -40,7 +40,7 @@ params["dimensions"] = [
 ]
 
 params["walkers"] = [
-    "int",
+    "unsigned",
     "target_population",
     "1000",
     ("The target population of DMC walkers. The actual number of "
@@ -68,7 +68,7 @@ params["min_pop_ratio"] = [
 ]
 
 params["iterations"] = [
-    "int",
+    "unsigned",
     "dmc_iterations",
     "10000",
     ("The number of DMC iterations, each corresponding to a "
@@ -77,7 +77,7 @@ params["iterations"] = [
 ]
 
 params["iter"] = [
-    "int",
+    "unsigned",
     "dmc_iteration",
     "0",
     ("The current DMC iteration."),

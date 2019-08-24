@@ -232,7 +232,7 @@ void walker :: write_wavefunction()
     params::wavefunction_file << this->weight << ":";
     for (unsigned i=0; i<particles.size(); ++i)
     {
-        for (int j=0; j<params::dimensions; ++j)
+        for (unsigned j=0; j<params::dimensions; ++j)
         {
             params::wavefunction_file
                 << particles[i]->coords[j];
