@@ -249,7 +249,7 @@ void walker_collection :: make_exchange_moves()
 {
     // Don't make exchange moves if they're turned off
     if (!params::exchange_moves)
-        continue;
+        return;
 
     // Apply exchange moves to each of the walkers
     for (unsigned n=0; n<size(); ++n)
@@ -451,7 +451,7 @@ void walker_collection :: correct_seperations()
 {
     // Don't do anything if seperation correction is off
     if (!params::correct_seperations)
-        continue;
+        return;
     
     // Correct walker seperations in a pairwise manner
     for (unsigned n=0; n<size(); ++n)
