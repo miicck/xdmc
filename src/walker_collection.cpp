@@ -149,8 +149,6 @@ void walker_collection :: apply_renormalization()
     for (unsigned n=0; n<size(); ++n)
         (*this)[n]->weight *= gn;
 
-    params::error_file << sum_mod_weight() << "\n";
-
     // Clip weight so that the population
     // remains between the min and max allowed values
     clip_weight();
