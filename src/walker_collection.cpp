@@ -53,8 +53,18 @@ walker_collection :: walker_collection()
 walker_collection :: ~walker_collection()
 {
     // Clean up memory
-    for (int n=0; n<size(); ++n)
+    for (unsigned n=0; n<size(); ++n)
         delete (*this)[n];
+}
+
+walker_collection* walker_collection :: copy()
+{
+    // Create an exact copy of this collection
+    // of walkers
+    std::vector<walker*> copied_walkers;
+    for (unsigned n=0; n<size(); ++n)
+        copied_walkers.push_back((*this)[n]->copy());
+    return new walker_collection(copied_walkers);
 }
 
 double potential_greens_function(double pot_before, double pot_after)
@@ -69,7 +79,7 @@ double potential_greens_function(double pot_before, double pot_after)
 void walker_collection :: diffuse()
 {
     // Carry out diffusion and branching of the walkers
-    for (int n=0; n < size(); ++n)
+    for (unsigned n=0; n < size(); ++n)
     {
         walker* w = (*this)[n];
 
@@ -109,7 +119,7 @@ void walker_collection :: clip_weight()
                            << params::dmc_iteration 
                            << " this will introduce bias!\n";
 
-        for (int n=0; n<size(); ++n)
+        for (unsigned n=0; n<size(); ++n)
             (*this)[n]->weight /= amw;
     }
 }
@@ -129,16 +139,17 @@ void walker_collection :: apply_renormalization()
     double pop_after_propagation  = sum_mod_weight();
 
     // Set trial energy to minimize fluctuations
-    // (Noisy, potentially mix over iterations?)
     params::trial_energy  = log(pop_before_propagation / pop_after_propagation)/params::tau;
 
-    // Bias towards target population (good idea? how much?)
+    // Bias towards target population
     params::trial_energy -= log(pop_before_propagation / params::target_population);
 
     // Apply normalization greens function
     double gn = fexp(params::trial_energy * params::tau);
-    for (int n=0; n<size(); ++n)
+    for (unsigned n=0; n<size(); ++n)
         (*this)[n]->weight *= gn;
+
+    params::error_file << sum_mod_weight() << "\n";
 
     // Clip weight so that the population
     // remains between the min and max allowed values
@@ -151,8 +162,8 @@ void walker_collection :: branch()
     this->apply_renormalization();
 
     // Carry out branching of the walkers
-    int nmax = size();
-    for (int n=0; n < nmax; ++n)
+    unsigned nmax = size();
+    for (unsigned n=0; n < nmax; ++n)
     {
         walker* w = (*this)[n];
 
@@ -164,7 +175,7 @@ void walker_collection :: branch()
     }
 
     // Delete the previous iterations walkers
-    for (int n=0; n < nmax; ++n)
+    for (unsigned n=0; n < nmax; ++n)
     {
         // Replace the nth walker with the
         // last walker, allowing us to shorten
@@ -181,7 +192,7 @@ double walker_collection :: sum_mod_weight()
     // Returns sum_i |w_i|
     // This is the effective population
     double sum = 0;
-    for (int n=0; n<size(); ++n)
+    for (unsigned n=0; n<size(); ++n)
         sum += fabs((*this)[n]->weight);
     return sum;
 }
@@ -196,7 +207,7 @@ double walker_collection :: average_weight()
 {
     // Returns (1/N) * sum_i w_i
     double av_weight = 0;
-    for (int n=0; n<size(); ++n)
+    for (unsigned n=0; n<size(); ++n)
         av_weight += (*this)[n]->weight;
     av_weight /= double(size());
     return av_weight;
@@ -210,7 +221,7 @@ double walker_collection :: average_potential()
     // weight w_i) and W = sum_i |w_i|
     double pot = 0;
     double weight = 0;
-    for (int n=0; n<size(); ++n)
+    for (unsigned n=0; n<size(); ++n)
     {
         pot    += (*this)[n]->potential() * fabs((*this)[n]->weight);
         weight += fabs((*this)[n]->weight);
@@ -227,7 +238,7 @@ double walker_collection :: average_kinetic()
     // weight w_i) and W = sum_i |w_i|
     double kin = 0;
     double weight = 0;
-    for (int n=0; n<size(); ++n)
+    for (unsigned n=0; n<size(); ++n)
     {
         kin    += (*this)[n]->kinetic() * fabs((*this)[n]->weight);
         weight += fabs((*this)[n]->weight);
@@ -239,21 +250,23 @@ double walker_collection :: average_kinetic()
 void walker_collection :: make_exchange_moves()
 {
     // Apply exchange moves to each of the walkers
-    for (int n=0; n<size(); ++n)
+    for (unsigned n=0; n<size(); ++n)
         (*this)[n]->exchange();
 }
 
-void walker_collection :: apply_cancellations()
+void walker_collection :: apply_cancellations(walker_collection* walkers_last)
 {
     double weight_before = sum_mod_weight();
 
-    // Apply the selected cancellation scheme
+    // Apply the selected cancellation scheme.
+    // Using walkers_last to construct trial wavefunctions
+    // where a trial wavefunction is required.
     if      (params::cancel_scheme == "voronoi")
         this->apply_voronoi_cancellations();
     else if (params::cancel_scheme == "pairwise")
         this->apply_pairwise_cancellations();
     else if (params::cancel_scheme == "diffusive")
-        this->apply_diffusive_cancellations();
+        this->apply_diffusive_cancellations(walkers_last);
     else if (params::cancel_scheme == "none")
         return;
     else
@@ -264,23 +277,26 @@ void walker_collection :: apply_cancellations()
     params::cancelled_weight = weight_before - sum_mod_weight();
 }
 
-void walker_collection :: apply_diffusive_cancellations()
+void walker_collection :: apply_diffusive_cancellations(walker_collection* walkers_last)
 {
     double* new_weights = new double[size()];
 
-    for (int n=0; n<size(); ++n)
+    for (unsigned n=0; n<size(); ++n)
     {
         walker* wn = (*this)[n];
 
         // Evaluate total diffusive Greens function
-        // at the configuration of wn
-        // gf = \sum_{m!=n} w_m G_D(x_n, x_m, dt)
+        // at the new configuration of wn:
+        //   gf = \sum_{m!=n} w_m G_D(x_n', x_m, dt)
+        //      + sss w_n G_D(x_n', x_n, dt)
+        // where sss is the self sign strength.
         double gf = 0;
-        for (int m=0; m<size(); ++m)
+        for (unsigned m=0; m<walkers_last->size(); ++m)
         {
-            if (m == n) continue;
-            walker* wm = (*this)[m];
-            gf += wm->diffusive_greens_function(wn) * wm->weight;
+            double factor = 1.0;
+            if (m == n) factor = params::self_sign_strength;
+            walker* wm = (*walkers_last)[m];
+            gf += factor * wm->diffusive_greens_function(wn) * wm->weight;
         }
 
         // Kill the walker if it ended up
@@ -292,7 +308,7 @@ void walker_collection :: apply_diffusive_cancellations()
     }
 
     // Apply new weights
-    for (int n=0; n<size(); ++n)
+    for (unsigned n=0; n<size(); ++n)
         (*this)[n]->weight = new_weights[n];
 
     // Free memory
@@ -310,40 +326,40 @@ void walker_collection :: apply_voronoi_cancellations()
     double* new_weights = new double[size()];
 
     // Work out number of nearest neighbours
-    int nn = params::dimensions*params::template_system.size() + 1;
+    unsigned nn = params::dimensions*params::template_system.size() + 1;
     if (size() < 1 + nn)
     {
         params::error_file << "Error in voronoi: population very small!\n";
         return;
     }
 
-    for (int n=0; n<size(); ++n)
+    for (unsigned n=0; n<size(); ++n)
     {
         walker* wn = (*this)[n];
 
         // Find the nn nearest neighbours
-        double* sq_distances = new double[nn];
-        int*    nn_indicies  = new int[nn];
+        double*   sq_distances = new double[nn];
+        unsigned* nn_indicies  = new unsigned[nn];
 
-        for (int i=0; i<nn; ++i)
+        for (unsigned i=0; i<nn; ++i)
         {
             nn_indicies[i]  = -1;
             sq_distances[i] = INFINITY;
         }
 
-        for (int m=0; m<size(); ++m)
+        for (unsigned m=0; m<size(); ++m)
         {
             if (m == n) continue;
 
             walker* wm = (*this)[m];
             double sq_dis = wn->sq_distance_to(wm);
             
-            for (int i=0; i<nn; ++i)
+            for (unsigned i=0; i<nn; ++i)
                 if (sq_dis < sq_distances[i])
                 {
                     // Shift records along by one to make
                     // space for new entry
-                    for (int j=nn-1; j>i; --j)
+                    for (unsigned j=nn-1; j>i; --j)
                     {
                         nn_indicies[j]  = nn_indicies[j-1];
                         sq_distances[j] = sq_distances[j-1];
@@ -361,7 +377,7 @@ void walker_collection :: apply_voronoi_cancellations()
         double positive_weight = 0;
         double negative_weight = 0;
 
-        for (int i=0; i<nn; ++i)
+        for (unsigned i=0; i<nn; ++i)
         {
             if (nn_indicies[i] < 0) 
             {
@@ -397,13 +413,13 @@ void walker_collection :: apply_voronoi_cancellations()
     // Don't apply cancellations if a large fraction
     // of the walkers will die
     double total_weight = 0;
-    for (int n=0; n<size(); ++n)
+    for (unsigned n=0; n<size(); ++n)
         total_weight += fabs(new_weights[n]);
     double frac_lost = 1 - total_weight/double(size());
     if (frac_lost > 0.5) return;
 
     // Apply new weights
-    for (int n=0; n<size(); ++n)
+    for (unsigned n=0; n<size(); ++n)
         (*this)[n]->weight = new_weights[n];
 
     // Free memory
@@ -413,11 +429,11 @@ void walker_collection :: apply_voronoi_cancellations()
 void walker_collection :: apply_pairwise_cancellations()
 {
     // Apply all pair-wise cancellations
-    for (int n=0; n<size(); ++n)
+    for (unsigned n=0; n<size(); ++n)
     {
         walker* wn = (*this)[n];
 
-        for (int m=0; m<n; ++m)
+        for (unsigned m=0; m<n; ++m)
         {
             walker* wm = (*this)[m];
             double cp  = wn->cancel_prob(wm);
@@ -432,8 +448,8 @@ void walker_collection :: apply_pairwise_cancellations()
 void walker_collection :: correct_seperations()
 {
     // Correct walker seperations in a pairwise manner
-    for (int n=0; n<size(); ++n)
-        for (int m=0; m<n; ++m)
+    for (unsigned n=0; n<size(); ++n)
+        for (unsigned m=0; m<n; ++m)
             (*this)[n]->drift_away_from((*this)[m]);
 }
 
@@ -489,8 +505,8 @@ void walker_collection :: write_output()
         // evolution file columns
         params::evolution_file
                 << "Population,"
-                << "Trial energy (Hartree),"
-                << "<V> (Hartree),"
+                << "Trial energy,"
+                << "<V>,"
                 << "Cancelled weight,"
                 << "Average weight\n";
     }
@@ -507,7 +523,7 @@ void walker_collection :: write_output()
     if (params::write_wavefunction)
     {
         params::wavefunction_file << "# Iteration " << params::dmc_iteration << "\n";
-        for (int n=0; n<size(); ++n)
+        for (unsigned n=0; n<size(); ++n)
         {
             (*this)[n]->write_wavefunction();
             params::wavefunction_file << "\n";

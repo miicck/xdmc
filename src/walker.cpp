@@ -34,7 +34,6 @@ walker :: walker()
     // that describe the system.
     ++ constructed_count;
     this->weight = 1;
-    this->particles.clear();
     for (unsigned i=0; i<params::template_system.size(); ++i)
         this->particles.push_back(params::template_system[i]->copy());
 }
