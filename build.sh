@@ -1,3 +1,16 @@
+# Set libraries, compiler flags and linker flags
+# Will choose the first compiler in the list that it finds
+
+COMPILERS="mpic++ mpicc.openmpi mpicc" 
+LIBS="-lstdc++ -lm"
+INCLUDE=""
+COMP_FLAGS="-c -Wall -Ofast -g -p $INCLUDE"
+LINK_FLAGS="-p -o xdmc $INCLUDE"
+
+###############################################################
+# You probably do not need to modify anything below this line #
+###############################################################
+
 # The base directory, the source directory
 # and the build directory locations
 BASE=$(pwd)
@@ -7,7 +20,7 @@ GEN=$BASE/src/gen_code
 
 # Run through compilers in preference order
 # until we find one that exists on this system
-for COMP in mpic++ mpicc.openmpi mpicc
+for COMP in $COMPILERS
 do
 	if [ ! -z $(which $COMP) ]
 	then
@@ -16,11 +29,12 @@ do
 	fi
 done
 
-# Set libraries, compiler flags and linker flags
-LIBS="-lstdc++ -lm"
-INCLUDE=""
-COMP_FLAGS="-c -Wall -Ofast -g -p $INCLUDE"
-LINK_FLAGS="-p -o xdmc $INCLUDE"
+# Check compiler has been found
+if [ -z $COMPILER ]
+then
+    echo "None of the following compilers could be found: $COMPILERS"
+    exit
+fi
 
 # Create the build directory
 rm -r $BUILD 2> /dev/null
