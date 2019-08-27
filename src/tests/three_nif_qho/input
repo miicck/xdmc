@@ -1,10 +1,10 @@
-dimensions	    1
-walkers		    4000
-iterations	    10000
-tau		        0.001
-pre_diffusion   2.5
-min_pop_ratio   0
-exchange_prob   0.5
+dimensions	       1
+walkers		       4000
+iterations	       4000
+tau		           0.01
+pre_diffusion      2.5
+exchange_prob      0.5
+self_sign_strength 1.0
 
 harmonic_well 1
 particle non_interacting_fermion 0 0 1 0
