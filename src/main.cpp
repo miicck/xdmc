@@ -39,9 +39,9 @@ void run_dmc()
         // Apply various propagation steps
         // (Some may be turned off internally)
         walkers.diffuse();
+        walkers.apply_cancellations(walkers_last);
         walkers.make_exchange_moves();
         walkers.correct_seperations();
-        walkers.apply_cancellations(walkers_last);
         walkers.branch();
         walkers.write_output();
 

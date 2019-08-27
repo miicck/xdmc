@@ -19,6 +19,7 @@
 #define __WALKER__
 
 #include <vector>
+#include <string>
 #include "particle.h"
 
 // The object used by the diffusion monte carlo algorithm
@@ -45,6 +46,7 @@ public:
     walker* branch_copy();
 
     void write_wavefunction();
+    std::string summary();
 private:
 
     // The particles in this system snapshot

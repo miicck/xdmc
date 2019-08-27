@@ -78,6 +78,21 @@ walker* walker :: branch_copy()
     return bcopy;
 }
 
+std::string walker :: summary()
+{
+    // Return a summary of this walker
+    std::stringstream ss;
+    ss << "Weight: " << this->weight << "\n";
+    for (unsigned i=0; i<particles.size(); ++i)
+    {
+        ss << "    Particle " << i << ":";
+        for (unsigned j=0; j<params::dimensions; ++j)
+            ss << particles[i]->coords[j] << " ";
+        ss << "\n";
+    }
+    return ss.str();
+}
+
 double walker :: potential()
 {
     // No need to reevaluate the potential

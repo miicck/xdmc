@@ -87,7 +87,7 @@ void walker_collection :: diffuse()
         // part of the greens function
         // (recording the potential before/after)
         double pot_before = w->potential();
-        w->diffuse(params::tau);
+        w->diffuse(1.0);
         double pot_after  = w->potential();
 
         // Multiply the weight by the potential-
@@ -101,27 +101,29 @@ int branch_from_weight(double weight)
     // Returns how many walkers should be produced
     // from one walker of the given weight
     int num = (int)floor(fabs(weight) + rand_uniform());
-    return std::min(num, 3);
+    return num;
 }
 
 void walker_collection :: clip_weight()
 {
-    // Adjust weights if expected population after
-    // branching is unacceptable
-    double amw        = this->average_mod_weight();
-    double ex_weight  = amw*size();
+    double ex_weight = sum_mod_weight();
     double max_weight = params::target_population * params::max_pop_ratio;
     double min_weight = params::target_population * params::min_pop_ratio;
-    if (ex_weight < min_weight || ex_weight > max_weight)
-    {
-        // Warn the user this has happened
-        params::error_file << "Warning: clipping applied at iteration "
-                           << params::dmc_iteration 
-                           << " this will introduce bias!\n";
 
+    if (ex_weight > max_weight)
         for (unsigned n=0; n<size(); ++n)
-            (*this)[n]->weight /= amw;
-    }
+            (*this)[n]->weight *= max_weight / ex_weight;
+    else if (ex_weight < min_weight)
+        for (unsigned n=0; n<size(); ++n)
+            (*this)[n]->weight *= min_weight / ex_weight;
+    else return;
+
+    // Warn the user this has happened
+    params::error_file << "Warning: clipping applied at iteration "
+                       << params::dmc_iteration 
+                       << " this will introduce bias!\n";
+
+    params::error_file << "Weight after clipping: " << sum_mod_weight() << "\n";
 }
 
 void walker_collection :: apply_renormalization()
@@ -293,6 +295,8 @@ void walker_collection :: apply_diffusive_cancellations(walker_collection* walke
         //      + sss w_n G_D(x_n', x_n, dt)
         // where sss is the self sign strength.
         double gf = 0;
+        double self_gf = (*walkers_last)[n]->diffusive_greens_function(wn);
+
         for (unsigned m=0; m<walkers_last->size(); ++m)
         {
             double factor = 1.0;
@@ -300,6 +304,12 @@ void walker_collection :: apply_diffusive_cancellations(walker_collection* walke
             walker* wm = (*walkers_last)[m];
             gf += factor * wm->diffusive_greens_function(wn) * wm->weight;
         }
+
+        new_weights[n] = gf;
+        params::error_file << self_gf << ", " << gf << "\n";
+        params::error_file << wn->summary() << "\n";
+        params::error_file << (*walkers_last)[n]->summary() << "\n";
+        continue;
 
         // Kill the walker if it ended up
         // in an opposite-sign region
