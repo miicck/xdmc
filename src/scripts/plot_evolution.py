@@ -1,8 +1,11 @@
 import sys
 import numpy as np
+from math import floor, log10
 import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from parser import parse_evolution
+    
+round_to_n = lambda x, n: round(x, -int(floor(log10(abs(x)))) + (n - 1))
 
 # Parse command line args
 e_targ = None
@@ -32,8 +35,8 @@ for i, d in enumerate(data):
     axes[i,0].set_xlabel("Iteration")
 
     half = int(len(d)/2)
-    mean = round(np.mean(d[half:]), 4)
-    std  = round(np.std(d[half:]),  4)
+    mean = round_to_n(np.mean(d[half:]), 4)
+    std  = round_to_n(np.std(d[half:]),  4)
 
     axes[i,0].set_ylabel(y_axes[i]+"\n{0} +/- {1}".format(mean,std))
     axes[i,0].axhline(mean, color="green", linestyle=":")
@@ -66,5 +69,6 @@ for i, d in enumerate(data):
     axes[i,1].set_yticks([])
 
 # Spread the subplots out, and show them
-plt.subplots_adjust(wspace=0, hspace=0.5)
+plt.subplots_adjust(wspace=0, hspace=0)
+fig.align_ylabels(axes)
 plt.show()
