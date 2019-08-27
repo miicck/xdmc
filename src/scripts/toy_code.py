@@ -1,13 +1,11 @@
 import numpy as np
 import numpy.linalg as la
 import matplotlib.pyplot as plt
-from itertools import permutations
-from sympy.combinatorics.permutations import Permutation
 from math import erf
 
 def extern_potential(particle):
-        # Hydrogen potential
-        return -1/la.norm(particle)
+        # Harmonic well
+        return 0.5*la.norm(particle)**2
 
 def potential(walkers):
         # Return the sum of the single 
@@ -20,28 +18,14 @@ def potential(walkers):
                 ret.append(pot)
         return np.array(ret)
 
-def symmetry_equivelants(walker, fermion_groups):
-        # Generate all symmetry-equivelant walkers
-        seq = []
-        signs = []
-        for g in fermion_groups:
-                perms = list(permutations(g))
-                for p in perms:
-                        seq_walker = walker.copy()
-                        for i, j in enumerate(p):
-                                seq_walker[i] = walker[j]
-                        signs.append(Permutation(p).signature())
-                        seq.append(seq_walker)
-        return seq, signs
-
 def cancel_func(w1, w2, tau):
         return erf(la.norm(w1-w2)/(2*np.sqrt(2*tau)))
 
 # DMC algorithm setup
-DIM         = 3
+DIM         = 1
 PARTICLES   = 2
-DMC_WALKERS = 1000
-DMC_ITERS   = 1000
+DMC_WALKERS = 500
+DMC_ITERS   = 500
 TAU         = 0.01
 E_T         = 0
 
@@ -78,13 +62,6 @@ for dmc_iter in range(0, DMC_ITERS):
 
         # Caclulate potential renormalization
         weights = np.exp(-TAU*(pots_before + pots_after - 2.0*E_T)/2.0)
-
-        # Apply self-cancellations
-        #for i, w in enumerate(walkers):
-        #        seq, ex_signs = symmetry_equivelants(w, FERMION_GROUPS)
-        #        for j in range(0, len(seq)):
-        #                if ex_signs[j] == 1: continue
-        #                weights[i] *= cancel_func(w, seq[j], TAU)
 
         # Apply inter-walker cancellations
         for i, wi in enumerate(walkers):
