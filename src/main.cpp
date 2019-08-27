@@ -34,31 +34,17 @@ void run_dmc()
          params::dmc_iteration <= params::dmc_iterations;
          params::dmc_iteration ++)
     {
-        // Remember the walkers from last iteration
         walker_collection* walkers_last = walkers.copy();
 
-        // Apply diffusion-branching step.
+        // Apply various propagation steps
+        // (Some may be turned off internally)
         walkers.diffuse();
-
-        // Carry out exchange moves on the walkers
-        if (params::exchange_moves)
-            walkers.make_exchange_moves();
-
-        // Apply walker seperation-correction
-        if (params::correct_seperations)
-                walkers.correct_seperations();
-
-        // Apply cancellation of walkers
+        walkers.make_exchange_moves();
+        walkers.correct_seperations();
         walkers.apply_cancellations(walkers_last);
-
-        // Apply branching
         walkers.branch();
-
-        // Output information about the walkers
-        // at this iteration
         walkers.write_output();
 
-        // Free memory
         delete walkers_last;
     }
 
