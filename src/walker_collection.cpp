@@ -101,7 +101,14 @@ int branch_from_weight(double weight)
     // Returns how many walkers should be produced
     // from one walker of the given weight
     int num = (int)floor(fabs(weight) + rand_uniform());
-    return std::min(num, 3);
+    if (num > 3)
+    {
+        // Warn user about large weights, often a sign of population explosion
+        params::error_file << "Warning: Large weight detected; " << weight 
+                           << " which will branch into "      << num 
+                           << " walkers.\n";
+    }
+    return num;
 }
 
 void walker_collection :: clip_weight()
