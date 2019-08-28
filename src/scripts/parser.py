@@ -69,6 +69,11 @@ def parse_wavefunction_file(filename, iter_start=0, iter_end=None):
                 dat.append([float(w) for w in particle.split(",")])
             data.append(dat)
 
+        if len(data) == 0:
+            fs = "Error: iterations {0} to {1} out of range for wavefuction file {2}"
+            print(fs.format(iter_start, iter_end, filename))
+            quit()
+
         data = list(map(list, zip(*data)))
         return data
             
