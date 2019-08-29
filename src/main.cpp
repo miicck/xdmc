@@ -25,11 +25,14 @@
 void run_dmc()
 {
     // Our DMC walkers
-    params::progress_file << "Initializing walkers...\n";
+    params::progress_file << "Initializing walkers\n";
     walker_collection walkers;
     
     // Run our DMC iterations
-    params::progress_file << "Starting DMC simulation...\n";
+    params::progress_file << "Starting DMC simulation\n";
+    params::progress_file << "    Total setup time: " << params::time() << "s\n";
+    params::dmc_start_clock = clock();
+
     for (params::dmc_iteration = 1;
          params::dmc_iteration <= params::dmc_iterations;
          params::dmc_iteration ++)
@@ -46,6 +49,9 @@ void run_dmc()
 // Program entrypoint
 int main(int argc, char** argv)
 {
+    // Used for timing info
+    params::start_clock = clock();
+
     // Read input files, ready output files, initialize MPI etc.
     params::load(argc, argv);
 

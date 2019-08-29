@@ -35,6 +35,7 @@ walker_collection :: walker_collection()
     {
         walker* w = new walker();
         w->diffuse(params::pre_diffusion);
+        w->reflect_to_irreducible();
         walkers.push_back(w);
     }
 }
@@ -289,11 +290,12 @@ void walker_collection :: write_output()
 
     // Average various things across processes
     double triale_red        = mpi_average(params::trial_energy);
-    double av_weight_red     = mpi_average(this->average_weight());
-    double potential_red     = mpi_average(this->average_potential());
+    double av_weight_red     = mpi_average(average_weight());
+    double potential_red     = mpi_average(average_potential());
+    double acceptance_red    = mpi_average(params::acceptance_ratio);
 
     // Calculate timing information
-    double time_per_iter     = params::time()/params::dmc_iteration;
+    double time_per_iter     = params::dmc_time()/params::dmc_iteration;
     double secs_remain       = time_per_iter * (params::dmc_iterations - params::dmc_iteration);
     double percent_complete  = double(100*params::dmc_iteration)/params::dmc_iterations;
 
@@ -308,6 +310,7 @@ void walker_collection :: write_output()
     params::progress_file << "    <V>                : " << potential_red  << " Hartree\n";
     params::progress_file << "    Population         : " << population_red
                           << " (" << population_red/params::np << " per process) "<< "\n";
+    params::progress_file << "    Acceptance ratio   : " << acceptance_red*100 << "%\n";
 
     if (params::dmc_iteration == 1)
     {
@@ -317,6 +320,7 @@ void walker_collection :: write_output()
                 << "Population,"
                 << "Trial energy,"
                 << "<V>,"
+                << "Acceptance ratio,"
                 << "Average weight\n";
     }
 
@@ -325,6 +329,7 @@ void walker_collection :: write_output()
         << population_red    << ","
         << triale_red        << ","
         << potential_red     << ","
+        << acceptance_red    << ","
         << av_weight_red     << "\n";
 
     // Write the wavefunction to file

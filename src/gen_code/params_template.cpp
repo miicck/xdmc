@@ -173,9 +173,6 @@ void output_sim_details()
 
 void params::load(int argc, char** argv)
 {
-    // Get the start time so we can time stuff
-    start_clock = clock();
-    
     // Initialize mpi
     if (MPI_Init(&argc, &argv) != 0) exit(MPI_ERROR);
 
@@ -249,4 +246,11 @@ double params :: time()
 {
     // Return the time in seconds since startup
     return double(clock()-start_clock)/double(CLOCKS_PER_SEC);
+}
+
+double params :: dmc_time()
+{
+    // Return the time that the DMC algorithm has
+    // been running (excluding setup time)
+    return double(clock()-dmc_start_clock)/double(CLOCKS_PER_SEC);
 }

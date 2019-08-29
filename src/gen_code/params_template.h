@@ -67,6 +67,9 @@ namespace params
 
     // Get the time since startup
     double time();
+
+    // Get the time DMC iterations have been running
+    double dmc_time();
 };
 
 #endif

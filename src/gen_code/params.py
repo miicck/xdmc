@@ -85,4 +85,15 @@ params = [{
     "default"     : "0",
     "description" : ("The proportion of proposed walker moves that were accepted "
                      "in the last iteration.")
+},{
+    "type"        : "int",
+    "cpp_name"    : "start_clock",
+    "default"     : "0",
+    "description" : "The result of clock() called at program start."
+},{
+    "type"        : "int",
+    "cpp_name"    : "dmc_start_clock",
+    "default"     : "0",
+    "description" : "The result of clock() called just before first DMC iteration."
 }]
+

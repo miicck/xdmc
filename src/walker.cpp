@@ -93,6 +93,45 @@ std::string walker :: summary()
     return ss.str();
 }
 
+void walker :: reflect_to_irreducible()
+{
+    // Reflect this walker using fermionic exchanges until
+    // we're in the irreducible section of configuration space
+    while(true)
+    {
+        bool swap_made = false;
+        for (unsigned i=0; i<particles.size()-1; ++i)
+        {
+            particle* p1 = particles[i];
+            particle* p2 = particles[i+1];
+            if (p1->exchange_symmetry(p2) == 0)
+                continue;
+
+            // These particles should be swapped if they're
+            // in the wrong order (sort by increasing coordinates)
+            bool swap = true;
+            for (unsigned j=0; j < params::dimensions; ++j)
+                if (p1->coords[j] < p2->coords[j])
+                {
+                    // These are in the right order
+                    swap = false;
+                    break;
+                }
+
+            if (swap)
+            {
+                // Swap these particles
+                particles[i]   = p2;
+                particles[i+1] = p1;
+                swap_made = true;
+            }
+        }
+
+        // No swaps => particles in correct order
+        if (!swap_made) break;
+    }
+}
+
 double walker :: potential()
 {
     // No need to reevaluate the potential
