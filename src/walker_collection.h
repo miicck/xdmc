@@ -27,35 +27,24 @@ public:
     walker_collection();
     ~walker_collection();
 
-    walker_collection* copy();
-
-    unsigned size() { return walkers.size(); }
-    walker* operator[](int i) { return walkers[i]; }
-
-    void make_exchange_moves();
-    void apply_cancellations(walker_collection* walkers_last);
-    void correct_seperations();
-    void diffuse();
-    void branch();
+    void propagate();
+    void write_output();
 
     double average_weight();
     double average_mod_weight();
     double average_potential();
-    double average_kinetic();
     double sum_mod_weight();
 
-    void write_output();
-
 private:
-    walker_collection(std::vector<walker*> walkers_in)
-        : walkers(walkers_in) {}
+    walker_collection(std::vector<walker*> walkers_in) : walkers(walkers_in) {}
+    walker_collection* copy();
 
-    void clip_weight();
+    double diffused_wavefunction(walker* w);
 
-    void apply_diffusive_cancellations(walker_collection* walkers_last);
-    void apply_pairwise_cancellations();
-    void apply_voronoi_cancellations();
+    void make_exchange_moves();
+    void make_diffusive_moves();
     void apply_renormalization();
+    void branch();
 
     std::vector<walker*> walkers;
 };

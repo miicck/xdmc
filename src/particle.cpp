@@ -61,7 +61,7 @@ std::string particle :: one_line_description()
     std::stringstream des;
     des << name;
     des << " [charge: " << this->charge 
-            << " mass: " << this->mass
+        << " mass: " << this->mass
         << " spin: " << this->half_spins << "/2]";
     return des.str();
 }
@@ -92,19 +92,6 @@ void particle :: exchange(particle* other)
         this->coords[i]  = other->coords[i];
         other->coords[i] = tmp;
     }
-}
-
-void particle :: drift_apart(particle* other, double multiplier)
-{
-        // Move these particles apart so that |this - other|
-        // --> multiplier*|this - other|
-        for (unsigned i=0; i<params::dimensions; ++i)
-        {
-                double di = this->coords[i] - other->coords[i];
-                di *= (multiplier - 1.0)/2.0;
-                this->coords[i]  += di;
-                other->coords[i] -= di;
-        }
 }
 
 double particle :: sq_distance_to(particle* other)

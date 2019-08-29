@@ -67,6 +67,9 @@ def project_wavefunction(wfn):
 
         bins[vi, ui] += w
 
+    if tot_w == 0:
+        print("Error, wavefunction has zero weight!")
+
     av_r2 /= tot_w
 
     # Plot the resulting contours

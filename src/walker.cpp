@@ -118,30 +118,6 @@ double walker :: potential()
     return last_potential;
 }
 
-double walker :: kinetic()
-{
-    // Evalueate the kinetic energy of this
-    // walker using the virial theorem
-    // <T> = 0.5 sum_n <x_n dv/dx_n>
-
-    double v0 = potential();
-    double kinetic = 0;
-    for (unsigned i=0; i<particles.size(); ++i)
-    {
-        particle* p = particles[i];
-        for (unsigned j=0; j<params::dimensions; ++j)
-        {
-            p->coords[j] += EPS_X;
-            potential_dirty = true;
-            double dv_dxij = (potential() - v0)/EPS_X;
-            kinetic += 0.5 * p->coords[j] * dv_dxij;
-            p->coords[j] -= EPS_X;
-        }
-    }
-    potential_dirty = false;
-    return kinetic;
-}
-
 void walker :: diffuse(double tau=params::tau)
 {
     // Diffuse all of the particles
@@ -194,48 +170,6 @@ double walker :: diffusive_greens_function(walker* other)
     // at the configuration of the other walker
     double r2 = this->sq_distance_to(other);
     return fexp(-r2/(2*params::tau));
-}
-
-double walker :: cancel_prob(walker* other)
-{
-    // Apply cancellation of two walkers
-
-    // Don't cancel walkers of the same sign
-    if (sign(this->weight) == sign(other->weight)) return 0;
-
-    // Cancel according to the cancellation function chosen
-    double r2 = this->sq_distance_to(other);
-
-    if (params::cancel_function == "integrated_weight")
-        return 1.0-erf(0.5*sqrt(r2/(2*params::tau*params::tau_c_ratio)));
-
-    else if (params::cancel_function == "greens_function_overlap")
-        return fexp(-r2/(4*params::tau*params::tau_c_ratio));
-
-    else
-    {
-        // Throw error for an unkown cancellation function
-        std::string err = "Unkown cancellation function: ";
-        err += params::cancel_function;
-        params::error_file << err << "\n";
-        throw std::runtime_error(err);
-    }
-}
-
-void walker :: drift_away_from(walker* other)
-{
-        // Same-sign walkers don't drift away from one another
-        if (sign(other->weight) == sign(this->weight)) return;
-
-        // Work out how much to increase the seperation by
-        double r2 = this->sq_distance_to(other);
-        double arg = 0.5*sqrt(r2/(2*params::tau));
-        double mult = 1.0 / erf(arg);
-
-        // Drift each particle apart to obtain
-        // the correct average seperation
-        for (unsigned i=0; i<particles.size(); ++i)
-                this->particles[i]->drift_apart(other->particles[i], mult);
 }
 
 void walker :: write_wavefunction()

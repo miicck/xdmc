@@ -3,10 +3,7 @@ walkers		       4000
 iterations	       4000
 tau		           0.01
 pre_diffusion      2.5
-exchange_prob      0.25
-self_sign_strength 1.0
-min_pop_ratio      0.5
-max_pop_ratio      1.5
+exchange_prob      0.90
 
 harmonic_well 1
 particle non_interacting_fermion 0 0 1 0

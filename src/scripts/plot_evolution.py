@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from parser import parse_evolution
     
-round_to_n = lambda x, n: round(x, -int(floor(log10(abs(x)))) + (n - 1))
+round_to_n = lambda x, n: round(x, -int(floor(log10(abs(x)))) + (n - 1)) if abs(x) > 10e-9 else 0
 
 # Parse command line args
 e_targ = None
@@ -63,12 +63,12 @@ for i, d in enumerate(data):
 
     # Histogram distribution
     d = [di for di in d if di > axes[i,0].get_ylim()[0] and di < axes[i,0].get_ylim()[1]]
-    bins = int(min(100, int(len(d))/10))
+    bins = int(min(100, int(len(d)/10 + 1)))
     axes[i,1].hist(d, bins=bins, orientation="horizontal")
     axes[i,1].set_ylim(axes[i,0].get_ylim())
     axes[i,1].set_yticks([])
 
 # Spread the subplots out, and show them
 plt.subplots_adjust(wspace=0, hspace=0)
-fig.align_ylabels(axes)
+#fig.align_ylabels(axes)
 plt.show()
