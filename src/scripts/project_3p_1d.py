@@ -88,7 +88,10 @@ def project_wavefunction(wfn):
 
 # Pick start and end indicies
 start = int(sys.argv[1])
-end   = int(sys.argv[2])
+if len(sys.argv) > 2:
+    end = int(sys.argv[2])
+else:
+    end = None
 
 plt.subplot(121)
 wfn = list(zip(*parser.parse_wavefunction(start, end)))

@@ -115,7 +115,7 @@ void walker_collection :: make_diffusive_moves()
         //  does not have to be a greens function; any
         //  ergodic step will do - this one just ensures
         //  a reasonable acceptance probability).
-        w_after->diffuse(10*params::tau);
+        w_after->diffuse(params::tau*10);
 
         // Record the diffusive wavefunction and the potential
         // before and after the proposed move

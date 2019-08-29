@@ -4,7 +4,7 @@ import parser
 import sys
 
 start = int(sys.argv[1])
-end   = int(sys.argv[2])
+end   = int(sys.argv[2]) if len(sys.argv) > 2 else None
 
 wfn = parser.parse_wavefunction(start, end)
 

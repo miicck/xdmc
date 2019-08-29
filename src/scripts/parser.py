@@ -52,7 +52,13 @@ def parse_wavefunction_file(filename, iter_start=0, iter_end=None):
         lines = f.read().split("\n")
         f.close()
         
-        if iter_end is None: iter_end = iter_start + 1
+        if iter_end is None: 
+            if iter_start < 0:
+                total_iters = sum([1 for l in lines if "#" in l])
+                iter_end    = total_iters - 1
+                iter_start  = iter_end + iter_start
+            else:
+                iter_end = iter_start + 1
 
         iter_count = -1
         data = []

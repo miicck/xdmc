@@ -178,9 +178,7 @@ void walker :: exchange()
     // No exchanges possible
     if (params::exchange_values.size() == 0) return;
 
-    // Make each type of exchange with equal probability
-    //double ne = (double)params::exchange_values.size();
-    //if (rand_uniform() < 1/(ne+1)) return;
+    // Make an exchange with probability exchange_prob
     if (rand_uniform() > params::exchange_prob) return;
 
     // Pick a random exchangable pair
