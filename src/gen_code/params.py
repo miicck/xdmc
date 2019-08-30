@@ -80,12 +80,6 @@ params = [{
                      "at random. 1 - this is the probability of simply diffusing, "
                      "making no exchange moves."),
 },{
-    "type"        : "double",
-    "cpp_name"    : "acceptance_ratio",
-    "default"     : "0",
-    "description" : ("The proportion of proposed walker moves that were accepted "
-                     "in the last iteration.")
-},{
     "type"        : "int",
     "cpp_name"    : "start_clock",
     "default"     : "0",

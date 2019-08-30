@@ -103,60 +103,28 @@ void walker_collection :: make_diffusive_moves()
     walker_collection* walkers_last = this->copy();
 
     // Carry out diffusion of the walkers
-    int accepted_moves = 0;
-    int rejected_moves = 0;
     for (unsigned n=0; n < walkers.size(); ++n)
     {
-        walker* w_after  = walkers[n];
-        walker* w_before = w_after->copy();
+        // Diffuse the walker
+        walker* w = walkers[n];
+        w->diffuse(params::tau);
+        
+        // Evaluate diffused wavefunction at new position
+        double psi = walkers_last->diffused_wavefunction(w);
 
-        // Make some proposed move
-        // (note this is a metropolis proposal step, so
-        //  does not have to be a greens function; any
-        //  ergodic step will do - this one just ensures
-        //  a reasonable acceptance probability).
-        w_after->diffuse(params::tau*10);
-
-        // Record the diffusive wavefunction and the potential
-        // before and after the proposed move
-        double psi_before = walkers_last->diffused_wavefunction(w_before);
-        double psi_after  = walkers_last->diffused_wavefunction(w_after);
-
-        double pot_before = w_before->potential();
-        double pot_after  = w_after->potential();
-
-        // Accept the move with probability given by
-        // the diffused wavefunction
-        double accept_prob = fabs(psi_after/psi_before);
-
-        if (rand_uniform() < accept_prob)
+        // Kill the walker if it ended up in a region with
+        // the wrong sign
+        if (sign(w->weight) != sign(psi))
         {
-            // Accept new walker
-            // inherit sign of diffused wavefunction
-            // apply potential part of greens function
-            walkers[n]       = w_after;
-            w_after->weight  = sign(psi_after);
-            w_after->weight *= potential_greens_function(pot_after, pot_before);
-            accepted_moves  += 1;
-            delete w_before;
-        }
-        else
-        {
-            // Revert to previous walker
-            // inherit sign of diffused wavefunction
-            // apply potential part of greens function
-            walkers[n]        = w_before;
-            w_before->weight  = sign(psi_before);
-            w_before->weight *= potential_greens_function(pot_before, pot_before);
-            rejected_moves   += 1;
-            delete w_after;
+            w->weight  = 0;
+            continue;
         }
 
+        // Apply potential part of greens function
+        double pot_before = walkers_last->walkers[n]->potential();
+        double pot_after  = w->potential();
+        w->weight        *= potential_greens_function(pot_before, pot_after);
     }
-
-    // Calculate accpetance ratio
-    params::acceptance_ratio = double(accepted_moves)/
-                               double(accepted_moves + rejected_moves);
 
     // Free memory
     delete walkers_last;
@@ -292,7 +260,6 @@ void walker_collection :: write_output()
     double triale_red        = mpi_average(params::trial_energy);
     double av_weight_red     = mpi_average(average_weight());
     double potential_red     = mpi_average(average_potential());
-    double acceptance_red    = mpi_average(params::acceptance_ratio);
 
     // Calculate timing information
     double time_per_iter     = params::dmc_time()/params::dmc_iteration;
@@ -310,7 +277,6 @@ void walker_collection :: write_output()
     params::progress_file << "    <V>                : " << potential_red  << " Hartree\n";
     params::progress_file << "    Population         : " << population_red
                           << " (" << population_red/params::np << " per process) "<< "\n";
-    params::progress_file << "    Acceptance ratio   : " << acceptance_red*100 << "%\n";
 
     if (params::dmc_iteration == 1)
     {
@@ -320,7 +286,6 @@ void walker_collection :: write_output()
                 << "Population,"
                 << "Trial energy,"
                 << "<V>,"
-                << "Acceptance ratio,"
                 << "Average weight\n";
     }
 
@@ -329,7 +294,6 @@ void walker_collection :: write_output()
         << population_red    << ","
         << triale_red        << ","
         << potential_red     << ","
-        << acceptance_red    << ","
         << av_weight_red     << "\n";
 
     // Write the wavefunction to file

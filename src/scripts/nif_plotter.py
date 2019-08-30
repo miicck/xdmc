@@ -63,8 +63,8 @@ def bin_2nif(start_iter, end_iter, RES=40):
         ys = np.array([x[0] for x in wfn[2]])
         ws = wfn[0]
 
-        MAX  = 4.0
-        MIN  = -4.0
+        MAX  = 4
+        MIN  = -4
         bins = np.zeros((RES,RES))
 
         for x,y,w in zip(xs,ys,ws):

@@ -1,7 +1,7 @@
 dimensions	       1
 walkers		       4000
 iterations	       4000
-tau		           0.01
+tau		           0.001
 pre_diffusion      2.5
 exchange_prob      0.90
 
