@@ -47,6 +47,7 @@ namespace params
     extern std::vector<int> exchange_values;
 
     // Output files
+    extern output_file nodal_surface_file;
     extern output_file wavefunction_file;
     extern output_file evolution_file;
     extern output_file progress_file;

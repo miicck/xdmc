@@ -36,6 +36,7 @@ std::vector<external_potential*> params::potentials;
 std::vector<particle*>           params::template_system;
 std::vector<int> params::exchange_pairs;
 std::vector<int> params::exchange_values;
+output_file params::nodal_surface_file;
 output_file params::wavefunction_file;
 output_file params::evolution_file;
 output_file params::progress_file;
@@ -195,6 +196,7 @@ void params::load(int argc, char** argv)
     error_file.open("error_"+std::to_string(pid));
     error_file.auto_flush = true;
     wavefunction_file.open("wavefunction_"+std::to_string(pid));
+    nodal_surface_file.open("nodal_surface_"+std::to_string(pid));
 
     // Read our input and setup parameters accordingly 
     // do for each process sequentially to avoid access issues

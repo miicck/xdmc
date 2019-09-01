@@ -38,6 +38,14 @@ params = [{
     "default"     : "0.01",
     "description" : "The DMC timestep in atomic units.",
 },{
+    "in_name"     : "tau_psi",
+    "type"        : "double",
+    "cpp_name"    : "tau_psi",
+    "default"     : "0.1",
+    "description" : ("The effective timestep used when evaluating the diffused "
+                     "wavefunction. Larger values encourage the formation of nodal "
+                     "pockets.")
+},{
     "type"        : "int",
     "cpp_name"    : "np",
     "default"     : "1",
@@ -70,6 +78,19 @@ params = [{
     "cpp_name"    : "write_wavefunction",
     "default"     : "true",
     "description" : "True if wavefunction files are to be written.",
+},{
+    "in_name"     : "write_nodal_surface",
+    "type"        : "bool",
+    "cpp_name"    : "write_nodal_surface",
+    "default"     : "true",
+    "description" : "True if nodal surface files are to be written.",
+},{
+    "in_name"     : "exact_1d_nodes",
+    "type"        : "bool",
+    "cpp_name"    : "exact_1d_nodes",
+    "default"     : "false",
+    "description" : ("True if the exact nodal surface is used when we're in 1 "
+                     "spatial dimension.")
 },{
     "in_name"     : "exchange_prob",
     "type"        : "double",

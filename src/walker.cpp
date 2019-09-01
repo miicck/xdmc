@@ -132,6 +132,39 @@ void walker :: reflect_to_irreducible()
     }
 }
 
+bool walker :: crossed_nodal_surface(walker* other)
+{
+    // Returns true if, to get to the other walker
+    // we must cross a nodal surface
+
+    // Cant tell in > 1D
+    if (params::dimensions > 1)
+        return false;
+
+    for (unsigned n=0; n < params::exchange_values.size(); ++n)
+    {
+        // Only fermionic exchanges define nodes
+        if (params::exchange_values[n] > 0)
+            continue;
+
+        unsigned i = params::exchange_pairs[2*n];
+        unsigned j = params::exchange_pairs[2*n+1];
+
+        particle* pi1 = particles[i];
+        particle* pj1 = particles[j];
+        particle* pi2 = other->particles[i];
+        particle* pj2 = other->particles[j];
+
+        double d1 = pi1->coords[0] - pj1->coords[0];
+        double d2 = pi2->coords[0] - pj2->coords[0];
+
+        if (sign(d1) != sign(d2))
+            return true;
+    }
+
+    return false;
+}
+
 double walker :: potential()
 {
     // No need to reevaluate the potential
@@ -201,30 +234,30 @@ double walker :: sq_distance_to(walker* other)
     return r2;
 }
 
-double walker :: diffusive_greens_function(walker* other)
+double walker :: diffusive_greens_function(walker* other, double tau=params::tau)
 {
     // Evaluate the diffusive greens function of this walker
     // at the configuration of the other walker
     double r2 = this->sq_distance_to(other);
-    return fexp(-r2/(2*params::tau));
+    return fexp(-r2/(2*tau));
 }
 
-void walker :: write_wavefunction()
+void walker :: write_coords(output_file& file)
 {
     // Write the walker wavefunction in the form
     // [weight: x1, y1, z1 ...; x2, y2, z2 ...; ...]
     // where x1 is the x coord of the first particle etc
-    params::wavefunction_file << this->weight << ":";
+    file << this->weight << ":";
     for (unsigned i=0; i<particles.size(); ++i)
     {
         for (unsigned j=0; j<params::dimensions; ++j)
         {
-            params::wavefunction_file
-                << particles[i]->coords[j];
+            file << particles[i]->coords[j];
             if (j != params::dimensions - 1)
-                params::wavefunction_file << ",";
+                file << ",";
         }
         if (i != particles.size() - 1)
-            params::wavefunction_file << ";";
+            file << ";";
     }
+    file << "\n";
 }

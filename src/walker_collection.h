@@ -39,10 +39,11 @@ private:
     walker_collection(std::vector<walker*> walkers_in) : walkers(walkers_in) {}
     walker_collection* copy();
 
-    double diffused_wavefunction(walker* w);
+    double diffused_wavefunction(walker* w, double tau);
 
     void make_exchange_moves();
     void make_diffusive_moves();
+    void make_diffusive_moves_1d();
     void apply_renormalization();
     void branch();
 

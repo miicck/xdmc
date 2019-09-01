@@ -21,6 +21,7 @@
 #include <vector>
 #include <string>
 #include "particle.h"
+#include "params.h"
 
 // The object used by the diffusion monte carlo algorithm
 // to represent a snapshot of the system.
@@ -31,11 +32,13 @@ public:
     ~walker();
     static int constructed_count;
 
-    double weight;
+    double weight = 1.0;
 
     double potential();
     double sq_distance_to(walker* other);
-    double diffusive_greens_function(walker* other);
+    double diffusive_greens_function(walker* other, double tau);
+
+    bool crossed_nodal_surface(walker* other);
 
     void diffuse(double tau);
     void exchange();
@@ -44,7 +47,7 @@ public:
     walker* copy();
     walker* branch_copy();
 
-    void write_wavefunction();
+    void write_coords(output_file& file);
     std::string summary();
 private:
 

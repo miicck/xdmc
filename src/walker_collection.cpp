@@ -73,7 +73,7 @@ void walker_collection :: make_exchange_moves()
         walkers[n]->exchange();
 }
 
-double walker_collection :: diffused_wavefunction(walker* c)
+double walker_collection :: diffused_wavefunction(walker* c, double tau=params::tau)
 {
     // Evaluate the diffused wavefunction 
     // at the configuration of c: 
@@ -83,7 +83,7 @@ double walker_collection :: diffused_wavefunction(walker* c)
     for (unsigned n=0; n < walkers.size(); ++n)
     {
         walker* w = walkers[n];
-        psi_d += w->weight * w->diffusive_greens_function(c);
+        psi_d += w->weight * w->diffusive_greens_function(c, tau);
     }
     return psi_d;
 }
@@ -97,26 +97,72 @@ double potential_greens_function(double pot_before, double pot_after)
     return fexp( -params::tau * (pot_before + pot_after)/2.0 );
 }
 
-void walker_collection :: make_diffusive_moves()
+void walker_collection :: make_diffusive_moves_1d()
 {
-    // Record locations before diffusion
-    walker_collection* walkers_last = this->copy();
-
     // Carry out diffusion of the walkers
+    params::nodal_surface_file << "# Iteration " << params::dmc_iteration << "\n";
     for (unsigned n=0; n < walkers.size(); ++n)
     {
         // Diffuse the walker
         walker* w = walkers[n];
+        walker* w_before = w->copy();
         w->diffuse(params::tau);
-        
-        // Evaluate diffused wavefunction at new position
-        double psi = walkers_last->diffused_wavefunction(w);
 
-        // Kill the walker if it ended up in a region with
-        // the wrong sign
-        if (sign(w->weight) != sign(psi))
+        // Kill walkers crossing the nodal surface
+        if (w_before->crossed_nodal_surface(w))
         {
-            w->weight  = 0;
+            if (params::write_nodal_surface)
+            {
+                w->weight = 1.0; // Set so plots work
+                w->write_coords(params::nodal_surface_file);
+            }
+
+            // Kill the walker
+            w->weight = 0;
+        }
+
+        // Apply potential part of greens function
+        double pot_before = w_before->potential();
+        double pot_after  = w->potential();
+        w->weight        *= potential_greens_function(pot_before, pot_after);
+
+        delete w_before;
+    }
+}
+
+void walker_collection :: make_diffusive_moves()
+{
+    if (params::exact_1d_nodes && (params::dimensions == 1))
+    {
+        // Special case of 1D
+        make_diffusive_moves_1d();
+        return;
+    }
+
+    // Record locations before diffusion
+    walker_collection* walkers_last = this->copy();
+
+    // Carry out diffusion of the walkers
+    params::nodal_surface_file << "# Iteration " << params::dmc_iteration << "\n";
+    for (unsigned n=0; n < walkers.size(); ++n)
+    {
+        // Diffuse the walker
+        walker* w = walkers[n];
+        double psi_before = walkers_last->diffused_wavefunction(w, params::tau_psi);
+        w->diffuse(params::tau);
+        double psi_after  = walkers_last->diffused_wavefunction(w, params::tau_psi);
+
+        // Kill walkers crossing the nodal surface
+        if (sign(psi_before) != sign(psi_after))
+        {
+            if (params::write_nodal_surface)
+            {
+                w->weight = 1.0; // Set so plots work
+                w->write_coords(params::nodal_surface_file);
+            }
+            
+            // Kill the walker
+            w->weight = 0;
             continue;
         }
 
@@ -258,6 +304,7 @@ void walker_collection :: write_output()
 
     // Average various things across processes
     double triale_red        = mpi_average(params::trial_energy);
+    double tau_psi_red       = mpi_average(params::tau_psi);
     double av_weight_red     = mpi_average(average_weight());
     double potential_red     = mpi_average(average_potential());
 
@@ -275,6 +322,7 @@ void walker_collection :: write_output()
     params::progress_file << "    ETA                : " << secs_remain    << "s \n";
     params::progress_file << "    Trial energy       : " << triale_red     << " Hartree\n";
     params::progress_file << "    <V>                : " << potential_red  << " Hartree\n";
+    params::progress_file << "    Tau_psi            : " << tau_psi_red    << "\n";
     params::progress_file << "    Population         : " << population_red
                           << " (" << population_red/params::np << " per process) "<< "\n";
 
@@ -286,6 +334,7 @@ void walker_collection :: write_output()
                 << "Population,"
                 << "Trial energy,"
                 << "<V>,"
+                << "Tau_psi,"
                 << "Average weight\n";
     }
 
@@ -294,6 +343,7 @@ void walker_collection :: write_output()
         << population_red    << ","
         << triale_red        << ","
         << potential_red     << ","
+        << tau_psi_red       << ","
         << av_weight_red     << "\n";
 
     // Write the wavefunction to file
@@ -301,10 +351,7 @@ void walker_collection :: write_output()
     {
         params::wavefunction_file << "# Iteration " << params::dmc_iteration << "\n";
         for (unsigned n=0; n<walkers.size(); ++n)
-        {
-            walkers[n]->write_wavefunction();
-            params::wavefunction_file << "\n";
-        }
+            walkers[n]->write_coords(params::wavefunction_file);
     }
 
     // Flush output files after every call
