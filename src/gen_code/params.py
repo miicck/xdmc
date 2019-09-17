@@ -92,6 +92,12 @@ params = [{
     "description" : ("True if the exact nodal surface is used when we're in 1 "
                      "spatial dimension.")
 },{
+    "in_name"     : "enforce_nodal_surface",
+    "type"        : "bool",
+    "cpp_name"    : "enforce_nodal_surface",
+    "default"     : "true",
+    "description" : "True if we remove walkers that cross the nodal surface."
+},{
     "in_name"     : "exchange_prob",
     "type"        : "double",
     "cpp_name"    : "exchange_prob",

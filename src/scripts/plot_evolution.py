@@ -39,6 +39,7 @@ for i, d in enumerate(data):
     std  = round_to_n(np.std(d[half:]),  4)
 
     axes[i,0].set_ylabel(y_axes[i]+"\n{0} +/- {1}".format(mean,std))
+    axes[i,0].set_ylabel(y_axes[i])
     axes[i,0].axhline(mean, color="green", linestyle=":")
 
     # Set the axis scales
@@ -70,5 +71,8 @@ for i, d in enumerate(data):
 
 # Spread the subplots out, and show them
 plt.subplots_adjust(wspace=0, hspace=0)
-#fig.align_ylabels(axes)
+try:
+    fig.align_ylabels(axes)
+except:
+    print("Could not align y labels!")
 plt.show()

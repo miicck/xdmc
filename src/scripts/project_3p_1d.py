@@ -3,13 +3,13 @@ import numpy as np
 import parser
 import sys
 
-BINS = 50
+BINS = 100
 MIN_U  = -4
 MAX_U  =  4
 MIN_X  = -4
 MAX_X  =  4
 plt.rc("text", usetex=True)
-plt.rc("font", size=14)
+#plt.rc("font", size=14)
 
 # The 2d projection that we will visualize
 # (looking along the (111) direction
@@ -59,7 +59,7 @@ def plot_psi():
     plt.contour(us, vs, bins, 11)
     plt.xlabel(r"$u = \frac{x - y}{\sqrt{2}}$")
     plt.ylabel(r"$v = \frac{2z - x - y}{\sqrt{6}}$")
-    plt.gca().title.set_text(r"$\langle r^2 \rangle = 6.0$")
+    #plt.gca().title.set_text(r"$\langle r^2 \rangle = 6.0$")
 
     # Plot symmetry lines
     plot_symmetry_line(0,1,1)
@@ -111,7 +111,7 @@ def project_wavefunction(wfn):
     plt.contour(us, vs, bins, 11)
     plt.xlabel(r"$u = \frac{x - y}{\sqrt{2}}$")
     plt.ylabel(r"$v = \frac{2z - x - y}{\sqrt{6}}$")
-    plt.gca().title.set_text(r"$\langle r^2 \rangle = {0}$".format(av_r2))
+    # plt.gca().title.set_text(r"$\langle r^2 \rangle = {0}$".format(av_r2))
 
     # Plot symmetry lines
     plot_symmetry_line(0,1,1)
@@ -130,7 +130,7 @@ def project_nodal_surface(wfn):
     plt.scatter(us,vs, alpha=0.1)
 
 # Plot DMC samples
-plt.subplot(121)
+plt.figure()
 wfn = list(zip(*parser.parse_wavefunction(sys.argv[1:])))
 #if "nodal_surface" in sys.argv[1:]:
 #    project_nodal_surface(wfn)
@@ -138,7 +138,7 @@ wfn = list(zip(*parser.parse_wavefunction(sys.argv[1:])))
 project_wavefunction(wfn)
 
 # Plot analytic
-plt.subplot(122)
+plt.figure()
 plot_psi()
 
 plt.show()
