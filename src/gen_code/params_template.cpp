@@ -77,6 +77,8 @@ void parse_atomic_potential(std::vector<std::string> split)
     double* coords = new double[dimensions];
     for (unsigned i=0; i<dimensions; ++i)
         coords[i] = std::stod(split[2+i]);
+
+    // Create an atomic potential
     potentials.push_back(new atomic_potential(charge, coords));
 }
 

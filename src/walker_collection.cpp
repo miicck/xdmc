@@ -100,7 +100,6 @@ double potential_greens_function(double pot_before, double pot_after)
 void walker_collection :: make_diffusive_moves_1d()
 {
     // Carry out diffusion of the walkers
-    params::nodal_surface_file << "# Iteration " << params::dmc_iteration << "\n";
     for (unsigned n=0; n < walkers.size(); ++n)
     {
         // Diffuse the walker
@@ -120,6 +119,7 @@ void walker_collection :: make_diffusive_moves_1d()
 
                 // Kill the walker
                 w->weight = 0;
+                params::nodal_deaths += 1;
             }
 
         // Apply potential part of greens function
@@ -133,6 +133,10 @@ void walker_collection :: make_diffusive_moves_1d()
 
 void walker_collection :: make_diffusive_moves()
 {
+    // Reset things
+    params::nodal_surface_file << "# Iteration " << params::dmc_iteration << "\n";
+    params::nodal_deaths = 0;
+
     if (params::exact_1d_nodes && (params::dimensions == 1))
     {
         // Special case of 1D
@@ -144,12 +148,11 @@ void walker_collection :: make_diffusive_moves()
     walker_collection* walkers_last = this->copy();
 
     // Carry out diffusion of the walkers
-    params::nodal_surface_file << "# Iteration " << params::dmc_iteration << "\n";
     for (unsigned n=0; n < walkers.size(); ++n)
     {
         // Diffuse the walker
         walker* w = walkers[n];
-        double psi_before = walkers_last->diffused_wavefunction(w, params::tau_psi);
+        double psi_before = walkers_last->diffused_wavefunction(w, params::tau_psi); 
         w->diffuse(params::tau);
         double psi_after  = walkers_last->diffused_wavefunction(w, params::tau_psi);
 
@@ -165,6 +168,7 @@ void walker_collection :: make_diffusive_moves()
                 
                 // Kill the walker
                 w->weight = 0;
+                params::nodal_deaths += 1;
                 continue;
             }
 
@@ -180,7 +184,7 @@ void walker_collection :: make_diffusive_moves()
 
 void walker_collection :: apply_renormalization()
 {
-    // Set the trial energy and apply renormalization
+    // Set thetrial energy and apply renormalization
     // so that the population fluctuates around the 
     // target population
 
@@ -208,7 +212,12 @@ int branch_from_weight(double weight)
 {
     // Returns how many walkers should be produced
     // from one walker of the given weight
-    return (int)floor(fabs(weight) + rand_uniform());
+    int ret = (int)floor(fabs(weight) + rand_uniform());
+
+    // Decrease params::max_branch to help avoid
+    // population explosions
+    if (ret > params::max_branch) ret = 0;
+    return ret;
 }
 
 void walker_collection :: branch()
@@ -303,6 +312,8 @@ void walker_collection :: write_output()
 {
     // Sum various things across processes
     double population_red    = mpi_sum(double(walkers.size()));
+    int    nodal_deaths_red  = mpi_sum(params::nodal_deaths);
+    double nodal_death_perc  = 100.0*double(nodal_deaths_red)/double(population_red);
 
     // Average various things across processes
     double triale_red        = mpi_average(params::trial_energy);
@@ -326,6 +337,8 @@ void walker_collection :: write_output()
     params::progress_file << "    <V>                : " << potential_red  << " Hartree\n";
     params::progress_file << "    Population         : " << population_red
                           << " (" << population_red/params::np << " per process) "<< "\n";
+    params::progress_file << "    Nodal deaths       : " << nodal_deaths_red
+                          << " (" << nodal_death_perc << "% of the total population)\n";
 
     if (params::dmc_iteration == 1)
     {
@@ -335,7 +348,8 @@ void walker_collection :: write_output()
                 << "Population,"
                 << "Trial energy,"
                 << "<V>,"
-                << "Average weight\n";
+                << "Average weight,"
+                << "Nodal deaths\n";
     }
 
     // Output evolution information to file
@@ -343,7 +357,8 @@ void walker_collection :: write_output()
         << population_red    << ","
         << triale_red        << ","
         << potential_red     << ","
-        << av_weight_red     << "\n";
+        << av_weight_red     << ","
+        << nodal_deaths_red  << "\n";
 
     // Write the wavefunction to file
     if (params::write_wavefunction)

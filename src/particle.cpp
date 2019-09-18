@@ -21,6 +21,7 @@
 #include "params.h"
 #include "particle.h"
 #include "random.h"
+#include "math.h"
 
 int particle::constructed_count;
 
@@ -127,18 +128,13 @@ double particle :: sq_distance_to(particle* other)
     return r2;
 }
 
-double coulomb(particle* a, particle* b)
-{
-    // The coulomb interaction between two particles
-    if (fabs(a->charge) < 10e-10) return 0;
-    if (fabs(b->charge) < 10e-10) return 0;
-    double r = sqrt(a->sq_distance_to(b));
-    return (a->charge*b->charge)/r;
-}
-
 double particle::interaction(particle* other)
 {
-    return coulomb(this, other);
+    if (fabs(this->charge)  < 10e-10) return 0;
+    if (fabs(other->charge) < 10e-10) return 0;
+
+    double r = sqrt(this->sq_distance_to(other));
+    return coulomb(this->charge, other->charge, r);
 }
 
 void particle :: diffuse(double tau)

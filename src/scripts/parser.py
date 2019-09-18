@@ -30,8 +30,12 @@ def parse_wavefunction(sys_args):
         combined = None
         wfns = []
         for f in os.listdir("."):
-                if f.startswith(prefix):
-                    wfns.append(parse_wavefunction_file(f, sys_args))
+                if not f.startswith(prefix): continue
+                wfns.append(parse_wavefunction_file(f, sys_args))
+
+        if len(wfns) == 0:
+            raise Exception("Error: no wavefunction files found!")
+
         wfn_sizes = [len(w) for w in wfns]
         min_size  = min(wfn_sizes)
         combined  = wfns[wfn_sizes.index(min_size)]

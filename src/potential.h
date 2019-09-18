@@ -57,8 +57,8 @@ class atomic_potential : public external_potential
 public:
     atomic_potential(double charge, double* coords)
     {
-        this->coords = coords;
-        this->charge = charge;
+        this->coords    = coords;
+        this->charge    = charge;
     }
     
     virtual ~atomic_potential()

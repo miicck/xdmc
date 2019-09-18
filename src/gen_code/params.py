@@ -46,6 +46,20 @@ params = [{
                      "wavefunction. Larger values encourage the formation of nodal "
                      "pockets.")
 },{
+    "in_name"     : "coulomb_softening",
+    "type"        : "double",
+    "cpp_name"    : "coulomb_softening",
+    "default"     : "0",
+    "description" : "Softening parameter for the coulomb potential."
+},{
+    "in_name"     : "max_branch",
+    "type"        : "int",
+    "cpp_name"    : "max_branch",
+    "default"     : "100",
+    "description" : ("The maximum allowed number of walkers that a single walker "
+                     "can divide into. Lowering this value will decrease the likelyhood "
+                     "of population explosions, but will introduce bias.")
+},{
     "type"        : "int",
     "cpp_name"    : "np",
     "default"     : "1",
@@ -64,6 +78,12 @@ params = [{
                      "value is used to control the DMC population and will "
                      "fluctuate during runtime. After equilibriation, it will "
                      "fluctuate around the ground state energy of the system."),
+},{
+    "type"        : "int",
+    "cpp_name"    : "nodal_deaths",
+    "default"     : "0",
+    "description" : ("The number of walkers that died to crossing the nodal "
+                     "surface last iteration.")
 },{
     "in_name"     : "pre_diffusion",
     "type"        : "double",

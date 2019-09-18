@@ -30,16 +30,18 @@ fig, axes = plt.subplots(len(data),2, gridspec_kw = {"width_ratios":[8,1]})
 # Plot each dataseries on its own subplot
 for i, d in enumerate(data):
 
+    sigma_range = 3
+
+    # Get statistics for dataseries
+    half = int(len(d)/2)
+    std  = round_to_n(np.std(d[half:]),  4)
+    mean = round_to_n(np.mean(d[half:]), 4)
+    err  = round_to_n(std / (float(half)**0.5), 4)
+
     # Plot dataseries
     axes[i,0].plot(d)
     axes[i,0].set_xlabel("Iteration")
-
-    half = int(len(d)/2)
-    mean = round_to_n(np.mean(d[half:]), 4)
-    std  = round_to_n(np.std(d[half:]),  4)
-
-    axes[i,0].set_ylabel(y_axes[i]+"\n{0} +/- {1}".format(mean,std))
-    axes[i,0].set_ylabel(y_axes[i])
+    axes[i,0].set_ylabel(y_axes[i]+"\n{0} +/- {1}".format(mean,err))
     axes[i,0].axhline(mean, color="green", linestyle=":")
 
     # Set the axis scales
@@ -48,7 +50,7 @@ for i, d in enumerate(data):
         axes[i,1].set_yscale("log")
 
     elif "norm" in sys.argv:
-        axes[i,0].set_ylim([mean - 4*std, mean + 4*std])
+        axes[i,0].set_ylim([mean - sigma_range*std, mean + sigma_range*std])
 
     # Plot additional things
     if "Average weight" in y_axes[i]:
