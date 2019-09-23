@@ -26,7 +26,6 @@ params = [{
     "description" : ("The number of DMC iterations, each corresponding to a "
                      "step of tau in imaginary time."),
 },{
-    "in_name"     : "iter",
     "type"        : "unsigned",
     "cpp_name"    : "dmc_iteration",
     "default"     : "0",
@@ -52,13 +51,12 @@ params = [{
     "default"     : "0",
     "description" : "Softening parameter for the coulomb potential."
 },{
-    "in_name"     : "max_branch",
-    "type"        : "int",
-    "cpp_name"    : "max_branch",
-    "default"     : "100",
-    "description" : ("The maximum allowed number of walkers that a single walker "
-                     "can divide into. Lowering this value will decrease the likelyhood "
-                     "of population explosions, but will introduce bias.")
+    "in_name"     : "max_weight",
+    "type"        : "double",
+    "cpp_name"    : "max_weight",
+    "default"     : "10",
+    "description" : ("The maximum allowed weight of any individual walker. "
+                     "If this is exceeded then the iteration is reverted. ")
 },{
     "type"        : "int",
     "cpp_name"    : "np",

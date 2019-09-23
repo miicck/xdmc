@@ -4,8 +4,8 @@
 COMPILERS="mpic++ mpicc.openmpi mpicc" 
 LIBS="-lstdc++ -lm"
 INCLUDE=""
-COMP_FLAGS="-c -Wall -Ofast -g -p $INCLUDE"
-LINK_FLAGS="-p -o xdmc $INCLUDE"
+COMP_FLAGS="-c -Wall -Ofast $INCLUDE"
+LINK_FLAGS="-o xdmc $INCLUDE"
 
 ###############################################################
 # You probably do not need to modify anything below this line #

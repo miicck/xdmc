@@ -1,14 +1,15 @@
 dimensions          3     
 walkers             10000
 iterations          10000
-tau                 0.01  
+tau                 0.001  
 tau_psi             1.0
 write_wavefunction  0
+write_nodal_surface 0
 pre_diffusion       0.5
 
 # Parameters to help reduce population explosions
 coulomb_softening   0.00001
-max_branch          4
+max_weight          4
 
 atomic_potential 3 0 0 0
 particle electron 1 -1  1 0 0 0 # Spin up

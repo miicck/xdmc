@@ -26,9 +26,10 @@ class walker_collection
 public:
     walker_collection();
     ~walker_collection();
+    walker_collection* copy();
 
-    void propagate();
-    void write_output();
+    bool propagate(walker_collection* walkers_last);
+    void write_output(bool reverted);
 
     double average_weight();
     double average_mod_weight();
@@ -37,12 +38,11 @@ public:
 
 private:
     walker_collection(std::vector<walker*> walkers_in) : walkers(walkers_in) {}
-    walker_collection* copy();
 
     double diffused_wavefunction(walker* w, double tau);
 
     void make_exchange_moves();
-    void make_diffusive_moves();
+    void make_diffusive_moves(walker_collection* walkers_last);
     void make_diffusive_moves_1d();
     void apply_renormalization();
     void branch();
@@ -51,5 +51,3 @@ private:
 };
 
 #endif
-
-

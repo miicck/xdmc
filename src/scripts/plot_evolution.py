@@ -11,7 +11,9 @@ round_to_n = lambda x, n: round(x, -int(floor(log10(abs(x)))) + (n - 1)) if abs(
 e_targ = None
 for arg in sys.argv:
     if arg.startswith("-e="):
-        e_targ = float(arg.split("=")[-1])
+        val = arg.split("=")[-1]
+        if val == "lithium": e_targ = -7.47807
+        else: e_targ = float(val)
         break
 
 v_targ = None

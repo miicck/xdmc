@@ -26,7 +26,7 @@ void run_dmc()
 {
     // Our DMC walkers
     params::progress_file << "Initializing walkers\n";
-    walker_collection walkers;
+    walker_collection* walkers = new walker_collection();
     
     // Run our DMC iterations
     params::progress_file << "Starting DMC simulation\n";
@@ -38,12 +38,27 @@ void run_dmc()
          params::dmc_iteration ++)
     {
         // Apply propagation of walkers
-        walkers.propagate();
-        walkers.write_output();
+        walker_collection* walkers_last = walkers->copy();
+        bool revert = !walkers->propagate(walkers_last);
+
+        if (revert)
+        {
+            // Revert this iteration
+            delete walkers;
+            walkers = walkers_last;
+        }
+        else
+            // Keep the new walkers
+            delete walkers_last;
+
+        walkers->write_output(revert);
     }
 
     // Output success message
     params::progress_file << "\nDone, total time: " << params::time() << "s.\n";
+    
+    // Free memory
+    delete walkers;
 }
 
 // Program entrypoint
