@@ -234,12 +234,12 @@ double walker :: sq_distance_to(walker* other)
     return r2;
 }
 
-double walker :: diffusive_greens_function(walker* other, double tau=params::tau)
+double walker :: diffusive_greens_function(walker* other, double tau)
 {
     // Evaluate the diffusive greens function of this walker
     // at the configuration of the other walker
     double r2 = this->sq_distance_to(other);
-    return fexp(-r2/(2*tau));
+    return fexp(-r2/(2*tau))/sqrt(2*PI*tau);
 }
 
 void walker :: write_coords(output_file& file)

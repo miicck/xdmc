@@ -2,7 +2,6 @@ dimensions	       1
 walkers		       10000
 iterations	       4000
 tau		           0.001
-tau_psi            0.1
 pre_diffusion      2.5
 exchange_prob      0.90
 #exact_1d_nodes     1

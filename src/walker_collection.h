@@ -40,6 +40,7 @@ private:
     walker_collection(std::vector<walker*> walkers_in) : walkers(walkers_in) {}
 
     double diffused_wavefunction(walker* w, double tau);
+    double* diffused_wavefunction_signed(walker* w, double tau);
 
     void make_exchange_moves();
     void make_diffusive_moves(walker_collection* walkers_last);

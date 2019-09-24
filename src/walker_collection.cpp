@@ -97,6 +97,23 @@ double walker_collection :: diffused_wavefunction(walker* c, double tau=params::
     return psi_d;
 }
 
+double* walker_collection :: diffused_wavefunction_signed(walker* c, double tau=params::tau)
+{
+    // Evaluate the diffused wavefunction as components whos sign
+    // matches c and those that do not
+    double* ret = new double[2];
+    ret[0] = 0; // Same sign
+    ret[1] = 0; // Opposite sign
+    for (unsigned n=0; n < walkers.size(); ++n)
+    {
+        walker* w = walkers[n];
+        double gf = w->diffusive_greens_function(c, tau);
+        if (sign(w->weight/c->weight) == 1) ret[0] += gf;
+        else ret[1] += gf;
+    }
+    return ret;
+}
+
 double potential_greens_function(double pot_before, double pot_after)
 {
     // Evaluate the potential-dependent part of the greens
@@ -157,27 +174,28 @@ void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
     // Carry out diffusion of the walkers
     for (unsigned n=0; n < walkers.size(); ++n)
     {
-        // Diffuse the walker
         walker* w = walkers[n];
-        double psi_before = walkers_last->diffused_wavefunction(w, params::tau_psi); 
         w->diffuse(params::tau);
-        double psi_after  = walkers_last->diffused_wavefunction(w, params::tau_psi);
+        double* psi   = walkers_last->diffused_wavefunction_signed(w);
+        double* psi_d = walkers_last->diffused_wavefunction_signed(w, params::tau_psi);
 
-        // Kill walkers crossing the nodal surface
-        if (params::enforce_nodal_surface)
-            if (sign(psi_before) != sign(psi_after))
-            {
-                if (params::write_nodal_surface)
-                {
-                    w->weight = 1.0; // Set so plots work
-                    w->write_coords(params::nodal_surface_file);
-                }
-                
-                // Kill the walker
-                w->weight = 0;
-                params::nodal_deaths += 1;
-                continue;
-            }
+        if (psi[0] < psi[1] || psi_d[0] < psi_d[1])
+        {
+            // Record the nodal surface
+            if (params::write_nodal_surface)
+                w->write_coords(params::nodal_surface_file);
+
+            // w has strayed into the wrong neighbourhood, kill them
+            w->weight = 0;
+            params::nodal_deaths += 1;
+        }
+        else if (params::tau == params::tau_psi)
+            // Account for cancellations
+            w->weight *= 1 - psi[1]/psi[0];
+
+        // Free memory
+        delete psi;
+        delete psi_d;
 
         // Apply potential part of greens function
         double pot_before = walkers_last->walkers[n]->potential();
