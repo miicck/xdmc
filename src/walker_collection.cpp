@@ -107,7 +107,7 @@ double* walker_collection :: diffused_wavefunction_signed(walker* c, double tau=
     for (unsigned n=0; n < walkers.size(); ++n)
     {
         walker* w = walkers[n];
-        double gf = w->diffusive_greens_function(c, tau);
+        double gf = fabs(w->weight) * w->diffusive_greens_function(c, tau);
         if (sign(w->weight/c->weight) == 1) ret[0] += gf;
         else ret[1] += gf;
     }
@@ -189,7 +189,7 @@ void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
             w->weight = 0;
             params::nodal_deaths += 1;
         }
-        else if (params::tau == params::tau_psi)
+        else
             // Account for cancellations
             w->weight *= 1 - psi[1]/psi[0];
 
