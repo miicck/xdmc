@@ -1,8 +1,7 @@
 dimensions          3     
 walkers             10000
 iterations          10000
-tau                 0.001  
-tau_psi             1.0
+tau                 0.001
 write_wavefunction  0
 write_nodal_surface 0
 pre_diffusion       0.5

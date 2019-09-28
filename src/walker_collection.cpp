@@ -23,40 +23,6 @@
 #include "walker_collection.h"
 #include "params.h"
 
-walker_collection :: walker_collection()
-{
-    // Reserve a reasonable amount of space to deal efficiently
-    // with the fact that the population can fluctuate.
-    walkers.reserve(2*int(params::target_population));
-
-    // Initialize the set of walkers to the target
-    // population size.
-    for (unsigned i=0; i<params::target_population; ++i)
-    {
-        walker* w = new walker();
-        w->diffuse(params::pre_diffusion);
-        w->reflect_to_irreducible();
-        walkers.push_back(w);
-    }
-}
-
-walker_collection :: ~walker_collection()
-{
-    // Clean up memory
-    for (unsigned n=0; n<walkers.size(); ++n)
-        delete walkers[n];
-}
-
-walker_collection* walker_collection :: copy()
-{
-    // Create an exact copy of this collection
-    // of walkers
-    std::vector<walker*> copied_walkers;
-    for (unsigned n=0; n<walkers.size(); ++n)
-        copied_walkers.push_back(walkers[n]->copy());
-    return new walker_collection(copied_walkers);
-}
-
 bool walker_collection :: propagate(walker_collection* walkers_last)
 {
     // Apply the stages of walker propagation
@@ -72,7 +38,28 @@ bool walker_collection :: propagate(walker_collection* walkers_last)
             return false;
 
     branch();
+
+    // Check for population collapse
+    if (walkers.size() == 0)
+        return false;
+
     return true;
+}
+
+void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
+{
+    // Reset things
+    if (params::write_nodal_surface)
+        params::nodal_surface_file << "# Iteration " << params::dmc_iteration << "\n";
+    params::nodal_deaths = 0;
+    
+    // Carry out the specified diffusion scheme
+    if (params::diffusion_scheme == "exact_1d")
+        diffuse_exact_1d();
+    else if (params::diffusion_scheme == "max_seperation")
+        diffuse_max_seperation(walkers_last);
+    else
+        throw "Unkown diffusion scheme";
 }
 
 void walker_collection :: make_exchange_moves()
@@ -123,8 +110,12 @@ double potential_greens_function(double pot_before, double pot_after)
     return fexp( -params::tau * (pot_before + pot_after)/2.0 );
 }
 
-void walker_collection :: make_diffusive_moves_1d()
+void walker_collection :: diffuse_exact_1d()
 {
+    // Error if dimensions of system != 1
+    if (params::dimensions != 1)
+        throw "Dimension != 1 in exact 1d diffusion!";
+
     // Carry out diffusion of the walkers
     for (unsigned n=0; n < walkers.size(); ++n)
     {
@@ -134,19 +125,16 @@ void walker_collection :: make_diffusive_moves_1d()
         w->diffuse(params::tau);
 
         // Kill walkers crossing the nodal surface
-        if (params::enforce_nodal_surface)
-            if (w_before->crossed_nodal_surface(w))
-            {
-                if (params::write_nodal_surface)
-                {
-                    w->weight = 1.0; // Set so plots work
-                    w->write_coords(params::nodal_surface_file);
-                }
+        if (w_before->crossed_nodal_surface(w))
+        {
+            // Record the nodal surface
+            if (params::write_nodal_surface)
+                w->write_coords(params::nodal_surface_file);
 
-                // Kill the walker
-                w->weight = 0;
-                params::nodal_deaths += 1;
-            }
+            // Kill the walker
+            w->weight = 0;
+            params::nodal_deaths += 1;
+        }
 
         // Apply potential part of greens function
         double pot_before = w_before->potential();
@@ -157,29 +145,16 @@ void walker_collection :: make_diffusive_moves_1d()
     }
 }
 
-void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
+void walker_collection :: diffuse_max_seperation(walker_collection* walkers_last)
 {
-    // Reset things
-    if (params::write_nodal_surface)
-        params::nodal_surface_file << "# Iteration " << params::dmc_iteration << "\n";
-    params::nodal_deaths = 0;
-
-    if (params::exact_1d_nodes && (params::dimensions == 1))
-    {
-        // Special case of 1D
-        make_diffusive_moves_1d();
-        return;
-    }
-
     // Carry out diffusion of the walkers
     for (unsigned n=0; n < walkers.size(); ++n)
     {
         walker* w = walkers[n];
         w->diffuse(params::tau);
-        double* psi   = walkers_last->diffused_wavefunction_signed(w);
-        double* psi_d = walkers_last->diffused_wavefunction_signed(w, params::tau_psi);
+        double* psi = walkers_last->diffused_wavefunction_signed(w);
 
-        if (psi[0] < psi[1] || psi_d[0] < psi_d[1])
+        if (psi[0] < psi[1])
         {
             // Record the nodal surface
             if (params::write_nodal_surface)
@@ -195,7 +170,6 @@ void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
 
         // Free memory
         delete psi;
-        delete psi_d;
 
         // Apply potential part of greens function
         double pot_before = walkers_last->walkers[n]->potential();
@@ -263,6 +237,40 @@ void walker_collection :: branch()
         walkers[n] = walkers.back();
         walkers.pop_back();
     }
+}
+
+walker_collection :: walker_collection()
+{
+    // Reserve a reasonable amount of space to deal efficiently
+    // with the fact that the population can fluctuate.
+    walkers.reserve(2*int(params::target_population));
+
+    // Initialize the set of walkers to the target
+    // population size.
+    for (unsigned i=0; i<params::target_population; ++i)
+    {
+        walker* w = new walker();
+        w->diffuse(params::pre_diffusion);
+        w->reflect_to_irreducible();
+        walkers.push_back(w);
+    }
+}
+
+walker_collection :: ~walker_collection()
+{
+    // Clean up memory
+    for (unsigned n=0; n<walkers.size(); ++n)
+        delete walkers[n];
+}
+
+walker_collection* walker_collection :: copy()
+{
+    // Create an exact copy of this collection
+    // of walkers
+    std::vector<walker*> copied_walkers;
+    for (unsigned n=0; n<walkers.size(); ++n)
+        copied_walkers.push_back(walkers[n]->copy());
+    return new walker_collection(copied_walkers);
 }
 
 double walker_collection :: sum_mod_weight()

@@ -37,19 +37,17 @@ params = [{
     "default"     : "0.01",
     "description" : "The DMC timestep in atomic units.",
 },{
-    "in_name"     : "tau_psi",
-    "type"        : "double",
-    "cpp_name"    : "tau_psi",
-    "default"     : "0.1",
-    "description" : ("The effective timestep used when evaluating the diffused "
-                     "wavefunction. Larger values encourage the formation of nodal "
-                     "pockets.")
-},{
     "in_name"     : "coulomb_softening",
     "type"        : "double",
     "cpp_name"    : "coulomb_softening",
     "default"     : "0",
     "description" : "Softening parameter for the coulomb potential."
+},{
+    "in_name"     : "diffusion_scheme",
+    "type"        : "std::string",
+    "cpp_name"    : "diffusion_scheme",
+    "default"     : '"max_seperation"',
+    "description" : "The diffusion scheme used."
 },{
     "in_name"     : "max_weight",
     "type"        : "double",
@@ -102,19 +100,6 @@ params = [{
     "cpp_name"    : "write_nodal_surface",
     "default"     : "true",
     "description" : "True if nodal surface files are to be written.",
-},{
-    "in_name"     : "exact_1d_nodes",
-    "type"        : "bool",
-    "cpp_name"    : "exact_1d_nodes",
-    "default"     : "false",
-    "description" : ("True if the exact nodal surface is used when we're in 1 "
-                     "spatial dimension.")
-},{
-    "in_name"     : "enforce_nodal_surface",
-    "type"        : "bool",
-    "cpp_name"    : "enforce_nodal_surface",
-    "default"     : "true",
-    "description" : "True if we remove walkers that cross the nodal surface."
 },{
     "in_name"     : "exchange_prob",
     "type"        : "double",

@@ -40,8 +40,11 @@ def psi(x,y,z):
             mat[i][j] = psis[i](r[j])
     return np.linalg.det(mat)
 
+def psi_bosonic(x,y,z):
+    return psi0(x)*psi0(y)*psi0(z)
+    
 # Returns \psi(u, v) = \int \psi(x,y,z) \delta(u(x,y,z)-u) \delta(v(x,y,z)-v)
-def psi_uv(u, v):
+def psi_uv(u, v, psi):
     d = np.array([1.0,1.0,1.0])
     y =  MIN_X
     x =  np.sqrt(2.0)*u + y
@@ -49,22 +52,24 @@ def psi_uv(u, v):
     p = np.array([x,y,z])
     return np.trapz([psi(*(p+d*l)) for l in np.linspace(0,MAX_X-MIN_X,20)])
 
-def plot_psi():
+def plot_psi(psi):
     bins = np.zeros((BINS, BINS))
     us = np.linspace(MIN_U, MAX_U, BINS)
     vs = np.linspace(MIN_U, MAX_U, BINS)
     for ui, u in enumerate(us):
         for vi, v in enumerate(vs):
-            bins[vi][ui] = psi_uv(u, v)
+            bins[vi][ui] = psi_uv(u, v, psi)
+
     plt.contour(us, vs, bins, 11)
     plt.xlabel(r"$u = \frac{x - y}{\sqrt{2}}$")
     plt.ylabel(r"$v = \frac{2z - x - y}{\sqrt{6}}$")
     #plt.gca().title.set_text(r"$\langle r^2 \rangle = 6.0$")
 
-    # Plot symmetry lines
-    plot_symmetry_line(0,1,1)
-    plot_symmetry_line(1,0,1)
-    plot_symmetry_line(1,1,0)
+    if psi != psi_bosonic:
+        # Plot symmetry lines
+        plot_symmetry_line(0,1,1)
+        plot_symmetry_line(1,0,1)
+        plot_symmetry_line(1,1,0)
 
 def project_wavefunction(wfn):
 
@@ -137,8 +142,12 @@ wfn = list(zip(*parser.parse_wavefunction(sys.argv[1:])))
 #else:
 project_wavefunction(wfn)
 
-# Plot analytic
+# Plot analytic fermionic ground state
 plt.figure()
-plot_psi()
+plot_psi(psi)
+
+# Plot analytic bosonic ground state
+plt.figure()
+plot_psi(psi_bosonic)
 
 plt.show()
