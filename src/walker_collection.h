@@ -41,11 +41,13 @@ private:
 
     double diffused_wavefunction(walker* w, double tau);
     double* diffused_wavefunction_signed(walker* w, double tau);
+    double* exchange_diffused_wfn_signed(walker* w, double tau);
 
     void make_exchange_moves();
     void make_diffusive_moves(walker_collection* walkers_last);
     void diffuse_exact_1d();
     void diffuse_max_seperation(walker_collection* walkers_last);
+    void exchange_diffuse(walker_collection* walkers_last);
     void apply_renormalization();
     void branch();
 

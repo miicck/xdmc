@@ -21,6 +21,8 @@
 #include "random.h"
 #include "constants.h"
 
+#include <iostream>
+
 // Run the DMC calculation
 void run_dmc()
 {

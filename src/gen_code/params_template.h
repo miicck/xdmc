@@ -24,6 +24,25 @@
 #include "particle.h"
 #include "potential.h"
 #include "output_file.h"
+#include "dmc_math.h"
+
+// This represents a group of particle indicies
+// that can be exchanged with one another
+class exchange_group
+{
+public:
+    exchange_group();
+    ~exchange_group();
+
+    int sign;
+    std::vector<int> particles;
+    std::vector<std::pair<int,int>> pairs;
+    permutations<int>* perms;
+
+    void add(int index);
+    void finalize();
+    std::string one_line_summary();
+};
 
 // This namespace represents a complete specification for
 // a simulation to run and progress, including ready-to-write
@@ -40,11 +59,9 @@ namespace params
     extern std::vector<external_potential*> potentials;
 
     // The system which will be copied to generate walkers
+    // and exchange information about it
     extern std::vector<particle*> template_system;
-
-    // Exchange information about the system
-    extern std::vector<int> exchange_pairs;
-    extern std::vector<int> exchange_values;
+    extern std::vector<exchange_group*> exchange_groups;
 
     // Output files
     extern output_file nodal_surface_file;

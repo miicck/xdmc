@@ -34,8 +34,7 @@ PYTHON_GEN_PARAMS_HERE
 // Global param:: variables
 std::vector<external_potential*> params::potentials;
 std::vector<particle*>           params::template_system;
-std::vector<int> params::exchange_pairs;
-std::vector<int> params::exchange_values;
+std::vector<exchange_group*>     params::exchange_groups;
 output_file params::nodal_surface_file;
 output_file params::wavefunction_file;
 output_file params::evolution_file;
@@ -127,24 +126,84 @@ void read_input()
 
     input.close();
 
-    // Work out exchange properties of the system
+    // Record exchange groups within the system
+    bool in_group[template_system.size()];
+    for (unsigned i=0; i<template_system.size(); ++i)
+        in_group[i] = false;
+
     for (unsigned i=0; i<template_system.size(); ++i)
     {
+        // Already in a group
+        if (in_group[i]) continue; 
+
         particle* p1 = template_system[i];
-        for (unsigned j=0; j<i; ++j)
+
+        // Add p1 to its own group
+        exchange_group* eg = new exchange_group();
+        eg->add(i);
+        in_group[i] = true;
+
+        for (unsigned j=i+1; j<template_system.size(); ++j)
         {
             particle* p2 = template_system[j];
-            int exchange_sym = p1->exchange_symmetry(p2);
-
-            // These particles cannot be exchanged 
-            if (exchange_sym == 0) continue;
-
-            // Record this exchangable pair
-            exchange_pairs.push_back(j);
-            exchange_pairs.push_back(i);
-            exchange_values.push_back(exchange_sym);
+            if (p1->exchange_symmetry(p2) != 0)
+            {
+                // Add p2 to p1's group
+                eg->add(j);
+                in_group[j] = true;
+            }
         }
+
+        eg->finalize();
+        params::exchange_groups.push_back(eg);
     }
+}
+
+// Construct/destruct an exchange_group
+exchange_group ::  exchange_group() { perms = nullptr; }
+exchange_group :: ~exchange_group() { if (perms != nullptr) delete perms; }
+
+// Add a particle index to an exchange group
+void exchange_group :: add(int index) { particles.push_back(index); }
+
+void exchange_group :: finalize()
+{
+    // Work out exchange group permutations
+    perms = new permutations<int>(particles);
+
+    // Work out exchange group sign and double check that it is consistent
+    // across the group. Construct the exchange pairs
+    sign = -2;
+    for (unsigned i=0; i<particles.size(); ++i)
+        for (unsigned j=0; j<i; ++j)
+        {
+            unsigned n = particles[i];
+            unsigned m = particles[j];
+
+            // Record the pair
+            std::pair<int,int> pair(m, n);
+            pairs.push_back(pair);
+
+            // Check/record the sign
+            particle* p1 = params::template_system[n];
+            particle* p2 = params::template_system[m];
+            if (sign < -1) sign = p1->exchange_symmetry(p2); 
+            else if (sign != p1->exchange_symmetry(p2))
+                throw "Error, inconsistent signs in exchange group!";
+        }
+}
+
+std::string exchange_group :: one_line_summary()
+{
+    // Return a simple description of the exchange group
+    std::stringstream s;
+    s << "Sign = " << sign
+      << ", permutations = " << perms->size() 
+      << ", particles = {";
+    for (unsigned i=0; i<particles.size(); ++i)
+        s << particles[i] << " ";
+    s << "\b}";
+    return s.str();
 }
 
 void output_sim_details()
@@ -164,12 +223,26 @@ void output_sim_details()
            progress_file << "    " << i << ": "
                  << template_system[i]->one_line_description() << "\n";
 
-    // Output a summary of exchange information
-    progress_file << "Exchange pairs (sign, particle 1, particle 2)\n";
-    for (unsigned i=0; i<exchange_values.size(); ++i)
-           progress_file << "    " << exchange_values[i] << " "
-                 << exchange_pairs[2*i]   << " "
-                 << exchange_pairs[2*i+1] << "\n";
+    // Output a summary of the exchange groups
+    progress_file << "Exchange groups:\n";
+    for (unsigned i=0; i<exchange_groups.size(); ++i)
+    {
+        exchange_group* eg = exchange_groups[i];
+        progress_file << "    " << eg->one_line_summary() << "\n";
+        for (unsigned j=0; j<eg->pairs.size(); ++j)
+            progress_file << "        " 
+                          << eg->pairs[j].first << " <--> " 
+                          << eg->pairs[j].second << "\n";
+
+        progress_file << "    Permutations:\n";
+        for (unsigned j=0; j<eg->perms->size(); ++j)
+        {
+            progress_file << "        p = {";
+            for (unsigned k=0; k<eg->perms->elements(); ++k)
+                progress_file << (*eg->perms)[j][k] << " ";
+            progress_file << "\b} " << " sign = " << eg->perms->sign(j) << "\n";
+        }
+    }
 
     progress_file << "\n";
 }
@@ -218,6 +291,10 @@ void params::free_memory()
     progress_file.close();
     evolution_file.close();
     wavefunction_file.close();
+
+    // Free memory used in exchange groups 
+    for (unsigned i=0; i<exchange_groups.size(); ++i)
+        delete exchange_groups[i];
 
     // Free memory in template_system
     for (unsigned i=0; i<template_system.size(); ++i)

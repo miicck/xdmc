@@ -19,7 +19,7 @@
 #include <mpi.h>
 
 #include "random.h"
-#include "math.h"
+#include "dmc_math.h"
 #include "walker_collection.h"
 #include "params.h"
 
@@ -28,8 +28,16 @@ bool walker_collection :: propagate(walker_collection* walkers_last)
     // Apply the stages of walker propagation
     // returns false if this iteration should be
     // reverted, because of population explosion etc...
+
+    // Diffusive moves involving G_D
     make_diffusive_moves(walkers_last);
-    make_exchange_moves();
+
+    // Exchange moves (only if not included in diffusive moves)
+    if (params::diffusion_scheme != "exchange_diffuse")
+        make_exchange_moves();
+
+    // Renormalize by applying exp(E_T \delta\tau)
+    // (work out E_T as well)
     apply_renormalization();
 
     // Check for population explosion
@@ -58,6 +66,8 @@ void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
         diffuse_exact_1d();
     else if (params::diffusion_scheme == "max_seperation")
         diffuse_max_seperation(walkers_last);
+    else if (params::diffusion_scheme == "exchange_diffuse")
+        exchange_diffuse(walkers_last);
     else
         throw "Unkown diffusion scheme";
 }
@@ -74,7 +84,6 @@ double walker_collection :: diffused_wavefunction(walker* c, double tau=params::
     // Evaluate the diffused wavefunction 
     // at the configuration of c: 
     // \psi_D(c) = \sum_i w_i G_D(c, x_i, dt)
-
     double psi_d = 0;
     for (unsigned n=0; n < walkers.size(); ++n)
     {
@@ -97,6 +106,43 @@ double* walker_collection :: diffused_wavefunction_signed(walker* c, double tau=
         double gf = fabs(w->weight) * w->diffusive_greens_function(c, tau);
         if (sign(w->weight/c->weight) == 1) ret[0] += gf;
         else ret[1] += gf;
+    }
+    return ret;
+}
+
+double* walker_collection :: exchange_diffused_wfn_signed(walker* c, double tau=params::tau)
+{
+    // Evaluate the exchange-diffused wavefunction as components whos sign
+    // matches c and those that do not
+    double* ret = new double[2];
+    ret[0] = 0; // Same sign
+    ret[1] = 0; // Opposite sign
+    for (unsigned n=0; n < walkers.size(); ++n)
+    {
+        walker* w  = walkers[n];
+        double* gf = w->exchange_diffusive_gf(c, tau);
+        gf[0]     *= fabs(w->weight);
+        gf[1]     *= fabs(w->weight);
+
+        if (sign(w->weight/c->weight) == 1)
+        {
+            // w and c are same sign =>
+            // gf[0] is same-sign contribution
+            // gf[1] is opposite-sign contribution
+            ret[0] += gf[0];
+            ret[1] += gf[1]; 
+        }
+        else
+        {
+            // w and c are opposite signs =>
+            // gf[0] is opposite-sign contribution
+            // gf[1] is same-sign contribution
+            ret[0] += gf[1]; 
+            ret[1] += gf[0];
+        }
+
+        // Free memory
+        delete[] gf;
     }
     return ret;
 }
@@ -147,12 +193,50 @@ void walker_collection :: diffuse_exact_1d()
 
 void walker_collection :: diffuse_max_seperation(walker_collection* walkers_last)
 {
-    // Carry out diffusion of the walkers
+    // Carry out diffusion of the walkers in a manner
+    // that will result in the maximum seperation of 
+    // +ve wlakers to -ve walkers
     for (unsigned n=0; n < walkers.size(); ++n)
     {
         walker* w = walkers[n];
         w->diffuse(params::tau);
         double* psi = walkers_last->diffused_wavefunction_signed(w);
+
+        if (psi[0] < psi[1])
+        {
+            // Record the nodal surface
+            if (params::write_nodal_surface)
+                w->write_coords(params::nodal_surface_file);
+
+            // w has strayed into the wrong neighbourhood, kill them
+            w->weight = 0;
+            params::nodal_deaths += 1;
+        }
+        else
+            // Account for cancellations
+            w->weight *= 1 - psi[1]/psi[0];
+
+        // Free memory
+        delete psi;
+
+        // Apply potential part of greens function
+        double pot_before = walkers_last->walkers[n]->potential();
+        double pot_after  = w->potential();
+        w->weight        *= potential_greens_function(pot_before, pot_after);
+    }
+}
+
+void walker_collection :: exchange_diffuse(walker_collection* walkers_last)
+{
+    // Carry out diffusion of the walkers in a manner
+    // that will result in the maximum seperation of 
+    // +ve wlakers to -ve walkers, taking into account
+    // the exchanged images of the walkers.
+    for (unsigned n=0; n < walkers.size(); ++n)
+    {
+        walker* w = walkers[n];
+        w->diffuse(params::tau);
+        double* psi = walkers_last->exchange_diffused_wfn_signed(w);
 
         if (psi[0] < psi[1])
         {

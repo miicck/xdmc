@@ -37,6 +37,7 @@ public:
     double potential();
     double sq_distance_to(walker* other);
     double diffusive_greens_function(walker* other, double tau=params::tau);
+    double* exchange_diffusive_gf(walker* other, double tau=params::tau);
 
     bool crossed_nodal_surface(walker* other);
 

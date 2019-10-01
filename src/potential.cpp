@@ -19,7 +19,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
-#include "math.h"
+#include "dmc_math.h"
 #include "params.h"
 #include "potential.h"
 #include "constants.h"

@@ -19,7 +19,7 @@
 
 #include "constants.h"
 #include "random.h"
-#include "math.h"
+#include "dmc_math.h"
 #include "walker.h"
 #include "params.h"
 
@@ -141,25 +141,31 @@ bool walker :: crossed_nodal_surface(walker* other)
     if (params::dimensions > 1)
         return false;
 
-    for (unsigned n=0; n < params::exchange_values.size(); ++n)
+    for (unsigned n=0; n < params::exchange_groups.size(); ++n)
     {
+        exchange_group* eg = params::exchange_groups[n];
+
         // Only fermionic exchanges define nodes
-        if (params::exchange_values[n] > 0)
-            continue;
+        if (eg->sign >= 0) continue;
 
-        unsigned i = params::exchange_pairs[2*n];
-        unsigned j = params::exchange_pairs[2*n+1];
+        // Run over exchange pairs
+        for (unsigned m=0; m<eg->pairs.size(); ++m)
+        {
+            unsigned i = eg->pairs[m].first;
+            unsigned j = eg->pairs[m].second;
 
-        particle* pi1 = particles[i];
-        particle* pj1 = particles[j];
-        particle* pi2 = other->particles[i];
-        particle* pj2 = other->particles[j];
+            // Check if this pair has crossed it's nodal surface
+            particle* pi1 = particles[i];
+            particle* pj1 = particles[j];
+            particle* pi2 = other->particles[i];
+            particle* pj2 = other->particles[j];
 
-        double d1 = pi1->coords[0] - pj1->coords[0];
-        double d2 = pi2->coords[0] - pj2->coords[0];
+            double d1 = pi1->coords[0] - pj1->coords[0];
+            double d2 = pi2->coords[0] - pj2->coords[0];
 
-        if (sign(d1) != sign(d2))
-            return true;
+            if (sign(d1) != sign(d2))
+                return true;
+        }
     }
 
     return false;
@@ -208,20 +214,22 @@ void walker :: exchange()
     // same => we do not need to set the potential_dirty
     // flag.
 
-    // No exchanges possible
-    if (params::exchange_values.size() == 0) return;
+    for(unsigned n=0; n<params::exchange_groups.size(); ++n)
+    {
+        // Make an exchange with probability exchange_prob
+        if (rand_uniform() > params::exchange_prob) continue;
+        exchange_group* eg = params::exchange_groups[n];
 
-    // Make an exchange with probability exchange_prob
-    if (rand_uniform() > params::exchange_prob) return;
+        // Pick a random exchangable pair
+        int i = rand() % eg->pairs.size();
+        particle* p1 = particles[eg->pairs[i].first];
+        particle* p2 = particles[eg->pairs[i].second];
 
-    // Pick a random exchangable pair
-    int i = rand() % params::exchange_values.size();
-    particle* p1 = particles[params::exchange_pairs[2*i]];
-    particle* p2 = particles[params::exchange_pairs[2*i+1]];
+        // Exchange them 
+        this->weight *= double(eg->sign);
+        p1->exchange(p2);
 
-    // Exchange them 
-    this->weight *= double(params::exchange_values[i]);
-    p1->exchange(p2);
+    }
 }
 
 double walker :: sq_distance_to(walker* other)
@@ -240,6 +248,60 @@ double walker :: diffusive_greens_function(walker* other, double tau)
     // at the configuration of the other walker
     double r2 = this->sq_distance_to(other);
     return fexp(-r2/(2*tau))/sqrt(2*PI*tau);
+}
+
+double* walker :: exchange_diffusive_gf(walker* other, double tau)
+{
+    // Evaluate the exchange-diffusive greens function
+    // sum_{P_i} G(other, P_i this, tau) \sign(P_i)
+    double* ret = new double[2];
+    ret[0] = 0;
+    ret[1] = 0;
+    for (unsigned n=0; n<params::exchange_groups.size(); ++n)
+    {
+        exchange_group* eg = params::exchange_groups[n];
+
+        double r2_unpermuted = 0;
+        for (int i=0; i<particles.size(); ++i)
+        {
+            // Check if the i^th particle is
+            // permuted by this group 
+            bool is_permuted = false;
+            for (int j=0; j<eg->perms->elements(); ++j)
+                if ((*eg->perms)[0][j] == i)
+                {
+                    is_permuted = true;
+                    break;
+                }
+            if (is_permuted)
+                continue;
+
+            // Sum r^2 for particles that are not permuted
+            r2_unpermuted += particles[i]->sq_distance_to(other->particles[i]);
+        }
+
+        // Loop over permutations
+        int* unperm = (*eg->perms)[0];
+        for (unsigned m=0; m<eg->perms->size(); ++m)
+        {
+            int* perm   = (*eg->perms)[m];
+            double r2   = r2_unpermuted;
+
+            // Add the contribution to r^2 from the permuted particles
+            for (unsigned i=0; i<eg->perms->elements(); ++i)
+            {
+                int j = perm[i];
+                int k = unperm[i];
+                r2   += particles[j]->sq_distance_to(other->particles[k]);
+            }
+
+            // Sum the greens functions
+            double gf = fexp(-r2/(2*tau))/sqrt(2*PI*tau);
+            if (eg->perms->sign(m) > 0) ret[0] += gf;
+            else ret[1] += gf;
+        }
+    }
+    return ret;
 }
 
 void walker :: write_coords(output_file& file)

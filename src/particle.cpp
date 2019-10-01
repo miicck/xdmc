@@ -21,7 +21,7 @@
 #include "params.h"
 #include "particle.h"
 #include "random.h"
-#include "math.h"
+#include "dmc_math.h"
 
 int particle::constructed_count;
 
