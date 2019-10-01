@@ -154,8 +154,17 @@ void read_input()
             }
         }
 
-        eg->finalize();
-        params::exchange_groups.push_back(eg);
+        if (eg->particles.size() < 2)
+        {
+            // It's not an exchange group if there is only one!
+            delete eg;
+        }
+        else
+        {
+            // Record this exchange group
+            eg->finalize();
+            params::exchange_groups.push_back(eg);
+        }
     }
 }
 

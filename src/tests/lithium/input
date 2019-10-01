@@ -1,10 +1,11 @@
 dimensions          3     
-walkers             10000
+walkers             1000
 iterations          10000
-tau                 0.001
+tau                 0.01
 write_wavefunction  0
 write_nodal_surface 0
 pre_diffusion       0.5
+diffusion_scheme    exchange_diffuse
 
 # Parameters to help reduce population explosions
 coulomb_softening   0.00001

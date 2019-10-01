@@ -33,8 +33,7 @@ bool walker_collection :: propagate(walker_collection* walkers_last)
     make_diffusive_moves(walkers_last);
 
     // Exchange moves (only if not included in diffusive moves)
-    if (params::diffusion_scheme != "exchange_diffuse")
-        make_exchange_moves();
+    make_exchange_moves();
 
     // Renormalize by applying exp(E_T \delta\tau)
     // (work out E_T as well)
