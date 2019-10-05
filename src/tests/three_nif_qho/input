@@ -1,10 +1,10 @@
 dimensions	       1
-walkers		       10000
+walkers		       1000
 iterations	       10000
 tau		           0.001
+tau_nodes          0.01
 pre_diffusion      2.5
-exchange_prob      0.0
-diffusion_scheme   exchange_diffuse
+diffusion_scheme   stochastic_nodes
 
 harmonic_well 1
 particle non_interacting_fermion 0 0 1 0

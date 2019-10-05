@@ -3,7 +3,7 @@ import numpy as np
 import parser
 import sys
 
-BINS = 100
+BINS = 30
 MIN_U  = -4
 MAX_U  =  4
 MIN_X  = -4

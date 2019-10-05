@@ -37,6 +37,12 @@ params = [{
     "default"     : "0.01",
     "description" : "The DMC timestep in atomic units.",
 },{
+    "in_name"     : "tau_nodes",
+    "type"        : "double",
+    "cpp_name"    : "tau_nodes",
+    "default"     : "0.1",
+    "description" : "Tau used to describe the stochastic nodal surface."
+},{
     "in_name"     : "coulomb_softening",
     "type"        : "double",
     "cpp_name"    : "coulomb_softening",

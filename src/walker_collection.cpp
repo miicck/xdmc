@@ -32,7 +32,7 @@ bool walker_collection :: propagate(walker_collection* walkers_last)
     // Diffusive moves involving G_D
     make_diffusive_moves(walkers_last);
 
-    // Exchange moves (only if not included in diffusive moves)
+    // Exchange moves
     make_exchange_moves();
 
     // Renormalize by applying exp(E_T \delta\tau)
@@ -65,6 +65,8 @@ void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
         diffuse_exact_1d();
     else if (params::diffusion_scheme == "max_seperation")
         diffuse_max_seperation(walkers_last);
+    else if (params::diffusion_scheme == "stochastic_nodes")
+        diffuse_stochastic_nodes(walkers_last);
     else if (params::diffusion_scheme == "exchange_diffuse")
         exchange_diffuse(walkers_last);
     else
@@ -253,6 +255,35 @@ void walker_collection :: exchange_diffuse(walker_collection* walkers_last)
 
         // Free memory
         delete psi;
+
+        // Apply potential part of greens function
+        double pot_before = walkers_last->walkers[n]->potential();
+        double pot_after  = w->potential();
+        w->weight        *= potential_greens_function(pot_before, pot_after);
+    }
+}
+
+void walker_collection :: diffuse_stochastic_nodes(walker_collection* walkers_last)
+{
+    // Carry out diffusion of walkers, killing any that cross the
+    // stochastic nodal surface set up last iteration
+    for (unsigned n=0; n < walkers.size(); ++n)
+    {
+        walker* w = walkers[n];
+        double psi_before = walkers_last->diffused_wavefunction(w, params::tau_nodes);
+        w->diffuse(params::tau);
+        double psi_after  = walkers_last->diffused_wavefunction(w, params::tau_nodes);
+
+        if (sign(psi_before) != sign(psi_after))
+        {
+            // Record the nodal surface
+            if (params::write_nodal_surface)
+                w->write_coords(params::nodal_surface_file);
+
+            // w has strayed into the wrong neighbourhood, kill them
+            w->weight = 0;
+            params::nodal_deaths += 1;
+        }
 
         // Apply potential part of greens function
         double pot_before = walkers_last->walkers[n]->potential();
