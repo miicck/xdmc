@@ -35,11 +35,12 @@ public:
     ~exchange_group();
 
     int sign;
-    std::vector<int> particles;
-    std::vector<std::pair<int,int>> pairs;
-    permutations<int>* perms;
+    int weight_mult(unsigned permutation);
+    std::vector<unsigned> particles;
+    std::vector<std::pair<unsigned,unsigned>> pairs;
+    permutations<unsigned>* perms;
 
-    void add(int index);
+    void add(unsigned index);
     void finalize();
     std::string one_line_summary();
 };

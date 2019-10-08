@@ -30,17 +30,17 @@ class permutations
             row_number = 0;
             s     = new double[nfact];
             p     = new T*[nfact];
-            for (int i=0; i<nfact; ++i)
+            for (unsigned i=0; i<nfact; ++i)
                 p[i] = new T[n];
 
             double sign = 1;
             unsigned c[n];
-            for(int i=0; i<n; ++i)
+            for(unsigned i=0; i<n; ++i)
                 c[i] = 0;
 
             output(a, sign);
 
-            int i = 0;
+            unsigned i = 0;
             while(i < n)
             {
                 if (c[i] < i)
@@ -96,7 +96,7 @@ class permutations
         void output(std::vector<T> a, double sign)
         {
             s[row_number] = sign;
-            for (int i=0; i<n; ++i)
+            for (unsigned i=0; i<n; ++i)
                 p[row_number][i] = a[i];
             ++ row_number;
         }

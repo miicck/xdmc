@@ -43,6 +43,35 @@ params = [{
     "default"     : "0.1",
     "description" : "Tau used to describe the stochastic nodal surface."
 },{
+    "in_name"     : "self_gf_strength",
+    "type"        : "double",
+    "cpp_name"    : "self_gf_strength",
+    "default"     : "1.0",
+    "description" : ("How much a walker contributes to it's own diffused "
+                     "wavefunction. 1.0 <=> the same as other walkers. 0.0 "
+                     " <=> not at all.")
+},{
+    "in_name"     : "energy_estimator",
+    "type"        : "std::string",
+    "cpp_name"    : "energy_estimator",
+    "default"     : '"growth"',
+    "description" : "The method used to estimate the energy."
+},{
+    "in_name"     : "growth_mixing_factor",
+    "type"        : "double",
+    "cpp_name"    : "growth_mixing_factor",
+    "default"     : "0.0",
+    "description" : ("The amount that the old trial energy is mixed back "
+                     "into the new trial energy when the growth estimator "
+                     "is used for the energy. Should be in [0,1].")
+},{
+    "in_name"     : "full_exchange",
+    "type"        : "bool",
+    "cpp_name"    : "full_exchange",
+    "default"     : "false",
+    "description" : ("If true, sample exchange moves from permutations, "
+                     "rather than permutation operators.")
+},{
     "in_name"     : "coulomb_softening",
     "type"        : "double",
     "cpp_name"    : "coulomb_softening",

@@ -95,8 +95,9 @@ std::string walker :: summary()
 
 void walker :: reflect_to_irreducible()
 {
-    // Reflect this walker using fermionic exchanges until
+    // Reflect this walker using exchange symmetry until
     // we're in the irreducible section of configuration space
+    // doesn't change the weight at all (even for fermionic exchanges)
     while(true)
     {
         bool swap_made = false;
@@ -139,7 +140,7 @@ bool walker :: crossed_nodal_surface(walker* other)
 
     // Cant tell in > 1D
     if (params::dimensions > 1)
-        return false;
+        throw "Can't tell if a walker crossed the nodal surface in > 1D!";
 
     for (unsigned n=0; n < params::exchange_groups.size(); ++n)
     {
@@ -220,15 +221,38 @@ void walker :: exchange()
         if (rand_uniform() > params::exchange_prob) continue;
         exchange_group* eg = params::exchange_groups[n];
 
-        // Pick a random exchangable pair
-        int i = rand() % eg->pairs.size();
-        particle* p1 = particles[eg->pairs[i].first];
-        particle* p2 = particles[eg->pairs[i].second];
+        if (params::full_exchange)
+        {
+            // Pick a random permutation
+            unsigned i = rand() % eg->perms->size();
 
-        // Exchange them 
-        this->weight *= double(eg->sign);
-        p1->exchange(p2);
+            // Record where the old particles were
+            std::vector<particle*> old_particles;
+            for (unsigned j=0; j<particles.size(); ++j)
+                old_particles.push_back(particles[j]);
 
+            // Put them into their permuted positions
+            for (unsigned j=0; j<eg->perms->elements(); ++j)
+            {
+                unsigned k_unperm = (*eg->perms)[0][j];
+                unsigned k_perm   = (*eg->perms)[i][j];
+                particles[k_perm] = old_particles[k_unperm];
+            }
+
+            // Update the weight according to the sign of the permutation
+            this->weight *= eg->weight_mult(i);
+        }
+        else
+        {
+            // Pick a random exchangable pair (i.e exchange operator)
+            unsigned i = rand() % eg->pairs.size();
+            particle* p1 = particles[eg->pairs[i].first];
+            particle* p2 = particles[eg->pairs[i].second];
+
+            // Exchange them 
+            this->weight *= double(eg->sign);
+            p1->exchange(p2);
+         }
     }
 }
 
@@ -253,7 +277,9 @@ double walker :: diffusive_greens_function(walker* other, double tau)
 double* walker :: exchange_diffusive_gf(walker* other, double tau)
 {
     // Evaluate the exchange-diffusive greens function
-    // sum_{P_i} G(other, P_i this, tau) \sign(P_i)
+    // sum_{P_i} G(other, P_i this, tau) \sign(P_i).
+    // Note this will ignore the weight of other, and
+    // use only the configuration.
     double* ret = new double[2];
     ret[0] = 0;
     ret[1] = 0;
@@ -262,12 +288,12 @@ double* walker :: exchange_diffusive_gf(walker* other, double tau)
         exchange_group* eg = params::exchange_groups[n];
 
         double r2_unpermuted = 0;
-        for (int i=0; i<particles.size(); ++i)
+        for (unsigned i=0; i<particles.size(); ++i)
         {
             // Check if the i^th particle is
             // permuted by this group 
             bool is_permuted = false;
-            for (int j=0; j<eg->perms->elements(); ++j)
+            for (unsigned j=0; j<eg->perms->elements(); ++j)
                 if ((*eg->perms)[0][j] == i)
                 {
                     is_permuted = true;
@@ -281,23 +307,23 @@ double* walker :: exchange_diffusive_gf(walker* other, double tau)
         }
 
         // Loop over permutations
-        int* unperm = (*eg->perms)[0];
+        unsigned* unperm = (*eg->perms)[0];
         for (unsigned m=0; m<eg->perms->size(); ++m)
         {
-            int* perm   = (*eg->perms)[m];
-            double r2   = r2_unpermuted;
+            unsigned* perm = (*eg->perms)[m];
+            double r2      = r2_unpermuted;
 
             // Add the contribution to r^2 from the permuted particles
             for (unsigned i=0; i<eg->perms->elements(); ++i)
             {
-                int j = perm[i];
-                int k = unperm[i];
+                unsigned j = perm[i];
+                unsigned k = unperm[i];
                 r2   += particles[j]->sq_distance_to(other->particles[k]);
             }
 
             // Sum the greens functions
             double gf = fexp(-r2/(2*tau))/sqrt(2*PI*tau);
-            if (eg->perms->sign(m) > 0) ret[0] += gf;
+            if (eg->weight_mult(m) > 0) ret[0] += gf;
             else ret[1] += gf;
         }
     }

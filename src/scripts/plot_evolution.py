@@ -52,7 +52,9 @@ for i, d in enumerate(data):
         axes[i,1].set_yscale("log")
 
     elif "norm" in sys.argv:
-        axes[i,0].set_ylim([mean - sigma_range*std, mean + sigma_range*std])
+        delta = sigma_range*std
+        if delta < 10e-5: delta = 10e-5
+        axes[i,0].set_ylim([mean - delta, mean + delta])
 
     # Plot additional things
     if "Average weight" in y_axes[i]:

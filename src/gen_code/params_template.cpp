@@ -173,12 +173,26 @@ exchange_group ::  exchange_group() { perms = nullptr; }
 exchange_group :: ~exchange_group() { if (perms != nullptr) delete perms; }
 
 // Add a particle index to an exchange group
-void exchange_group :: add(int index) { particles.push_back(index); }
+void exchange_group :: add(unsigned index) { particles.push_back(index); }
+
+int exchange_group :: weight_mult(unsigned perm_index)
+{
+    // Bosonic exhcnage => weight stays the same
+    if (this->sign == 1)
+        return 1;
+    
+    // Odd fermionic permutations => weight -> weight * -1
+    if (this->perms->sign(perm_index) == -1)
+        return -1;
+    
+    // Even fermionic permutations => weight stays the same
+    return 1;
+}
 
 void exchange_group :: finalize()
 {
     // Work out exchange group permutations
-    perms = new permutations<int>(particles);
+    perms = new permutations<unsigned>(particles);
 
     // Work out exchange group sign and double check that it is consistent
     // across the group. Construct the exchange pairs

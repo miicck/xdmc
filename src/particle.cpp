@@ -62,8 +62,11 @@ std::string particle :: one_line_description()
     std::stringstream des;
     des << name;
     des << " [charge: " << this->charge 
-        << " mass: " << this->mass
-        << " spin: " << this->half_spins << "/2]";
+        << " mass: " << this->mass;
+    if (this->half_spins % 2 == 0)
+        des << " spin: " << this->half_spins/2 << "]";
+    else
+        des << " spin: " << this->half_spins << "/2]";
     return des.str();
 }
 

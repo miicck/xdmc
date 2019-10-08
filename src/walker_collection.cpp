@@ -69,6 +69,8 @@ void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
         diffuse_stochastic_nodes(walkers_last);
     else if (params::diffusion_scheme == "exchange_diffuse")
         exchange_diffuse(walkers_last);
+    else if (params::diffusion_scheme == "bosonic")
+        diffuse_bosonic(walkers_last);
     else
         throw "Unkown diffusion scheme";
 }
@@ -80,7 +82,8 @@ void walker_collection :: make_exchange_moves()
         walkers[n]->exchange();
 }
 
-double walker_collection :: diffused_wavefunction(walker* c, double tau=params::tau)
+double walker_collection :: diffused_wavefunction(
+    walker* c, double tau=params::tau, int self_index=-1)
 {
     // Evaluate the diffused wavefunction 
     // at the configuration of c: 
@@ -88,13 +91,21 @@ double walker_collection :: diffused_wavefunction(walker* c, double tau=params::
     double psi_d = 0;
     for (unsigned n=0; n < walkers.size(); ++n)
     {
-        walker* w = walkers[n];
-        psi_d += w->weight * w->diffusive_greens_function(c, tau);
+        walker* w   = walkers[n];
+
+        // Treat my own contribution to the
+        // greens function differently
+        double  amp = 1.0;
+        if (int(n) == self_index) 
+            amp = params::self_gf_strength;
+
+        psi_d += amp * w->weight * w->diffusive_greens_function(c, tau);
     }
     return psi_d;
 }
 
-double* walker_collection :: diffused_wavefunction_signed(walker* c, double tau=params::tau)
+double* walker_collection :: diffused_wavefunction_signed(
+    walker* c, double tau=params::tau, int self_index=-1)
 {
     // Evaluate the diffused wavefunction as components whos sign
     // matches c and those that do not
@@ -104,14 +115,22 @@ double* walker_collection :: diffused_wavefunction_signed(walker* c, double tau=
     for (unsigned n=0; n < walkers.size(); ++n)
     {
         walker* w = walkers[n];
-        double gf = fabs(w->weight) * w->diffusive_greens_function(c, tau);
+
+        // Treat my own contribution to the
+        // greens function differently
+        double  amp = 1.0;
+        if (int(n) == self_index) 
+            amp = params::self_gf_strength;
+
+        double gf = amp * fabs(w->weight) * w->diffusive_greens_function(c, tau);
         if (sign(w->weight/c->weight) == 1) ret[0] += gf;
         else ret[1] += gf;
     }
     return ret;
 }
 
-double* walker_collection :: exchange_diffused_wfn_signed(walker* c, double tau=params::tau)
+double* walker_collection :: exchange_diffused_wfn_signed(
+    walker* c, double tau=params::tau, int self_index=-1)
 {
     // Evaluate the exchange-diffused wavefunction as components whos sign
     // matches c and those that do not
@@ -121,9 +140,16 @@ double* walker_collection :: exchange_diffused_wfn_signed(walker* c, double tau=
     for (unsigned n=0; n < walkers.size(); ++n)
     {
         walker* w  = walkers[n];
+
+        // Treat my own contribution to the
+        // greens function differently
+        double  amp = 1.0;
+        if (int(n) == self_index) 
+            amp = params::self_gf_strength;
+
         double* gf = w->exchange_diffusive_gf(c, tau);
-        gf[0]     *= fabs(w->weight);
-        gf[1]     *= fabs(w->weight);
+        gf[0]     *= amp*fabs(w->weight);
+        gf[1]     *= amp*fabs(w->weight);
 
         if (sign(w->weight/c->weight) == 1)
         {
@@ -192,16 +218,33 @@ void walker_collection :: diffuse_exact_1d()
     }
 }
 
-void walker_collection :: diffuse_max_seperation(walker_collection* walkers_last)
+void walker_collection :: diffuse_bosonic(walker_collection* walkers_last)
 {
-    // Carry out diffusion of the walkers in a manner
-    // that will result in the maximum seperation of 
-    // +ve wlakers to -ve walkers
+    // Carry out normal bosonic DMC diffusion
+    // where each walker diffuses independently
+    // according to the diffusive greens function
     for (unsigned n=0; n < walkers.size(); ++n)
     {
         walker* w = walkers[n];
         w->diffuse(params::tau);
-        double* psi = walkers_last->diffused_wavefunction_signed(w);
+
+        // Apply potential part of greens function
+        double pot_before = walkers_last->walkers[n]->potential();
+        double pot_after  = w->potential();
+        w->weight        *= potential_greens_function(pot_before, pot_after);
+    }
+}
+
+void walker_collection :: diffuse_max_seperation(walker_collection* walkers_last)
+{
+    // Carry out diffusion of the walkers in a manner
+    // that will result in the maximum seperation of 
+    // +ve wlakers to -ve walkers.
+    for (unsigned n=0; n < walkers.size(); ++n)
+    {
+        walker* w = walkers[n];
+        w->diffuse(params::tau);
+        double* psi = walkers_last->diffused_wavefunction_signed(w, params::tau, int(n));
 
         if (psi[0] < psi[1])
         {
@@ -231,21 +274,23 @@ void walker_collection :: exchange_diffuse(walker_collection* walkers_last)
 {
     // Carry out diffusion of the walkers in a manner
     // that will result in the maximum seperation of 
-    // +ve wlakers to -ve walkers, taking into account
+    // +ve walkers to -ve walkers, taking into account
     // the exchanged images of the walkers.
     for (unsigned n=0; n < walkers.size(); ++n)
     {
         walker* w = walkers[n];
         w->diffuse(params::tau);
-        double* psi = walkers_last->exchange_diffused_wfn_signed(w);
+        double* psi = walkers_last->exchange_diffused_wfn_signed(w, params::tau, int(n));
 
         if (psi[0] < psi[1])
         {
+            // w has strayed into the wrong neighbourhood, kill them
+
             // Record the nodal surface
             if (params::write_nodal_surface)
                 w->write_coords(params::nodal_surface_file);
 
-            // w has strayed into the wrong neighbourhood, kill them
+            // Kill the walker
             w->weight = 0;
             params::nodal_deaths += 1;
         }
@@ -270,9 +315,14 @@ void walker_collection :: diffuse_stochastic_nodes(walker_collection* walkers_la
     for (unsigned n=0; n < walkers.size(); ++n)
     {
         walker* w = walkers[n];
-        double psi_before = walkers_last->diffused_wavefunction(w, params::tau_nodes);
+
+        double psi_before = walkers_last->
+            diffused_wavefunction(w, params::tau_nodes, int(n));
+
         w->diffuse(params::tau);
-        double psi_after  = walkers_last->diffused_wavefunction(w, params::tau_nodes);
+
+        double psi_after  = walkers_last->
+            diffused_wavefunction(w, params::tau_nodes, int(n));
 
         if (sign(psi_before) != sign(psi_after))
         {
@@ -294,9 +344,37 @@ void walker_collection :: diffuse_stochastic_nodes(walker_collection* walkers_la
 
 void walker_collection :: apply_renormalization()
 {
-    // Set thetrial energy and apply renormalization
+    // Apply the selected renormalization scheme
+    // <=> energy estimator
+    if (params::energy_estimator == "growth")
+        renormalize_growth();
+    else if (params::energy_estimator == "potential")
+        renormalize_potential();
+    else
+        throw "Unkown energy estimator!";
+}
+
+void walker_collection :: renormalize_potential()
+{
+    // Set the trial energy with reference to the
+    // potential energy
+    params::trial_energy = average_potential();
+
+    // Bias towards target population
+    params::trial_energy -= log(sum_mod_weight() / params::target_population);
+
+    // Apply normalization greens function
+    double gn = fexp(params::trial_energy * params::tau);
+    for (unsigned n=0; n<walkers.size(); ++n)
+        walkers[n]->weight *= gn;
+}
+
+void walker_collection :: renormalize_growth()
+{
+    // Set the trial energy and apply renormalization
     // so that the population fluctuates around the 
-    // target population
+    // target population. Do this by employing the 
+    // growth estimator of the energy
 
     // The population at the start of the iteration
     double pop_before_propagation = double(walkers.size());
@@ -307,10 +385,13 @@ void walker_collection :: apply_renormalization()
     double pop_after_propagation  = sum_mod_weight();
 
     // Set trial energy to minimize fluctuations
-    params::trial_energy  = log(pop_before_propagation / pop_after_propagation)/params::tau;
+    double new_trial_energy = log(pop_before_propagation / pop_after_propagation)/params::tau;
 
     // Bias towards target population
-    params::trial_energy -= log(pop_before_propagation / params::target_population);
+    new_trial_energy -= log(pop_before_propagation / params::target_population);
+
+    params::trial_energy = params::trial_energy * params::growth_mixing_factor
+                         + new_trial_energy * (1.0 - params::growth_mixing_factor);
 
     // Apply normalization greens function
     double gn = fexp(params::trial_energy * params::tau);
@@ -467,7 +548,9 @@ void walker_collection :: write_output(bool reverted)
     // Output iteration information
     params::progress_file << "\nIteration " << params::dmc_iteration 
                           << "/"  << params::dmc_iterations
-                          << " (" << percent_complete << "%)\n";
+                          << " (" << percent_complete << "%" 
+                          << " imaginary time = "     
+                          << params::tau*params::dmc_iteration << ")\n";
     params::progress_file << "    Time running       : " << params::time()
                           << "s (" << time_per_iter << "s/iter)\n";
     params::progress_file << "    ETA                : " << secs_remain    << "s \n";

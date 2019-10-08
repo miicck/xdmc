@@ -13,7 +13,9 @@ def parse_evolution():
         for line in lines[1:]:
                 if len(line.strip()) > 0:
                         try:
-                            data.append([float(i) for i in line.split(",")])
+                            d = [float(i) for i in line.split(",")]
+                            if np.isfinite(d).all():
+                                data.append(d)
                         except Exception as e:
                             print(e)
         data = list(zip(*data))
