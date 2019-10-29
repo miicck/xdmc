@@ -244,7 +244,7 @@ void walker_collection :: diffuse_max_seperation(walker_collection* walkers_last
     {
         walker* w = walkers[n];
         w->diffuse(params::tau);
-        double* psi = walkers_last->diffused_wavefunction_signed(w, params::tau, int(n));
+        double* psi = walkers_last->diffused_wavefunction_signed(w, params::tau_nodes, int(n));
 
         if (psi[0] < psi[1])
         {
