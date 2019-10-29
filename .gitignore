@@ -9,3 +9,6 @@ src/build
 # Ignore generated code
 params.cpp
 params.h
+
+# Ignore the tests directory
+/src/tests
