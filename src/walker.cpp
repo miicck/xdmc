@@ -1,5 +1,5 @@
 /*
-    DMCPP
+    XDMC
     Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
 
     This program is free software: you can redistribute it and/or modify
@@ -349,3 +349,4 @@ void walker :: write_coords(output_file& file)
     }
     file << "\n";
 }
+

@@ -1,5 +1,5 @@
 /*
-    DMCPP
+    XDMC
     Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
 
     This program is free software: you can redistribute it and/or modify
@@ -122,3 +122,4 @@ double atomic_potential :: potential(particle* p)
     r = sqrt(r);
     return coulomb(this->charge, p->charge, r);
 }
+
