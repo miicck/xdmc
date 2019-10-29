@@ -1,8 +1,0 @@
-dimensions	   3     
-walkers		   1000 
-iterations	   10000
-tau		       0.01  
-no_wavefunction 
-
-atomic_potential 1 0 0 0
-particle electron 0 -1 1 0 0 0

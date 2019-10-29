@@ -1,8 +1,0 @@
-dimensions	     1
-walkers		     1000
-iterations	     10000
-tau		         0.01
-energy_estimator potential 
-
-harmonic_well 1
-particle particle 0 0 0 0
