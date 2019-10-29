@@ -1,9 +1,0 @@
-dimensions	   1       # The dimensionallity of the system
-walkers		   1000    # The number of DMC walkers
-iterations	   1000    # The number of DMC iterations to carry out 
-tau		   0.01    # The DMC timestep
-no_wavefunction            # Dont write wavefunction files
-
-# Create a harmonic well (omega = 1) with a particle in it
-harmonic_well 1
-particle particle 0 0 0 0

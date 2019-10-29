@@ -29,7 +29,7 @@ public:
     template<class T>
     output_file& operator<<(T t)
     {
-        if (!file.is_open()) file.open(filename);
+        if (!file.is_open()) file.open(filename, std::ofstream::trunc);
         file << t;
         if (auto_flush) flush();
         return (*this);

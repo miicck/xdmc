@@ -31,16 +31,16 @@ def plot_analytic_2nif_harmonic(min_lim, max_lim, LEVELS, alpha=1.0):
         label_plot()
         plt.title("Analytic solution")
 
-def plot_2nif_fast(start_iter, end_iter):
+def plot_2nif_fast(sys_args):
         
-        wfn = parser.parse_wavefunction(start_iter, end_iter)
+        wfn = parser.parse_wavefunction(sys_args)
         xs = [x[0] for x in wfn[1]]
         ys = [x[0] for x in wfn[2]]
         zs = wfn[0]
 
-        plot_analytic_2nif_harmonic(-4,4,5)
+        #plot_analytic_2nif_harmonic(-4,4,5)
         plt.scatter(xs,ys,c=zs,cmap=get_weight_cmap(zs))
-        plt.title("Walker positions\n(With analytic solution overlaid)\n")
+        #plt.title("Walker positions\n(With analytic solution overlaid)\n")
         plt.xlim([-4,4])
         plt.ylim([-4,4])
         label_plot()
@@ -57,14 +57,14 @@ def average_r2(xs, ys, bins):
         return tot_r2/tot_w
                         
 
-def bin_2nif(start_iter, end_iter, RES=40):
-        wfn = parser.parse_wavefunction(start_iter, end_iter)
+def bin_2nif(sys_args, RES=40):
+        wfn = parser.parse_wavefunction(sys_args)
         xs = np.array([x[0] for x in wfn[1]])
         ys = np.array([x[0] for x in wfn[2]])
         ws = wfn[0]
 
-        MAX  = 4.0
-        MIN  = -4.0
+        MAX  = 4
+        MIN  = -4
         bins = np.zeros((RES,RES))
 
         for x,y,w in zip(xs,ys,ws):
@@ -93,8 +93,8 @@ def bin_2nif(start_iter, end_iter, RES=40):
         plt.ylabel("Particle 2 position")
         plt.gca().title.set_text("Analytic wavefunction\n<r^2> = {0}".format(average_r2(xs,ys,anal_sol)))
 
-def plot_2nif(start_iter, end_iter):
-        wfn = parser.parse_wavefunction(start_iter, end_iter)
+def plot_2nif(sys_args):
+        wfn = parser.parse_wavefunction(sys_args)
         iterations = end_iter - start_iter
         
         print(len(wfn[1]))
@@ -102,9 +102,6 @@ def plot_2nif(start_iter, end_iter):
         ys = np.array([x[0] for x in wfn[2]])
         zs = wfn[0]
         zs_an = analytic(xs, ys)
-
-        fs = "{0} walkers from {1} dmc iteration(s) {2} to {3}"
-        plt.suptitle(fs.format(len(zs), iterations, start_iter, end_iter))
 
         RES    = 40
         LEVELS = 40

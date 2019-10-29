@@ -19,7 +19,7 @@
 
 #include "constants.h"
 #include "random.h"
-#include "math.h"
+#include "dmc_math.h"
 #include "walker.h"
 #include "params.h"
 
@@ -78,6 +78,100 @@ walker* walker :: branch_copy()
     return bcopy;
 }
 
+std::string walker :: summary()
+{
+    // Return a summary of this walker
+    std::stringstream ss;
+    ss << "Weight: " << this->weight << "\n";
+    for (unsigned i=0; i<particles.size(); ++i)
+    {
+        ss << "    Particle " << i << ":";
+        for (unsigned j=0; j<params::dimensions; ++j)
+            ss << particles[i]->coords[j] << " ";
+        ss << "\n";
+    }
+    return ss.str();
+}
+
+void walker :: reflect_to_irreducible()
+{
+    // Reflect this walker using exchange symmetry until
+    // we're in the irreducible section of configuration space
+    // doesn't change the weight at all (even for fermionic exchanges)
+    while(true)
+    {
+        bool swap_made = false;
+        for (unsigned i=0; i<particles.size()-1; ++i)
+        {
+            particle* p1 = particles[i];
+            particle* p2 = particles[i+1];
+            if (p1->exchange_symmetry(p2) == 0)
+                continue;
+
+            // These particles should be swapped if they're
+            // in the wrong order (sort by increasing coordinates)
+            bool swap = true;
+            for (unsigned j=0; j < params::dimensions; ++j)
+                if (p1->coords[j] < p2->coords[j])
+                {
+                    // These are in the right order
+                    swap = false;
+                    break;
+                }
+
+            if (swap)
+            {
+                // Swap these particles
+                particles[i]   = p2;
+                particles[i+1] = p1;
+                swap_made = true;
+            }
+        }
+
+        // No swaps => particles in correct order
+        if (!swap_made) break;
+    }
+}
+
+bool walker :: crossed_nodal_surface(walker* other)
+{
+    // Returns true if, to get to the other walker
+    // we must cross a nodal surface
+
+    // Cant tell in > 1D
+    if (params::dimensions > 1)
+        throw "Can't tell if a walker crossed the nodal surface in > 1D!";
+
+    for (unsigned n=0; n < params::exchange_groups.size(); ++n)
+    {
+        exchange_group* eg = params::exchange_groups[n];
+
+        // Only fermionic exchanges define nodes
+        if (eg->sign >= 0) continue;
+
+        // Run over exchange pairs
+        for (unsigned m=0; m<eg->pairs.size(); ++m)
+        {
+            unsigned i = eg->pairs[m].first;
+            unsigned j = eg->pairs[m].second;
+
+            // Check if this pair has crossed it's nodal surface
+            particle* pi1 = particles[i];
+            particle* pj1 = particles[j];
+            particle* pi2 = other->particles[i];
+            particle* pj2 = other->particles[j];
+
+            double d1 = pi1->coords[0] - pj1->coords[0];
+            double d2 = pi2->coords[0] - pj2->coords[0];
+
+            if (sign(d1) != sign(d2))
+                return true;
+        }
+    }
+
+    return false;
+}
+
 double walker :: potential()
 {
     // No need to reevaluate the potential
@@ -103,30 +197,6 @@ double walker :: potential()
     return last_potential;
 }
 
-double walker :: kinetic()
-{
-    // Evalueate the kinetic energy of this
-    // walker using the virial theorem
-    // <T> = 0.5 sum_n <x_n dv/dx_n>
-
-    double v0 = potential();
-    double kinetic = 0;
-    for (unsigned i=0; i<particles.size(); ++i)
-    {
-        particle* p = particles[i];
-        for (unsigned j=0; j<params::dimensions; ++j)
-        {
-            p->coords[j] += EPS_X;
-            potential_dirty = true;
-            double dv_dxij = (potential() - v0)/EPS_X;
-            kinetic += 0.5 * p->coords[j] * dv_dxij;
-            p->coords[j] -= EPS_X;
-        }
-    }
-    potential_dirty = false;
-    return kinetic;
-}
-
 void walker :: diffuse(double tau=params::tau)
 {
     // Diffuse all of the particles
@@ -145,22 +215,45 @@ void walker :: exchange()
     // same => we do not need to set the potential_dirty
     // flag.
 
-    // No exchanges possible
-    if (params::exchange_values.size() == 0) return;
+    for(unsigned n=0; n<params::exchange_groups.size(); ++n)
+    {
+        // Make an exchange with probability exchange_prob
+        if (rand_uniform() > params::exchange_prob) continue;
+        exchange_group* eg = params::exchange_groups[n];
 
-    // Make each type of exchange with equal probability
-    //double ne = (double)params::exchange_values.size();
-    //if (rand_uniform() < 1/(ne+1)) return;
-    if (rand_uniform() > params::exchange_prob) return;
+        if (params::full_exchange)
+        {
+            // Pick a random permutation
+            unsigned i = rand() % eg->perms->size();
 
-    // Pick a random exchangable pair
-    int i = rand() % params::exchange_values.size();
-    particle* p1 = particles[params::exchange_pairs[2*i]];
-    particle* p2 = particles[params::exchange_pairs[2*i+1]];
+            // Record where the old particles were
+            std::vector<particle*> old_particles;
+            for (unsigned j=0; j<particles.size(); ++j)
+                old_particles.push_back(particles[j]);
 
-    // Exchange them 
-    this->weight *= double(params::exchange_values[i]);
-    p1->exchange(p2);
+            // Put them into their permuted positions
+            for (unsigned j=0; j<eg->perms->elements(); ++j)
+            {
+                unsigned k_unperm = (*eg->perms)[0][j];
+                unsigned k_perm   = (*eg->perms)[i][j];
+                particles[k_perm] = old_particles[k_unperm];
+            }
+
+            // Update the weight according to the sign of the permutation
+            this->weight *= eg->weight_mult(i);
+        }
+        else
+        {
+            // Pick a random exchangable pair (i.e exchange operator)
+            unsigned i = rand() % eg->pairs.size();
+            particle* p1 = particles[eg->pairs[i].first];
+            particle* p2 = particles[eg->pairs[i].second];
+
+            // Exchange them 
+            this->weight *= double(eg->sign);
+            p1->exchange(p2);
+         }
+    }
 }
 
 double walker :: sq_distance_to(walker* other)
@@ -173,72 +266,86 @@ double walker :: sq_distance_to(walker* other)
     return r2;
 }
 
-double walker :: diffusive_greens_function(walker* other)
+double walker :: diffusive_greens_function(walker* other, double tau)
 {
     // Evaluate the diffusive greens function of this walker
     // at the configuration of the other walker
     double r2 = this->sq_distance_to(other);
-    return fexp(-r2/(2*params::tau));
+    return fexp(-r2/(2*tau))/sqrt(2*PI*tau);
 }
 
-double walker :: cancel_prob(walker* other)
+double* walker :: exchange_diffusive_gf(walker* other, double tau)
 {
-    // Apply cancellation of two walkers
-
-    // Don't cancel walkers of the same sign
-    if (sign(this->weight) == sign(other->weight)) return 0;
-
-    // Cancel according to the cancellation function chosen
-    double r2 = this->sq_distance_to(other);
-
-    if (params::cancel_function == "integrated_weight")
-        return 1.0-erf(0.5*sqrt(r2/(2*params::tau*params::tau_c_ratio)));
-
-    else if (params::cancel_function == "greens_function_overlap")
-        return fexp(-r2/(4*params::tau*params::tau_c_ratio));
-
-    else
+    // Evaluate the exchange-diffusive greens function
+    // sum_{P_i} G(other, P_i this, tau) \sign(P_i).
+    // Note this will ignore the weight of other, and
+    // use only the configuration.
+    double* ret = new double[2];
+    ret[0] = 0;
+    ret[1] = 0;
+    for (unsigned n=0; n<params::exchange_groups.size(); ++n)
     {
-        // Throw error for an unkown cancellation function
-        std::string err = "Unkown cancellation function: ";
-        err += params::cancel_function;
-        params::error_file << err << "\n";
-        throw std::runtime_error(err);
-    }
-}
+        exchange_group* eg = params::exchange_groups[n];
 
-void walker :: drift_away_from(walker* other)
-{
-        // Same-sign walkers don't drift away from one another
-        if (sign(other->weight) == sign(this->weight)) return;
-
-        // Work out how much to increase the seperation by
-        double r2 = this->sq_distance_to(other);
-        double arg = 0.5*sqrt(r2/(2*params::tau));
-        double mult = 1.0 / erf(arg);
-
-        // Drift each particle apart to obtain
-        // the correct average seperation
+        double r2_unpermuted = 0;
         for (unsigned i=0; i<particles.size(); ++i)
-                this->particles[i]->drift_apart(other->particles[i], mult);
+        {
+            // Check if the i^th particle is
+            // permuted by this group 
+            bool is_permuted = false;
+            for (unsigned j=0; j<eg->perms->elements(); ++j)
+                if ((*eg->perms)[0][j] == i)
+                {
+                    is_permuted = true;
+                    break;
+                }
+            if (is_permuted)
+                continue;
+
+            // Sum r^2 for particles that are not permuted
+            r2_unpermuted += particles[i]->sq_distance_to(other->particles[i]);
+        }
+
+        // Loop over permutations
+        unsigned* unperm = (*eg->perms)[0];
+        for (unsigned m=0; m<eg->perms->size(); ++m)
+        {
+            unsigned* perm = (*eg->perms)[m];
+            double r2      = r2_unpermuted;
+
+            // Add the contribution to r^2 from the permuted particles
+            for (unsigned i=0; i<eg->perms->elements(); ++i)
+            {
+                unsigned j = perm[i];
+                unsigned k = unperm[i];
+                r2   += particles[j]->sq_distance_to(other->particles[k]);
+            }
+
+            // Sum the greens functions
+            double gf = fexp(-r2/(2*tau))/sqrt(2*PI*tau);
+            if (eg->weight_mult(m) > 0) ret[0] += gf;
+            else ret[1] += gf;
+        }
+    }
+    return ret;
 }
 
-void walker :: write_wavefunction()
+void walker :: write_coords(output_file& file)
 {
     // Write the walker wavefunction in the form
     // [weight: x1, y1, z1 ...; x2, y2, z2 ...; ...]
     // where x1 is the x coord of the first particle etc
-    params::wavefunction_file << this->weight << ":";
+    file << this->weight << ":";
     for (unsigned i=0; i<particles.size(); ++i)
     {
         for (unsigned j=0; j<params::dimensions; ++j)
         {
-            params::wavefunction_file
-                << particles[i]->coords[j];
+            file << particles[i]->coords[j];
             if (j != params::dimensions - 1)
-                params::wavefunction_file << ",";
+                file << ",";
         }
         if (i != particles.size() - 1)
-            params::wavefunction_file << ";";
+            file << ";";
     }
+    file << "\n";
 }

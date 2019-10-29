@@ -3,10 +3,7 @@ import numpy as np
 import parser
 import sys
 
-start = int(sys.argv[1])
-end   = int(sys.argv[2])
-
-wfn = parser.parse_wavefunction(start, end)
+wfn = parser.parse_wavefunction(sys.argv[1:])
 
 weights = wfn[0]
 coords  = wfn[1:]
@@ -34,7 +31,10 @@ for ip, p in enumerate(coords):
                 for ix, x in enumerate(c):
                         # ix = sample index
                         # x  = sample
-                        index = int(bins * (x - min_x)/(max_x - min_x) - 0.5)
+                        try:
+                            index = int(bins * (x - min_x)/(max_x - min_x) - 0.5)
+                        except ValueError as ex:
+                            print(ex)
                         vals[index] += weights[ix]
 
                 vals /= np.sqrt(np.trapz(vals**2, x=xs))

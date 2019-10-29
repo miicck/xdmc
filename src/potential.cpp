@@ -19,6 +19,7 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+#include "dmc_math.h"
 #include "params.h"
 #include "potential.h"
 #include "constants.h"
@@ -119,6 +120,5 @@ double atomic_potential :: potential(particle* p)
         r += dxi * dxi;
     }
     r = sqrt(r);
-
-    return this->charge * p->charge / r;
+    return coulomb(this->charge, p->charge, r);
 }

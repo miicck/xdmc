@@ -26,40 +26,38 @@ class walker_collection
 public:
     walker_collection();
     ~walker_collection();
-
     walker_collection* copy();
 
-    unsigned size() { return walkers.size(); }
-    walker* operator[](int i) { return walkers[i]; }
-
-    void make_exchange_moves();
-    void apply_cancellations(walker_collection* walkers_last);
-    void correct_seperations();
-    void diffuse();
-    void branch();
+    bool propagate(walker_collection* walkers_last);
+    void write_output(bool reverted);
 
     double average_weight();
     double average_mod_weight();
     double average_potential();
-    double average_kinetic();
     double sum_mod_weight();
 
-    void write_output();
-
 private:
-    walker_collection(std::vector<walker*> walkers_in)
-        : walkers(walkers_in) {}
+    walker_collection(std::vector<walker*> walkers_in) : walkers(walkers_in) {}
 
-    void clip_weight();
+    double diffused_wavefunction(walker* w, double tau, int self_index);
+    double* diffused_wavefunction_signed(walker* w, double tau, int self_index);
+    double* exchange_diffused_wfn_signed(walker* w, double tau, int self_index);
 
-    void apply_diffusive_cancellations(walker_collection* walkers_last);
-    void apply_pairwise_cancellations();
-    void apply_voronoi_cancellations();
+    void make_exchange_moves();
+    void branch();
+
+    void make_diffusive_moves(walker_collection* walkers_last);
+    void diffuse_exact_1d();
+    void diffuse_max_seperation(walker_collection* walkers_last);
+    void diffuse_stochastic_nodes(walker_collection* walkers_last);
+    void diffuse_bosonic(walker_collection* walkers_last);
+    void exchange_diffuse(walker_collection* walkers_last);
+
     void apply_renormalization();
+    void renormalize_growth();
+    void renormalize_potential();
 
     std::vector<walker*> walkers;
 };
 
 #endif
-
-

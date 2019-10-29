@@ -5,13 +5,15 @@ import matplotlib.pyplot as plt
 from matplotlib.gridspec import GridSpec
 from parser import parse_evolution
     
-round_to_n = lambda x, n: round(x, -int(floor(log10(abs(x)))) + (n - 1))
+round_to_n = lambda x, n: round(x, -int(floor(log10(abs(x)))) + (n - 1)) if abs(x) > 10e-9 else 0
 
 # Parse command line args
 e_targ = None
 for arg in sys.argv:
     if arg.startswith("-e="):
-        e_targ = float(arg.split("=")[-1])
+        val = arg.split("=")[-1]
+        if val == "lithium": e_targ = -7.47807
+        else: e_targ = float(val)
         break
 
 v_targ = None
@@ -30,15 +32,18 @@ fig, axes = plt.subplots(len(data),2, gridspec_kw = {"width_ratios":[8,1]})
 # Plot each dataseries on its own subplot
 for i, d in enumerate(data):
 
+    sigma_range = 3
+
+    # Get statistics for dataseries
+    half = int(len(d)/2)
+    std  = round_to_n(np.std(d[half:]),  4)
+    mean = round_to_n(np.mean(d[half:]), 4)
+    err  = round_to_n(std / (float(half)**0.5), 4)
+
     # Plot dataseries
     axes[i,0].plot(d)
     axes[i,0].set_xlabel("Iteration")
-
-    half = int(len(d)/2)
-    mean = round_to_n(np.mean(d[half:]), 4)
-    std  = round_to_n(np.std(d[half:]),  4)
-
-    axes[i,0].set_ylabel(y_axes[i]+"\n{0} +/- {1}".format(mean,std))
+    axes[i,0].set_ylabel(y_axes[i]+"\n{0} +/- {1}".format(mean,err))
     axes[i,0].axhline(mean, color="green", linestyle=":")
 
     # Set the axis scales
@@ -47,7 +52,9 @@ for i, d in enumerate(data):
         axes[i,1].set_yscale("log")
 
     elif "norm" in sys.argv:
-        axes[i,0].set_ylim([mean - 4*std, mean + 4*std])
+        delta = sigma_range*std
+        if delta < 10e-5: delta = 10e-5
+        axes[i,0].set_ylim([mean - delta, mean + delta])
 
     # Plot additional things
     if "Average weight" in y_axes[i]:
@@ -63,12 +70,15 @@ for i, d in enumerate(data):
 
     # Histogram distribution
     d = [di for di in d if di > axes[i,0].get_ylim()[0] and di < axes[i,0].get_ylim()[1]]
-    bins = int(min(100, int(len(d))/10))
+    bins = int(min(100, int(len(d)/10 + 1)))
     axes[i,1].hist(d, bins=bins, orientation="horizontal")
     axes[i,1].set_ylim(axes[i,0].get_ylim())
     axes[i,1].set_yticks([])
 
 # Spread the subplots out, and show them
 plt.subplots_adjust(wspace=0, hspace=0)
-fig.align_ylabels(axes)
+try:
+    fig.align_ylabels(axes)
+except:
+    print("Could not align y labels!")
 plt.show()

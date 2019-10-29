@@ -3,9 +3,13 @@ import numpy as np
 import parser
 import sys
 
-BINS = 50
-MIN  = -4
-MAX  =  4
+BINS = 30
+MIN_U  = -4
+MAX_U  =  4
+MIN_X  = -4
+MAX_X  =  4
+plt.rc("text", usetex=True)
+#plt.rc("font", size=14)
 
 # The 2d projection that we will visualize
 # (looking along the (111) direction
@@ -15,12 +19,12 @@ def V(x,y,z): return (2*z-x-y)/np.sqrt(6)
 # Plot a symmetry line in the 
 # x,y,z cartesian direction
 def plot_symmetry_line(x,y,z):
-    global MAX
+    global MAX_U
     us = np.array([-U(x,y,z), U(x,y,z)])
     vs = np.array([-V(x,y,z), V(x,y,z)])
     scale = max(max(us), max(vs))
-    us *= MAX/scale
-    vs *= MAX/scale
+    us *= MAX_U/scale
+    vs *= MAX_U/scale
     plt.plot(us, vs, color="black", linestyle=":")
 
 def psi0(x): return np.exp(-x**2/2.0)
@@ -36,15 +40,50 @@ def psi(x,y,z):
             mat[i][j] = psis[i](r[j])
     return np.linalg.det(mat)
 
+def psi_bosonic(x,y,z):
+    return psi0(x)*psi0(y)*psi0(z)
+    
+# Returns \psi(u, v) = \int \psi(x,y,z) \delta(u(x,y,z)-u) \delta(v(x,y,z)-v)
+def psi_uv(u, v, psi):
+    d = np.array([1.0,1.0,1.0])
+    y =  MIN_X
+    x =  np.sqrt(2.0)*u + y
+    z = (np.sqrt(6.0)*v + x + y)/2.0
+    p = np.array([x,y,z])
+    return np.trapz([psi(*(p+d*l)) for l in np.linspace(0,MAX_X-MIN_X,20)])
+
+def plot_psi(psi):
+    bins = np.zeros((BINS, BINS))
+    us = np.linspace(MIN_U, MAX_U, BINS)
+    vs = np.linspace(MIN_U, MAX_U, BINS)
+    for ui, u in enumerate(us):
+        for vi, v in enumerate(vs):
+            bins[vi][ui] = psi_uv(u, v, psi)
+
+    plt.contour(us, vs, bins, 11)
+    plt.xlabel(r"$u = \frac{x - y}{\sqrt{2}}$")
+    plt.ylabel(r"$v = \frac{2z - x - y}{\sqrt{6}}$")
+    #plt.gca().title.set_text(r"$\langle r^2 \rangle = 6.0$")
+
+    if psi != psi_bosonic:
+        # Plot symmetry lines
+        plot_symmetry_line(0,1,1)
+        plot_symmetry_line(1,0,1)
+        plot_symmetry_line(1,1,0)
+
 def project_wavefunction(wfn):
 
-    global BINS, MIN, MAX
+    global BINS, MIN_U, MAX_U
 
     # Range in U, V space to plot
     bins = np.zeros((BINS,BINS))
 
     av_r2 = 0
     tot_w = 0
+
+    if (len(wfn) == 0):
+        print("Wavefunction has no samples, skipping...")
+        return
 
     # Bin the wavefunction into this range
     print("Projecting wavefunction of length", len(wfn))
@@ -55,49 +94,60 @@ def project_wavefunction(wfn):
 
         # Work out the u coordinate
         u = U(x[0],y[0],z[0])
-        ui = int(BINS*(u-MIN)/(MAX-MIN))
+        ui = int(BINS*(u-MIN_U)/(MAX_U-MIN_U))
         if ui < 0: continue
         if ui >= BINS: continue
 
         # Work out the v coordinate
         v = V(x[0],y[0],z[0])
-        vi = int(BINS*(v-MIN)/(MAX-MIN))
+        vi = int(BINS*(v-MIN_U)/(MAX_U-MIN_U))
         if vi < 0: continue
         if vi >= BINS: continue
 
         bins[vi, ui] += w
 
+    if tot_w == 0:
+        print("Error, wavefunction has zero weight!")
+
     av_r2 /= tot_w
 
     # Plot the resulting contours
-    us, vs = np.meshgrid(np.linspace(MIN,MAX,BINS), np.linspace(MIN,MAX,BINS))
-    plt.contour(us, vs, bins, 10)
-    plt.xlabel("u = (x - y)/sqrt(2)")
-    plt.ylabel("v = (2z - x - y)/sqrt(6)")
-    plt.gca().title.set_text("<r^2> = {0}".format(av_r2))
+    us, vs = np.meshgrid(np.linspace(MIN_U,MAX_U,BINS), np.linspace(MIN_U,MAX_U,BINS))
+    plt.contour(us, vs, bins, 11)
+    plt.xlabel(r"$u = \frac{x - y}{\sqrt{2}}$")
+    plt.ylabel(r"$v = \frac{2z - x - y}{\sqrt{6}}$")
+    # plt.gca().title.set_text(r"$\langle r^2 \rangle = {0}$".format(av_r2))
 
     # Plot symmetry lines
     plot_symmetry_line(0,1,1)
     plot_symmetry_line(1,0,1)
     plot_symmetry_line(1,1,0)
 
-    plt.legend()
+def project_nodal_surface(wfn):
 
-# Pick start and end indicies
-start = int(sys.argv[1])
-end   = int(sys.argv[2])
+    print("Projecting nodal surface of length", len(wfn))
+    us = []
+    vs = []
+    for w, x, y, z in wfn:
+        us.append(U(x[0],y[0],z[0]))
+        vs.append(V(x[0],y[0],z[0]))
 
-plt.subplot(121)
-wfn = list(zip(*parser.parse_wavefunction(start, end)))
+    plt.scatter(us,vs, alpha=0.1)
+
+# Plot DMC samples
+plt.figure()
+wfn = list(zip(*parser.parse_wavefunction(sys.argv[1:])))
+#if "nodal_surface" in sys.argv[1:]:
+#    project_nodal_surface(wfn)
+#else:
 project_wavefunction(wfn)
 
-# Plot the analytic solution
-awfn = []
-for n in range(0, len(wfn)):
-    x,y,z = np.random.rand(3)*(MAX-MIN) + MIN
-    awfn.append([psi(x,y,z),[x],[y],[z]])
+# Plot analytic fermionic ground state
+plt.figure()
+plot_psi(psi)
 
-plt.subplot(122)
-project_wavefunction(awfn)
+# Plot analytic bosonic ground state
+plt.figure()
+plot_psi(psi_bosonic)
 
 plt.show()

@@ -10,7 +10,6 @@ params = [{
     "cpp_name"    : "dimensions",
     "default"     : "3",
     "description" : "The spatial dimensions of the system.",
-    "read_in"     : True
 },{
     "in_name"     : "walkers",
     "type"        : "unsigned",
@@ -19,23 +18,6 @@ params = [{
     "description" : ("The target population of DMC walkers. The actual number of "
                      "dmc walkers will fluctuate during runtime, but will be bias "
                      "towards this value."),
-    "read_in"     : True
-},{
-    "in_name"     : "max_pop_ratio",
-    "type"        : "double",
-    "cpp_name"    : "max_pop_ratio",
-    "default"     : "4.0",
-    "description" : ("The maximum allowed population, expressed as a multiple of "
-                     "the target population."),
-    "read_in"     : True
-},{
-    "in_name"     : "min_pop_ratio",
-    "type"        : "double",
-    "cpp_name"    : "min_pop_ratio",
-    "default"     : "0.0",
-    "description" : ("The minimum allowed population, expressed as a fraction of "
-                     "the target population."),
-    "read_in"     : True
 },{
     "in_name"     : "iterations",
     "type"        : "unsigned",
@@ -43,43 +25,81 @@ params = [{
     "default"     : "10000",
     "description" : ("The number of DMC iterations, each corresponding to a "
                      "step of tau in imaginary time."),
-    "read_in"     : True
 },{
-    "in_name"     : "iter",
     "type"        : "unsigned",
     "cpp_name"    : "dmc_iteration",
     "default"     : "0",
     "description" : "The current DMC iteration.",
-    "read_in"     : False
 },{
     "in_name"     : "tau",
     "type"        : "double",
     "cpp_name"    : "tau",
     "default"     : "0.01",
     "description" : "The DMC timestep in atomic units.",
-    "read_in"     : True
 },{
-    "in_name"     : "tau_c_ratio",
+    "in_name"     : "tau_nodes",
     "type"        : "double",
-    "cpp_name"    : "tau_c_ratio",
-    "default"     : "1.0",
-    "description" : ("The ratio of tau_c:tau, where tau_c is the effective "
-                     "cancellation timestep and tau is the DMC timestep."),
-    "read_in"     : True
+    "cpp_name"    : "tau_nodes",
+    "default"     : "0.1",
+    "description" : "Tau used to describe the stochastic nodal surface."
 },{
-    "in_name"     : "np",
+    "in_name"     : "self_gf_strength",
+    "type"        : "double",
+    "cpp_name"    : "self_gf_strength",
+    "default"     : "1.0",
+    "description" : ("How much a walker contributes to it's own diffused "
+                     "wavefunction. 1.0 <=> the same as other walkers. 0.0 "
+                     " <=> not at all.")
+},{
+    "in_name"     : "energy_estimator",
+    "type"        : "std::string",
+    "cpp_name"    : "energy_estimator",
+    "default"     : '"growth"',
+    "description" : "The method used to estimate the energy."
+},{
+    "in_name"     : "growth_mixing_factor",
+    "type"        : "double",
+    "cpp_name"    : "growth_mixing_factor",
+    "default"     : "0.0",
+    "description" : ("The amount that the old trial energy is mixed back "
+                     "into the new trial energy when the growth estimator "
+                     "is used for the energy. Should be in [0,1].")
+},{
+    "in_name"     : "full_exchange",
+    "type"        : "bool",
+    "cpp_name"    : "full_exchange",
+    "default"     : "false",
+    "description" : ("If true, sample exchange moves from permutations, "
+                     "rather than permutation operators.")
+},{
+    "in_name"     : "coulomb_softening",
+    "type"        : "double",
+    "cpp_name"    : "coulomb_softening",
+    "default"     : "0",
+    "description" : "Softening parameter for the coulomb potential."
+},{
+    "in_name"     : "diffusion_scheme",
+    "type"        : "std::string",
+    "cpp_name"    : "diffusion_scheme",
+    "default"     : '"max_seperation"',
+    "description" : "The diffusion scheme used."
+},{
+    "in_name"     : "max_weight",
+    "type"        : "double",
+    "cpp_name"    : "max_weight",
+    "default"     : "10",
+    "description" : ("The maximum allowed weight of any individual walker. "
+                     "If this is exceeded then the iteration is reverted. ")
+},{
     "type"        : "int",
     "cpp_name"    : "np",
     "default"     : "1",
     "description" : "The number of MPI processes.",
-    "read_in"     : False
 },{
-    "in_name"     : "pid",
     "type"        : "int",
     "cpp_name"    : "pid",
     "default"     : "0",
     "description" : "The MPI process id of this process. Will be in [0,np).",
-    "read_in"     : False
 },{
     "in_name"     : "trial_energy",
     "type"        : "double",
@@ -89,7 +109,12 @@ params = [{
                      "value is used to control the DMC population and will "
                      "fluctuate during runtime. After equilibriation, it will "
                      "fluctuate around the ground state energy of the system."),
-     "read_in"    : True
+},{
+    "type"        : "int",
+    "cpp_name"    : "nodal_deaths",
+    "default"     : "0",
+    "description" : ("The number of walkers that died to crossing the nodal "
+                     "surface last iteration.")
 },{
     "in_name"     : "pre_diffusion",
     "type"        : "double",
@@ -98,21 +123,18 @@ params = [{
     "description" : ("The amount of imaginary time that the walkers will diffuse for "
                      "before the first full DMC iteration. Effectively, this is how "
                      "spread out the initial wavefunction is."),
-    "read_in"     : True
 },{
     "in_name"     : "write_wavefunction",
     "type"        : "bool",
     "cpp_name"    : "write_wavefunction",
     "default"     : "true",
     "description" : "True if wavefunction files are to be written.",
-    "read_in"     : True
 },{
-    "in_name"     : "exchange_moves",
+    "in_name"     : "write_nodal_surface",
     "type"        : "bool",
-    "cpp_name"    : "exchange_moves",
+    "cpp_name"    : "write_nodal_surface",
     "default"     : "true",
-    "description" : "True if exchange moves are to be made.",
-    "read_in"     : True
+    "description" : "True if nodal surface files are to be written.",
 },{
     "in_name"     : "exchange_prob",
     "type"        : "double",
@@ -122,45 +144,15 @@ params = [{
                      "given timestep. The actual exchange move made will be chosen "
                      "at random. 1 - this is the probability of simply diffusing, "
                      "making no exchange moves."),
-    "read_in"     : True
 },{
-    "in_name"     : "cancel_scheme",
-    "type"        : "std::string",
-    "cpp_name"    : "cancel_scheme",
-    "default"     : '"diffusive"',
-    "description" : "The cancellation scheme used.",
-    "read_in"     : True
+    "type"        : "int",
+    "cpp_name"    : "start_clock",
+    "default"     : "0",
+    "description" : "The result of clock() called at program start."
 },{
-    "in_name"     : "cancel_function",
-    "type"        : "std::string",
-    "cpp_name"    : "cancel_function",
-    "default"     : '"integrated_weight"',
-    "description" : "The cancellation function used if we are applying pairwise cancellations.",
-    "read_in"     : True
-},{
-    "in_name"     : "cancelled_weight",
-    "type"        : "double",
-    "cpp_name"    : "cancelled_weight",
-    "default"     : "0.0",
-    "description" : "The amount of weight cancelled during the last cancellation step.",
-    "read_in"     : False
-},{
-    "in_name"     : "correct_seperations",
-    "type"        : "bool",
-    "cpp_name"    : "correct_seperations",
-    "default"     : "false",
-    "description" : "True if seperation corrections are applied.",
-    "read_in"     : True
-},{
-    "in_name"     : "self_sign_strength",
-    "type"        : "double",
-    "cpp_name"    : "self_sign_strength",
-    "default"     : "0.0",
-    "description" : ("The strength of a walkers own greens function in "
-                     "deciding what sign it should be. A value of 0 strongly "
-                     "encourages the formation of nodal pockets, but represents "
-                     "an approximation to the true greens function. A value of " 
-                     "1 reproduces the correct greens function but is likely to "
-                     "lead to nodal pockets breaking apart."),
-    "read_in"     : True
+    "type"        : "int",
+    "cpp_name"    : "dmc_start_clock",
+    "default"     : "0",
+    "description" : "The result of clock() called just before first DMC iteration."
 }]
+

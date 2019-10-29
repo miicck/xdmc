@@ -21,40 +21,54 @@
 #include "random.h"
 #include "constants.h"
 
+#include <iostream>
+
 // Run the DMC calculation
 void run_dmc()
 {
     // Our DMC walkers
-    params::progress_file << "Initializing walkers...\n";
-    walker_collection walkers;
+    params::progress_file << "Initializing walkers\n";
+    walker_collection* walkers = new walker_collection();
     
     // Run our DMC iterations
-    params::progress_file << "Starting DMC simulation...\n";
+    params::progress_file << "Starting DMC simulation\n";
+    params::progress_file << "    Total setup time: " << params::time() << "s\n";
+    params::dmc_start_clock = clock();
+
     for (params::dmc_iteration = 1;
          params::dmc_iteration <= params::dmc_iterations;
          params::dmc_iteration ++)
     {
-        walker_collection* walkers_last = walkers.copy();
+        // Apply propagation of walkers
+        walker_collection* walkers_last = walkers->copy();
+        bool revert = !walkers->propagate(walkers_last);
 
-        // Apply various propagation steps
-        // (Some may be turned off internally)
-        walkers.diffuse();
-        walkers.make_exchange_moves();
-        walkers.correct_seperations();
-        walkers.apply_cancellations(walkers_last);
-        walkers.branch();
-        walkers.write_output();
+        if (revert)
+        {
+            // Revert this iteration
+            delete walkers;
+            walkers = walkers_last;
+        }
+        else
+            // Keep the new walkers
+            delete walkers_last;
 
-        delete walkers_last;
+        walkers->write_output(revert);
     }
 
     // Output success message
     params::progress_file << "\nDone, total time: " << params::time() << "s.\n";
+    
+    // Free memory
+    delete walkers;
 }
 
 // Program entrypoint
 int main(int argc, char** argv)
 {
+    // Used for timing info
+    params::start_clock = clock();
+
     // Read input files, ready output files, initialize MPI etc.
     params::load(argc, argv);
 

@@ -13,30 +13,42 @@ def parse_evolution():
         for line in lines[1:]:
                 if len(line.strip()) > 0:
                         try:
-                            data.append([float(i) for i in line.split(",")])
+                            d = [float(i) for i in line.split(",")]
+                            if np.isfinite(d).all():
+                                data.append(d)
                         except Exception as e:
                             print(e)
         data = list(zip(*data))
         return [y_axes, data]
 
-def parse_wavefunction(iter_start=0, iter_end=None):
+def parse_wavefunction(sys_args):
+
+        prefix = "wavefunction"
+        if "nodal_surface" in sys_args:
+            sys_args.remove("nodal_surface")
+            prefix = "nodal_surface"
 
         # Combines wavefunctions across processes
         combined = None
+        wfns = []
         for f in os.listdir("."):
-                if f.startswith("wavefunction"):
-                        wf = parse_wavefunction_file(f, iter_start, iter_end)
-                        if combined is None:
-                            combined = wf
-                        else:
-                            for i, wfi in enumerate(wf):
-                                combined[i].extend(wfi)
-        if combined is None:
-                print("Error, no wavefunction files found!")
-                quit()
+                if not f.startswith(prefix): continue
+                wfns.append(parse_wavefunction_file(f, sys_args))
+
+        if len(wfns) == 0:
+            raise Exception("Error: no wavefunction files found!")
+
+        wfn_sizes = [len(w) for w in wfns]
+        min_size  = min(wfn_sizes)
+        combined  = wfns[wfn_sizes.index(min_size)]
+        for w in wfns:
+            if w == combined: continue
+            for i in range(0, min_size):
+                combined[i].extend(w[i])
+
         return combined
 
-def parse_wavefunction_file(filename, iter_start=0, iter_end=None):
+def parse_wavefunction_file(filename, sys_args):
 
         # Reads a wavefunction file and returns
         # [weights, x1s, x2s ...]
@@ -48,26 +60,71 @@ def parse_wavefunction_file(filename, iter_start=0, iter_end=None):
                 print("Error parsing wavefunction from file "+filename+" does not exist!")
                 quit()
 
-        f = open(filename)
-        lines = f.read().split("\n")
-        f.close()
-        
-        if iter_end is None: iter_end = iter_start + 1
+        # Read lines from wavefunction file, count iterations
+        #f = open(filename)
+        #lines = f.read().split("\n")
+        #iter_start_lines = [i for i, l in enumerate(lines) if "#" in l]
+        #total_iters = len(iter_start_lines)
+        #f.close()
+        total_iters = -1
+        with open("evolution") as f:
+            for l in f:
+                total_iters += 1
 
-        iter_count = -1
+        # Work out which iterations to sample
+        if len(sys_args) == 1:
+            
+            # Read the last abs(sys_args[0]) iterations
+            iter_start   = total_iters - abs(int(sys_args[0]))
+            iter_end     = total_iters
+            iter_spacing = 1
+
+        elif len(sys_args) == 2:
+
+            if int(sys_args[0]) >= 0:
+
+                # Read start and end index from args 
+                iter_start   = int(sys_args[0])
+                iter_end     = int(sys_args[1])
+                iter_spacing = 1
+
+            else:
+
+                # If we were given a negative number, sample
+                # the last abs(sys_args[0]) iterations
+                # (Assume second number is spacing)
+                iter_start   = total_iters - abs(int(sys_args[0]))
+                iter_end     = total_iters
+                iter_spacing = int(sys_args[1])
+
+        elif len(sys_args) == 3:
+            
+            # Read in start, end, spacing
+            iter_start   = int(sys_args[0])
+            iter_end     = int(sys_args[1])
+            iter_spacing = int(sys_args[2])
+
+        print("Reading {0} from iteration {1} to {2} in steps of {3}".format(
+               filename, iter_start, iter_end, iter_spacing))
+
         data = []
-        for line in lines:
-            if "#" in line:
-                iter_count += 1
-                continue
-            if iter_count < iter_start: continue
-            if iter_count >= iter_end: break
-
-            weight, coords = line.split(":")
-            dat = [float(weight)]
-            for particle in coords.split(";"):
-                dat.append([float(w) for w in particle.split(",")])
-            data.append(dat)
+        with open(filename) as f:
+            iter_index = 0
+            for line in f:
+                if line[0] == "#":
+                    iter_index += 1
+                    continue
+                if iter_index < iter_start: continue
+                if iter_index > iter_end: break
+                if iter_index % iter_spacing != 0: continue
+                weight, coords = line.split(":")
+                dat = [float(weight)]
+                for particle in coords.split(";"):
+                    try:
+                        dat.append([float(w) for w in particle.split(",")])
+                    except:
+                        continue
+                data.append(dat)
 
         if len(data) == 0:
             fs = "Error: iterations {0} to {1} out of range for wavefuction file {2}"
@@ -76,7 +133,6 @@ def parse_wavefunction_file(filename, iter_start=0, iter_end=None):
 
         data = list(map(list, zip(*data)))
         return data
-            
 
 def parse_wavefunction_file_old(filename, iter_start=0, iter_end=None):
         

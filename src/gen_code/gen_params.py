@@ -50,7 +50,7 @@ with open("../params.cpp","w") as f:
         if "PYTHON_PARSE_PARAMS_HERE" in l:
             ws = l[0:l.find("P")]
             for p in params:
-                if not p["read_in"]: continue
+                if not "in_name" in p: continue
                 f.write(ws+"// Parse {0}\n".format(p["in_name"]))
                 f.write(ws+'if (tag == "{0}")\n'.format(p["in_name"]))
                 f.write(ws+"{\n")
@@ -63,9 +63,10 @@ with open("../params.cpp","w") as f:
         # Output params in params.cpp
         if "PYTHON_OUTPUT_PARAMS_HERE" in l:
             ws = l[0:l.find("P")]
-            max_len = max([len(p["in_name"]) for p in params])
+            max_len = max([len(p["in_name"]) for p in params if "in_name" in p])
             fs = 'progress_file << "    " << "{0:'+str(max_len)+'} "'
             for p in params:
+                if not "in_name" in p: continue
                 f.write(ws+fs.format(p["in_name"]))
                 f.write(" << params::{0}".format(p["cpp_name"]))
                 f.write(r' << "\n";'+"\n")

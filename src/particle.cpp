@@ -21,6 +21,7 @@
 #include "params.h"
 #include "particle.h"
 #include "random.h"
+#include "dmc_math.h"
 
 int particle::constructed_count;
 
@@ -61,8 +62,11 @@ std::string particle :: one_line_description()
     std::stringstream des;
     des << name;
     des << " [charge: " << this->charge 
-            << " mass: " << this->mass
-        << " spin: " << this->half_spins << "/2]";
+        << " mass: " << this->mass;
+    if (this->half_spins % 2 == 0)
+        des << " spin: " << this->half_spins/2 << "]";
+    else
+        des << " spin: " << this->half_spins << "/2]";
     return des.str();
 }
 
@@ -92,19 +96,6 @@ void particle :: exchange(particle* other)
         this->coords[i]  = other->coords[i];
         other->coords[i] = tmp;
     }
-}
-
-void particle :: drift_apart(particle* other, double multiplier)
-{
-        // Move these particles apart so that |this - other|
-        // --> multiplier*|this - other|
-        for (unsigned i=0; i<params::dimensions; ++i)
-        {
-                double di = this->coords[i] - other->coords[i];
-                di *= (multiplier - 1.0)/2.0;
-                this->coords[i]  += di;
-                other->coords[i] -= di;
-        }
 }
 
 double particle :: sq_distance_to(particle* other)
@@ -140,18 +131,13 @@ double particle :: sq_distance_to(particle* other)
     return r2;
 }
 
-double coulomb(particle* a, particle* b)
-{
-    // The coulomb interaction between two particles
-    if (fabs(a->charge) < 10e-10) return 0;
-    if (fabs(b->charge) < 10e-10) return 0;
-    double r = sqrt(a->sq_distance_to(b));
-    return (a->charge*b->charge)/r;
-}
-
 double particle::interaction(particle* other)
 {
-    return coulomb(this, other);
+    if (fabs(this->charge)  < 10e-10) return 0;
+    if (fabs(other->charge) < 10e-10) return 0;
+
+    double r = sqrt(this->sq_distance_to(other));
+    return coulomb(this->charge, other->charge, r);
 }
 
 void particle :: diffuse(double tau)
