@@ -31,7 +31,10 @@ for ip, p in enumerate(coords):
                 for ix, x in enumerate(c):
                         # ix = sample index
                         # x  = sample
-                        index = int(bins * (x - min_x)/(max_x - min_x) - 0.5)
+                        try:
+                            index = int(bins * (x - min_x)/(max_x - min_x) - 0.5)
+                        except ValueError as ex:
+                            print(ex)
                         vals[index] += weights[ix]
 
                 vals /= np.sqrt(np.trapz(vals**2, x=xs))
