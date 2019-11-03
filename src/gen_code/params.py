@@ -40,7 +40,7 @@ params = [{
     "in_name"     : "tau_nodes",
     "type"        : "double",
     "cpp_name"    : "tau_nodes",
-    "default"     : "0.1",
+    "default"     : "params::tau",
     "description" : "Tau used to describe the stochastic nodal surface."
 },{
     "in_name"     : "self_gf_strength",
