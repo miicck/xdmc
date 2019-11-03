@@ -4,7 +4,7 @@
 COMPILERS="mpic++ mpicc.openmpi mpicc" 
 LIBS="-lstdc++ -lm"
 INCLUDE=""
-COMP_FLAGS="-c -Wall -Ofast $INCLUDE"
+COMP_FLAGS="-c -Wall -g -O3 $INCLUDE"
 LINK_FLAGS="-o xdmc $INCLUDE"
 
 ###############################################################

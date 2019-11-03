@@ -352,6 +352,13 @@ void walker_collection :: apply_renormalization()
         renormalize_potential();
     else
         throw "Unkown energy estimator!";
+
+    // Revert trial energies found to be nan/inf
+    static double last_non_nan = 0;
+    if (std::isnan(params::trial_energy) || std::isinf(params::trial_energy))
+        params::trial_energy = last_non_nan;
+    else
+        last_non_nan = params::trial_energy;
 }
 
 void walker_collection :: renormalize_potential()
