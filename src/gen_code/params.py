@@ -90,7 +90,7 @@ params = [{
     "default"     : "0",
     "description" : ("Softening parameter for the coulomb potential. 0 corresponds "
                      "to a bare coulomb potential, larger values correspond to softer "
-                     "potentials of the form $\\frac{1}{r + s}$.")
+                     "potentials of the form 1/(r + s).")
 },{
     "in_name"     : "diffusion_scheme",
     "type"        : "std::string",
