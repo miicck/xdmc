@@ -1,4 +1,5 @@
 /*
+
     XDMC
     Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
 
@@ -13,6 +14,7 @@
     GNU General Public License for more details.
 
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
+
 */
 
 #include <math.h>
@@ -122,4 +124,13 @@ double atomic_potential :: potential(particle* p)
     r = sqrt(r);
     return coulomb(this->charge, p->charge, r);
 }
+
+
+
+
+
+
+
+
+
 

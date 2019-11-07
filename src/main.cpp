@@ -1,4 +1,5 @@
 /*
+
     XDMC
     Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
 
@@ -13,6 +14,7 @@
     GNU General Public License for more details.
 
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
+
 */
 
 #include "params.h"
@@ -97,4 +99,13 @@ int main(int argc, char** argv)
     // Free memory used in the simulation specification
     params::free_memory();
 }
+
+
+
+
+
+
+
+
+
 

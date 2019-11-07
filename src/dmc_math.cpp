@@ -1,4 +1,5 @@
 /*
+
     XDMC
     Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
 
@@ -13,6 +14,7 @@
     GNU General Public License for more details.
 
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
+
 */
 
 #include "dmc_math.h"
@@ -38,4 +40,13 @@ unsigned factorial(unsigned n)
     if (n == 0) return 1;
     return n * factorial(n-1);
 }
+
+
+
+
+
+
+
+
+
 

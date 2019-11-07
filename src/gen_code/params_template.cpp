@@ -1,5 +1,6 @@
 /*
-    DMCPP
+
+    XDMC
     Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
 
     This program is free software: you can redistribute it and/or modify
@@ -13,6 +14,7 @@
     GNU General Public License for more details.
 
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
+
 */
 
 #include <mpi.h>
@@ -398,3 +400,6 @@ double params :: dmc_time()
     // been running (excluding setup time)
     return double(clock()-dmc_start_clock)/double(CLOCKS_PER_SEC);
 }
+
+
+
