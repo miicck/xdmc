@@ -19,7 +19,7 @@ params = [{
     "type"        : "unsigned",
     "cpp_name"    : "dimensions",
     "default"     : "3",
-    "description" : "The spatial dimensions of the system.",
+    "description" : "The spatial dimension of the system.",
 },{
     "in_name"     : "walkers",
     "type"        : "unsigned",
@@ -51,7 +51,10 @@ params = [{
     "type"        : "double",
     "cpp_name"    : "tau_nodes",
     "default"     : "params::tau",
-    "description" : "Tau used to describe the stochastic nodal surface."
+    "description" : ("The effective timestep used enforce fermionic antisymmetry. "
+                     "Essentially corresponds to the range of influence of a single "
+                     "walker. Setting tau_nodes >> tau will combat bosonic collapse, "
+                     "but may introduce bias?")
 },{
     "in_name"     : "self_gf_strength",
     "type"        : "double",
@@ -72,8 +75,7 @@ params = [{
     "cpp_name"    : "growth_mixing_factor",
     "default"     : "0.0",
     "description" : ("The amount that the old trial energy is mixed back "
-                     "into the new trial energy when the growth estimator "
-                     "is used for the energy. Should be in [0,1].")
+                     "into the new trial energy each iteration. Should be in [0,1].")
 },{
     "in_name"     : "full_exchange",
     "type"        : "bool",
@@ -86,7 +88,9 @@ params = [{
     "type"        : "double",
     "cpp_name"    : "coulomb_softening",
     "default"     : "0",
-    "description" : "Softening parameter for the coulomb potential."
+    "description" : ("Softening parameter for the coulomb potential. 0 corresponds "
+                     "to a bare coulomb potential, larger values correspond to softer "
+                     "potentials of the form $\\frac{1}{r + s}$.")
 },{
     "in_name"     : "diffusion_scheme",
     "type"        : "std::string",
@@ -115,8 +119,8 @@ params = [{
     "type"        : "double",
     "cpp_name"    : "trial_energy",
     "default"     : "0.0",
-    "description" : ("The DMC trial energy in atomic units (Hartree). This "
-                     "value is used to control the DMC population and will "
+    "description" : ("The initial value of the DMC trial energy in atomic units (Hartree). "
+                     "This value is used to control the DMC population and will "
                      "fluctuate during runtime. After equilibriation, it will "
                      "fluctuate around the ground state energy of the system."),
 },{
@@ -124,7 +128,10 @@ params = [{
     "cpp_name"    : "nodal_deaths",
     "default"     : "0",
     "description" : ("The number of walkers that died to crossing the nodal "
-                     "surface last iteration.")
+                     "surface last iteration. Depending on diffusion scheme "
+                     "this may or may not be all of the deaths due to exchange "
+                     "(some schemes also apply partial cancellations which are "
+                     "not counted by this number). ")
 },{
     "in_name"     : "pre_diffusion",
     "type"        : "double",
@@ -152,7 +159,7 @@ params = [{
     "default"     : "0.5",
     "description" : ("The probability of a walker making an exchange move in any "
                      "given timestep. The actual exchange move made will be chosen "
-                     "at random. 1 - this is the probability of simply diffusing, "
+                     "at random. (1 - this) is the probability of simply diffusing, "
                      "making no exchange moves."),
 },{
     "type"        : "int",
@@ -165,7 +172,3 @@ params = [{
     "default"     : "0",
     "description" : "The result of clock() called just before first DMC iteration."
 }]
-
-
-
-
