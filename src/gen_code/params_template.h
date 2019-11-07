@@ -75,6 +75,9 @@ namespace params
     // FUNCTIONS //
     //%%%%%%%%%%%//
 
+    // Print information about the usage of parameters etc.
+    void print_usage_info();
+
     // Loads system from input, initializes MPI, opens output files etc.
     bool load(int argc, char** argv);
 

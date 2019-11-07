@@ -19,6 +19,7 @@
 #include <vector>
 #include <sstream>
 #include <iterator>
+#include <iostream>
 
 #include "params.h"
 #include "particle.h"
@@ -335,6 +336,16 @@ bool params::load(int argc, char** argv)
 
     // Load successful
     return true;
+}
+
+void params::print_usage_info()
+{
+    // Print parameter usage info
+    std::cout << "####################\n";
+    std::cout << "# Input parameters #\n";
+    std::cout << "####################\n";
+
+    PYTHON_GEN_USAGE_INFO_HERE
 }
 
 void params::free_memory()

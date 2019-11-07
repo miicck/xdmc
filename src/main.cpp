@@ -63,9 +63,30 @@ void run_dmc()
     delete walkers;
 }
 
+// Check if arg is requesting help
+bool is_help_arg(std::string arg)
+{
+    if (arg == "-h") return true;
+    if (arg == "--h") return true;
+    if (arg == "-help") return true;
+    if (arg == "--help") return true;
+    return false;
+}
+
 // Program entrypoint
 int main(int argc, char** argv)
 {
+    // Check for help request
+    for (int i=0; i<argc; ++i)
+    {
+        std::string arg = argv[i];
+        if (is_help_arg(arg))
+        {
+            params::print_usage_info();
+            return 0;
+        }
+    }
+
     // Used for timing info
     params::start_clock = clock();
 
