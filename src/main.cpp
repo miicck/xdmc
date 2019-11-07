@@ -70,10 +70,8 @@ int main(int argc, char** argv)
     params::start_clock = clock();
 
     // Read input files, ready output files, initialize MPI etc.
-    params::load(argc, argv);
-
-    // Run the DMC simulation
-    run_dmc();
+    if (params::load(argc, argv))
+        run_dmc(); // Run the DMC simulation
 
     // Free memory used in the simulation specification
     params::free_memory();

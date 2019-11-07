@@ -133,7 +133,7 @@ params = [{
     "in_name"     : "write_nodal_surface",
     "type"        : "bool",
     "cpp_name"    : "write_nodal_surface",
-    "default"     : "true",
+    "default"     : "false",
     "description" : "True if nodal surface files are to be written.",
 },{
     "in_name"     : "exchange_prob",

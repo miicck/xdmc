@@ -76,7 +76,7 @@ namespace params
     //%%%%%%%%%%%//
 
     // Loads system from input, initializes MPI, opens output files etc.
-    void load(int argc, char** argv);
+    bool load(int argc, char** argv);
 
     // Closes output files and frees template_system and potentials
     void free_memory();
