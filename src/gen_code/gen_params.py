@@ -1,3 +1,19 @@
+# 
+#     XDMC
+#     Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
+# 
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published by
+#     the Free Software Foundation, either version 3 of the License, or
+#     (at your option) any later version.
+# 
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     GNU General Public License for more details.
+# 
+#     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
+# 
 from params import params
 # Will generate the params.h and params.cpp files from 
 # params_template.h and params_template.cpp respectively
@@ -71,5 +87,49 @@ with open("../params.cpp","w") as f:
                 f.write(" << params::{0}".format(p["cpp_name"]))
                 f.write(r' << "\n";'+"\n")
             continue
+
+        # Output usage info
+        if "PYTHON_GEN_USAGE_INFO_HERE" in l:
+
+            # Snippets of code to be formatted with information
+            WIDTH     = 60
+            DES_WIDTH = WIDTH - len("Description   : ")
+            ws = l[0:l.find("P")]
+            seperator    = "".join(["_" for i in range(0, WIDTH)])
+            seperator    = r'std::cout << "{0}\n";'.format(seperator) + '\n' 
+            title        = r'std::cout << "Parameter     = {0}\n";' + '\n'
+            type_line    = r'std::cout << "Type          = {0}\n";' + '\n'
+            default_line = r'std::cout << "Default value = {0}\n";' + '\n'
+            description  = r'std::cout << "Description   = {0}\n";' + '\n'
+            new_line     = r'std::cout << "                {0}\n";' + '\n'
+
+            for p in params:
+                if not "in_name" in p: continue
+
+                # Write the parameter name, type and default value
+                f.write(ws+seperator)
+                f.write(ws+title.format(p["in_name"]))
+                f.write(ws+type_line.format(p["type"]))
+                f.write(ws+default_line.format(p["default"].replace('"','')))
+
+                # Write parameter description, keeping to a
+                # sensible line length
+                first_line = True
+                words = p["description"].split()
+                des_line = ""
+
+                for i, w in enumerate(words):
+                    des_line += w + " "
+                    if i == len(words) - 1 or len(des_line + words[i+1]) >= DES_WIDTH:
+                        if first_line: 
+                            f.write(ws+description.format(des_line))
+                            first_line = False
+                        else:
+                            f.write(ws+new_line.format(des_line))
+                        des_line = ""
+            continue
             
         f.write(l+"\n")
+
+
+

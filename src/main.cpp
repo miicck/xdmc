@@ -1,4 +1,5 @@
 /*
+
     XDMC
     Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
 
@@ -13,6 +14,7 @@
     GNU General Public License for more details.
 
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
+
 */
 
 #include "params.h"
@@ -63,19 +65,47 @@ void run_dmc()
     delete walkers;
 }
 
+// Check if arg is requesting help
+bool is_help_arg(std::string arg)
+{
+    if (arg == "-h") return true;
+    if (arg == "--h") return true;
+    if (arg == "-help") return true;
+    if (arg == "--help") return true;
+    return false;
+}
+
 // Program entrypoint
 int main(int argc, char** argv)
 {
+    // Check for help request
+    for (int i=0; i<argc; ++i)
+    {
+        std::string arg = argv[i];
+        if (is_help_arg(arg))
+        {
+            params::print_usage_info();
+            return 0;
+        }
+    }
+
     // Used for timing info
     params::start_clock = clock();
 
     // Read input files, ready output files, initialize MPI etc.
-    params::load(argc, argv);
-
-    // Run the DMC simulation
-    run_dmc();
+    if (params::load(argc, argv))
+        run_dmc(); // Run the DMC simulation
 
     // Free memory used in the simulation specification
     params::free_memory();
 }
+
+
+
+
+
+
+
+
+
 

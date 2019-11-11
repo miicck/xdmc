@@ -1,5 +1,6 @@
 /*
-    DMCPP
+
+    XDMC
     Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
 
     This program is free software: you can redistribute it and/or modify
@@ -13,12 +14,14 @@
     GNU General Public License for more details.
 
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
+
 */
 
 #include <mpi.h>
 #include <vector>
 #include <sstream>
 #include <iterator>
+#include <iostream>
 
 #include "params.h"
 #include "particle.h"
@@ -81,10 +84,29 @@ void parse_atomic_potential(std::vector<std::string> split)
     potentials.push_back(new atomic_potential(charge, coords));
 }
 
-// Parse the input file.
-void read_input()
+// Check that the parameter set is sensible
+bool check_params()
 {
+    if (params::template_system.size() == 0)
+    {
+        params::error_file << "Error: no particles found in system!\n";
+        return false;
+    }
+
+    return true;
+}
+
+// Parse the input file.
+bool read_input()
+{
+    // Open the input file
     std::ifstream input("input");
+    if (!input.is_open())
+    {
+        params::error_file << "Error: could not read input file!\n";
+        return false;
+    }
+
     for (std::string line; getline(input, line); )
     {
         // Ignore comments
@@ -166,6 +188,9 @@ void read_input()
             params::exchange_groups.push_back(eg);
         }
     }
+
+    // Check the parameter set
+    return check_params();
 }
 
 // Construct/destruct an exchange_group
@@ -270,7 +295,7 @@ void output_sim_details()
     progress_file << "\n";
 }
 
-void params::load(int argc, char** argv)
+bool params::load(int argc, char** argv)
 {
     // Initialize mpi
     if (MPI_Init(&argc, &argv) != 0) exit(MPI_ERROR);
@@ -297,15 +322,32 @@ void params::load(int argc, char** argv)
     nodal_surface_file.open("nodal_surface_"+std::to_string(pid));
 
     // Read our input and setup parameters accordingly 
-    // do for each process sequentially to avoid access issues
-    for (int pid_read = 0; pid_read < np; ++ pid_read)
+    bool input_success = read_input();
+
+    // Check all processes succeeded
+    bool all_success = false;
+    MPI_Allreduce(&input_success, &all_success, 1, MPI_C_BOOL, MPI_LAND, MPI_COMM_WORLD);
+    if (!all_success)
     {
-            if (pid == pid_read) read_input();
-            MPI_Barrier(MPI_COMM_WORLD);
+        progress_file << "Errors occured whilst reading input, stopping.\n";
+        return false;
     }
-    
+
     // Output parameters to the progress file
     output_sim_details();
+
+    // Load successful
+    return true;
+}
+
+void params::print_usage_info()
+{
+    // Print parameter usage info
+    std::cout << "####################\n";
+    std::cout << "# Input parameters #\n";
+    std::cout << "####################\n";
+
+    PYTHON_GEN_USAGE_INFO_HERE
 }
 
 void params::free_memory()
@@ -358,3 +400,6 @@ double params :: dmc_time()
     // been running (excluding setup time)
     return double(clock()-dmc_start_clock)/double(CLOCKS_PER_SEC);
 }
+
+
+

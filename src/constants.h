@@ -1,4 +1,5 @@
 /*
+
     XDMC
     Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
 
@@ -13,6 +14,7 @@
     GNU General Public License for more details.
 
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
+
 */
 
 #ifndef __CONSTANTS__
@@ -29,6 +31,15 @@ const double EPS_X = 0.01;  // Epsilon for distances
 const int MPI_ERROR = 1;    // Thrown when an MPI call fails
 
 #endif
+
+
+
+
+
+
+
+
+
 
 
 

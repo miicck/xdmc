@@ -1,5 +1,6 @@
 /*
-    DMCPP
+
+    XDMC
     Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
 
     This program is free software: you can redistribute it and/or modify
@@ -13,6 +14,7 @@
     GNU General Public License for more details.
 
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
+
 */
 
 #ifndef __SIMULATION__
@@ -75,8 +77,11 @@ namespace params
     // FUNCTIONS //
     //%%%%%%%%%%%//
 
+    // Print information about the usage of parameters etc.
+    void print_usage_info();
+
     // Loads system from input, initializes MPI, opens output files etc.
-    void load(int argc, char** argv);
+    bool load(int argc, char** argv);
 
     // Closes output files and frees template_system and potentials
     void free_memory();
@@ -92,5 +97,8 @@ namespace params
 };
 
 #endif
+
+
+
 
 
