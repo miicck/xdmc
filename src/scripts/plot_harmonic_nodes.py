@@ -90,8 +90,5 @@ def plot_2d_nodes(scale=4.0, res=100, other_particles = [[0,0]]):
     plt.scatter([p[0] for p in config[1:]], [p[1] for p in config[1:]])
     plt.gca().set_aspect(1.0)
 
-for n in range(0, 50):
-    print("{0}/50".format(n))
-    plot_2d_nodes(other_particles=[8*(np.random.rand(2)-0.5) for i in range(0,10)])
-    plt.savefig("nodes_{0}.png".format(n))
-    plt.clf()
+plot_2d_nodes(other_particles=[[1.0,0]])
+plt.show()

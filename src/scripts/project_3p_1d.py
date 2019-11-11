@@ -113,7 +113,7 @@ def project_wavefunction(wfn):
 
     # Plot the resulting contours
     us, vs = np.meshgrid(np.linspace(MIN_U,MAX_U,BINS), np.linspace(MIN_U,MAX_U,BINS))
-    plt.contour(us, vs, bins, 11)
+    plt.contour(us, vs, bins, 11, cmap="RdBu")
     plt.xlabel(r"$u = \frac{x - y}{\sqrt{2}}$")
     plt.ylabel(r"$v = \frac{2z - x - y}{\sqrt{6}}$")
     # plt.gca().title.set_text(r"$\langle r^2 \rangle = {0}$".format(av_r2))
