@@ -19,7 +19,11 @@ import numpy as np
 import parser
 import sys
 
-BINS = 30
+from matplotlib.colors import ListedColormap
+
+CMAP   = "RdBu"
+LEVELS = 14
+BINS   = 30
 MIN_U  = -4
 MAX_U  =  4
 MIN_X  = -4
@@ -76,9 +80,15 @@ def plot_psi(psi):
         for vi, v in enumerate(vs):
             bins[vi][ui] = psi_uv(u, v, psi)
 
-    plt.contour(us, vs, bins, 11)
+    scale = max(abs(np.max(bins)), abs(np.min(bins)))
+    bins /= scale
+    bins[0][0] = -1.0
+    ctr=plt.contour(us, vs, bins, 11, cmap=CMAP, levels=np.linspace(-1.0,1.0,LEVELS))
+    cbar=plt.colorbar(ctr)
+    cbar.set_label(r"$\psi$")
     plt.xlabel(r"$u = \frac{x - y}{\sqrt{2}}$")
     plt.ylabel(r"$v = \frac{2z - x - y}{\sqrt{6}}$")
+    plt.gca().set_aspect(1.0)
     #plt.gca().title.set_text(r"$\langle r^2 \rangle = 6.0$")
 
     if psi != psi_bosonic:
@@ -129,9 +139,14 @@ def project_wavefunction(wfn):
 
     # Plot the resulting contours
     us, vs = np.meshgrid(np.linspace(MIN_U,MAX_U,BINS), np.linspace(MIN_U,MAX_U,BINS))
-    plt.contour(us, vs, bins, 11, cmap="RdBu")
+    scale = max(abs(np.max(bins)), abs(np.min(bins)))
+    bins /= scale
+    ctr=plt.contour(us, vs, bins, 11, cmap=CMAP, levels=np.linspace(-1.0,1.0,LEVELS))
+    cbar=plt.colorbar(ctr)
+    cbar.set_label(r"$\psi$")
     plt.xlabel(r"$u = \frac{x - y}{\sqrt{2}}$")
     plt.ylabel(r"$v = \frac{2z - x - y}{\sqrt{6}}$")
+    plt.gca().set_aspect(1.0)
     # plt.gca().title.set_text(r"$\langle r^2 \rangle = {0}$".format(av_r2))
 
     # Plot symmetry lines

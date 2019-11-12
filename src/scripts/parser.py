@@ -19,6 +19,57 @@ import numpy as np
 import sys
 import os
 
+def call_on_walkers_single(func, skip_iter, filename):
+    # Call the function func(i, w, x) over walkers
+    # where i is the iteration, w is the weight
+    # and x is the configuration in the form
+    # x = [p1, p2, p3 ... ] and p1...pN are the
+    # particle position vectors
+
+    # Loop over lines in the wavefunction file
+    with open(filename) as f:
+        iteration = 0
+        skip = False
+        for l in f:
+            if l.startswith("#"):
+                # Got to next iteration
+                iteration += 1
+                if (iteration % 1000 == 0):
+                    print("    Iteration {0}".format(iteration))
+
+                # Skip certain iterations
+                skip = skip_iter(iteration)
+                continue
+
+            if skip:
+                continue
+
+            # Parse the walker
+            w, x = l.split(":")
+            w    = float(w)
+            x    = [[float(c) for c in p.split(",")] for p in x.split(";")]
+
+            # Call the function for this walker
+            func(iteration, w, x)
+
+def call_on_walkers(func, skip_iter=lambda i: False):
+    # Call the function func(i, w, x) over walkers
+    # where i is the iteration, w is the weight
+    # and x is the configuration in the form
+    # x = [p1, p2, p3 ... ] and p1...pN are the
+    # particle position vectors
+
+    procs = []
+
+    # Loop over wavefunction files
+    wfn_n = -1
+    while True:
+        wfn_n += 1
+        filename = "wavefunction_{0}".format(wfn_n)
+        if not os.path.isfile(filename): break
+        print(filename)
+        call_on_walkers_single(func, skip_iter, filename)
+
 def parse_evolution():
     
         # Read in our data from the evolution file
