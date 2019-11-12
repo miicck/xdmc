@@ -11,13 +11,16 @@ def read_density(filename):
 density      = read_density("density.binned")
 cond_density = read_density("cond_density.binned")
 
+def plot_density(d):
+    plt.imshow(d, extent=(-4,4,-4,4))
+    plt.axhline(0, color="black")
+    plt.axvline(0, color="black")
+
 plt.subplot(221)
-plt.imshow(density)
-
+plot_density(density)
 plt.subplot(222)
-plt.imshow(cond_density)
-
+plot_density(cond_density)
 plt.subplot(223)
-plt.imshow(cond_density - density)
+plot_density(cond_density - density)
 
 plt.show()

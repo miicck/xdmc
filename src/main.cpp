@@ -99,13 +99,3 @@ int main(int argc, char** argv)
     // Free memory used in the simulation specification
     params::free_memory();
 }
-
-
-
-
-
-
-
-
-
-

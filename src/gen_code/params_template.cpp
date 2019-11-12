@@ -256,6 +256,20 @@ std::string exchange_group :: one_line_summary()
 
 void output_sim_details()
 {
+    // Vanity
+    std::string vanity = "";
+    vanity += "  __   __________  ________        \n";
+    vanity += "  \\ \\ / /  _  \\  \\/  /  __ \\  \n";
+    vanity += "   \\ V /| | | | .  . | /  \\/     \n";
+    vanity += "   /   \\| | | | |\\/| | |         \n";
+    vanity += "  / /^\\ \\ |/ /| |  | | \\__/\\   \n";
+    vanity += "  \\/   \\/___/ \\_|  |_/\\____/   \n";
+    vanity += "                                   \n";
+    vanity += "eXchange Diffusion Monte Carlo     \n";
+    vanity += "  (c) 2019 Michael Hutcheon        \n";
+    vanity += "      mjh261@cam.ac.uk             \n";
+    progress_file << vanity << "\n";
+
     // Output a summary of the parameter values used
     progress_file << "Parameter values\n";
     PYTHON_OUTPUT_PARAMS_HERE
