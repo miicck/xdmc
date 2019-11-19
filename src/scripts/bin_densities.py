@@ -23,23 +23,45 @@ def on_plane(coords):
             return False
     return True
 
+# Read the spins of the particles
+index_spins = {}
+with open("progress") as f:
+
+    started = False
+    for l in f:
+        if "Particles" in l:
+            started = True
+            continue
+        if not started:
+            continue
+
+        try:
+            index = int(l.split(":")[0])
+            spin  = l.split(":")[-1].replace("]\n","")
+            index_spins[index] = spin
+        except:
+            break
+
+# Same spin particles
+same_spin = [i for i in index_spins if index_spins[i] == index_spins[0]] 
+print("Particle indicies: ", same_spin)
+
 def to_call(i, w, x):
     # This will be called on every walker
-    global density
-    global cond_density
+    global density, cond_density, same_spin
 
     # Evaluate if condition is true
     condition = coords(x[0]) == coords([1.0, 0, 0])
 
     # Sum up particle densities
-    for i, p in enumerate(x):
-        p = coords(p)
+    for i in same_spin:
+        p = coords(x[i])
         if not on_plane(p):
             continue
 
         try:
             density[p[0],p[1]] += 1.0
-            if i > 0 and condition:
+            if condition and (i > 0):
                 cond_density[p[0], p[1]] += 1.0
         except IndexError:
             continue
