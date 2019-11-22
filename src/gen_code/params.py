@@ -19,12 +19,14 @@ params = [{
     "type"        : "unsigned",
     "cpp_name"    : "dimensions",
     "default"     : "3",
+    "allowed"     : "positive",
     "description" : "The spatial dimension of the system.",
 },{
     "in_name"     : "walkers",
     "type"        : "unsigned",
     "cpp_name"    : "target_population",
     "default"     : "1000",
+    "allowed"     : "positive",
     "description" : ("The target population of DMC walkers. The actual number of "
                      "dmc walkers will fluctuate during runtime, but will be bias "
                      "towards this value."),
@@ -33,6 +35,7 @@ params = [{
     "type"        : "unsigned",
     "cpp_name"    : "dmc_iterations",
     "default"     : "10000",
+    "allowed"     : "positive",
     "description" : ("The number of DMC iterations, each corresponding to a "
                      "step of tau in imaginary time."),
 },{
@@ -45,12 +48,14 @@ params = [{
     "type"        : "double",
     "cpp_name"    : "tau",
     "default"     : "0.01",
+    "allowed"     : "positive",
     "description" : "The DMC timestep in atomic units.",
 },{
     "in_name"     : "tau_nodes",
     "type"        : "double",
     "cpp_name"    : "tau_nodes",
     "default"     : "params::tau",
+    "allowed"     : "positive",
     "description" : ("The effective timestep used enforce fermionic antisymmetry. "
                      "Essentially corresponds to the range of influence of a single "
                      "walker. Setting tau_nodes >> tau will combat bosonic collapse, "
@@ -60,6 +65,7 @@ params = [{
     "type"        : "double",
     "cpp_name"    : "self_gf_strength",
     "default"     : "1.0",
+    "allowed"     : "between 0.0 1.0",
     "description" : ("How much a walker contributes to it's own diffused "
                      "wavefunction. 1.0 <=> the same as other walkers. 0.0 "
                      " <=> not at all.")
@@ -68,12 +74,14 @@ params = [{
     "type"        : "std::string",
     "cpp_name"    : "energy_estimator",
     "default"     : '"growth"',
+    "allowed"     : "strings growth potential",
     "description" : "The method used to estimate the energy."
 },{
     "in_name"     : "growth_mixing_factor",
     "type"        : "double",
     "cpp_name"    : "growth_mixing_factor",
     "default"     : "0.0",
+    "allowed"     : "between 0.0 1.0",
     "description" : ("The amount that the old trial energy is mixed back "
                      "into the new trial energy each iteration. Should be in [0,1].")
 },{
@@ -88,6 +96,7 @@ params = [{
     "type"        : "double",
     "cpp_name"    : "coulomb_softening",
     "default"     : "0",
+    "allowed"     : "positive",
     "description" : ("Softening parameter for the coulomb potential. 0 corresponds "
                      "to a bare coulomb potential, larger values correspond to softer "
                      "potentials of the form 1/(r + s).")
@@ -95,13 +104,16 @@ params = [{
     "in_name"     : "diffusion_scheme",
     "type"        : "std::string",
     "cpp_name"    : "diffusion_scheme",
-    "default"     : '"max_seperation"',
+    "default"     : '"stochastic_nodes"',
+    "allowed"     : ("strings exact_1d max_seperation stochastic_nodes "
+                     "exchange_diffuse bosonic"),
     "description" : "The diffusion scheme used."
 },{
     "in_name"     : "max_weight",
     "type"        : "double",
     "cpp_name"    : "max_weight",
     "default"     : "10",
+    "allowed"     : "positive",
     "description" : ("The maximum allowed weight of any individual walker. "
                      "If this is exceeded then the iteration is reverted. ")
 },{
@@ -137,6 +149,7 @@ params = [{
     "type"        : "double",
     "cpp_name"    : "pre_diffusion",
     "default"     : "1.0",
+    "alowed"      : "positive",
     "description" : ("The amount of imaginary time that the walkers will diffuse for "
                      "before the first full DMC iteration. Effectively, this is how "
                      "spread out the initial wavefunction is."),
@@ -157,6 +170,7 @@ params = [{
     "type"        : "double",
     "cpp_name"    : "exchange_prob",
     "default"     : "0.5",
+    "allowed"     : "between 0.0 1.0",
     "description" : ("The probability of a walker making an exchange move in any "
                      "given timestep. The actual exchange move made will be chosen "
                      "at random. (1 - this) is the probability of simply diffusing, "

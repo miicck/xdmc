@@ -24,6 +24,54 @@ warning += "// GENERATED FILE - DO NOT EDIT \n"
 warning += "// Generated from {0} \n"
 warning += "// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% \n"
 
+# Generate the line(s) of c++ that test the given
+# named parameter according to the given test.
+# These lines should evaluate to true if the parameter
+# FAILS the test.
+# Generates c++ with indentaton given by ws (whitespace).
+def gen_test(param, test, ws=""):
+    test = test.strip()
+
+    if test == "positive":
+        return ws + "if (params::{0} < 0)".format(param)
+
+    if test.startswith("between"):
+
+        a  = float(test.split()[1])
+        b  = float(test.split()[2])
+        s  = ws + "if (params::{0} < {1}\n".format(param, a)
+        s += ws + " || params::{0} > {1})".format(param, b)
+        return s
+
+    if test.startswith("strings"):
+        s = ws + 'if (!(params::{0} == "{1}"'.format(param, test.split()[1])
+        for stest in test.split()[2:]:
+            s += "\n" + ws + '   || params::{0} == "{1}"'.format(param, stest)
+        s += "))"
+        return s
+
+    raise ValueError("Unkown test: "+test)
+
+# Generate the code to write the error to file if a parameter is
+# not in the allowed set
+def gen_test_fail_error(param, test, ws=""):
+    test=test.strip()
+
+    if test == "positive":
+        return ws+r'params::error_file << "Parameter {0} must be >= 0!\n";'.format(param)
+
+    if test.startswith("between"):
+        fs = r'params::error_file << "Parameter {0} must be between {1} and {2}!\n";'
+        return ws+fs.format(param, test.split()[1], test.split()[2])
+
+    if test.startswith("strings"):
+        fs = ws+r'params::error_file << "Parameter {0} must be one of the following:\n";'+"\n"
+        for s in test.split()[1:]:
+            fs += ws+'params::error_file << "    '+s+r'\n";'+"\n"
+        return fs.format(param)
+
+    raise ValueError("Unkown test: "+test)
+
 # Generate the params.h file from params_template.h
 with open("params_template.h") as f: 
     lines = f.read().split("\n")
@@ -72,6 +120,15 @@ with open("../params.cpp","w") as f:
                 f.write(ws+"{\n")
                 f.write(ws+"    std::stringstream ss(split[1]);\n")
                 f.write(ws+"    ss >> params::{0};\n".format(p["cpp_name"]))
+                if not "allowed" in p:
+                    f.write(ws+"    continue;\n")
+                    f.write(ws+"}\n\n")
+                    continue
+                f.write(gen_test(p["cpp_name"], p["allowed"], ws=ws+"    ")+"\n")
+                f.write(ws+"    {\n")
+                f.write(gen_test_fail_error(p["cpp_name"], p["allowed"], ws=ws+"        ")+"\n")
+                f.write(ws+"        return false;\n")
+                f.write(ws+"    }\n\n")
                 f.write(ws+"    continue;\n")
                 f.write(ws+"}\n\n")
             continue
