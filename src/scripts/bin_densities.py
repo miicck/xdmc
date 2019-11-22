@@ -27,6 +27,7 @@ def coords(x):
 
 # Read the spins of the particles
 index_spins = {}
+index_particles = []
 with open("progress") as f:
 
     started = False
@@ -39,44 +40,71 @@ with open("progress") as f:
 
         try:
             index = int(l.split(":")[0])
-            spin  = l.split(":")[-1].replace("]\n","")
+            spin  = l.split(":")[-1].replace("]\n","").strip()
             index_spins[index] = spin
+            index_particles.append(l.replace("\n",""))
         except:
             break
 
-# Same spin particles
-same_spin = [i for i in index_spins if index_spins[i] == index_spins[0]] 
-print("Particle indicies: ", same_spin)
+for p in index_particles:
+    print ("particle "+p)
 
-fixed_coords = [float(x) for x in input("Eneter the fixed particle coords: ").split()]
-print("Fixed coords", fixed_coords)
+plot_indicies   = [int(i) for i in input("Particle(s) to accumulate density for: ").split()]
+ignore_indicies = []
+fixed_positions = {}
+
+if len(plot_indicies) < len(index_particles):
+
+    ignore_indicies = [int(i) for i in input("Particle(s) to ignore: ").split()]
+
+    if len(plot_indicies) + len(ignore_indicies) < len(index_particles):
+        for j in range(0, len(index_particles)):
+            if not (j in plot_indicies):
+                if not (j in ignore_indicies):
+                    fs = "Fixed position for particle {0}: ".format(j)
+                    fixed_positions[j] = [float(x) for x in input(fs).split()]
+
+print("Plotting particles: ", plot_indicies)
+print("Ignoring particles: ", ignore_indicies)
+print("Fixing particles  : ")
+for i in fixed_positions:
+    print("    {0} : {1}".format(i, fixed_positions[i]))
+
+def in_range(c):
+    # Returns true if the coordinates c are
+    # in binning range
+    for ci in c:
+        if (ci < 0) or (ci >= BINS):
+            return False
+    return True
 
 def to_call(i, w, x):
     # This will be called on every walker
-    global density, cond_density, fixed_coords
+    global density, cond_density
+    global plot_indicies, ignore_indicies, fixed_positions
 
-    # Evaluate if condition is true
-    condition = coords(x[0]) == coords(fixed_coords)
+    # Evaluate if fixed particles are at the
+    # right place
+    condition = True
+    for i in fixed_positions:
+        if coords(x[i]) != coords(fixed_positions[i]):
+            condition = False
+            break
 
     # Sum up particle densities
-    for i in same_spin:
+    for i in plot_indicies:
         p = coords(x[i])
 
-        # Check coordinates are in range
-        in_range = True
-        for pi in p:
-            if (pi < 0) or (pi >= BINS):
-                in_range = False
-                break
-        if not in_range:
-            continue
+        # Check coordinates are in bin range
+        if not in_range(p): continue
 
-        density[tuple(p)] += 1.0
+        # Accumulate the weight
+        density[tuple(p)] += w
         if i > 0 and condition:
-            cond_density[tuple(p)] += 1.0
+            cond_density[tuple(p)] += w
             
-start = int(sys.argv[1])
-end   = int(sys.argv[2])
+start = int(input("start iteration: "))
+end   = int(input("end iteration  : "))
 call_on_walkers(to_call, skip_iter=lambda i: i <= start or i >= end)
 
 def normalized(d, norm):

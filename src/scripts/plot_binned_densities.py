@@ -14,7 +14,7 @@ def plot_density(d):
         plt.axvline(0, color="black")
     elif len(d.shape) == 3:
         h = int(len(d[0,0,:])/2)
-        plt.imshow(d[:,:,h], extent=(-4,4,-4,4))
+        plt.imshow(d[:,:,h].T, extent=(-4,4,-4,4))
         plt.axhline(0, color="black")
         plt.axvline(0, color="black")
     else:
