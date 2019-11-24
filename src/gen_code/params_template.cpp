@@ -275,18 +275,20 @@ void output_sim_details()
     PYTHON_OUTPUT_PARAMS_HERE
 
     // Output a summary of potentials to the progress file
-    progress_file << "Potentials\n";
+    progress_file << "\nPotentials\n";
     for (unsigned i=0; i<potentials.size(); ++i)
         progress_file << "    " << potentials[i]->one_line_description() << "\n";
 
     // Output a summary of particles to the progress file
-    progress_file << "Particles\n";
+    progress_file << "\nParticles\n";
     for (unsigned i=0; i<template_system.size(); ++i)
            progress_file << "    " << i << ": "
                  << template_system[i]->one_line_description() << "\n";
 
     // Output a summary of the exchange groups
-    progress_file << "Exchange groups:\n";
+    progress_file << "\nExchange groups:\n";
+    if (exchange_groups.size() == 0)
+        progress_file << "    None";
     for (unsigned i=0; i<exchange_groups.size(); ++i)
     {
         exchange_group* eg = exchange_groups[i];
@@ -306,7 +308,7 @@ void output_sim_details()
         }
     }
 
-    progress_file << "\n";
+    progress_file << "\n\n";
 }
 
 bool params::load(int argc, char** argv)
@@ -357,9 +359,7 @@ bool params::load(int argc, char** argv)
 void params::print_usage_info()
 {
     // Print parameter usage info
-    std::cout << "####################\n";
-    std::cout << "# Input parameters #\n";
-    std::cout << "####################\n";
+    std::cout << "Input parameters:\n";
 
     PYTHON_GEN_USAGE_INFO_HERE
 }

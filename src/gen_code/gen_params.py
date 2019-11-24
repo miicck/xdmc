@@ -23,6 +23,7 @@ warning  = "// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% \n"
 warning += "// GENERATED FILE - DO NOT EDIT \n"
 warning += "// Generated from {0} \n"
 warning += "// %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% \n"
+    
 
 # Generate the line(s) of c++ that test the given
 # named parameter according to the given test.
@@ -48,6 +49,30 @@ def gen_test(param, test, ws=""):
         for stest in test.split()[2:]:
             s += "\n" + ws + '   || params::{0} == "{1}"'.format(param, stest)
         s += "))"
+        return s
+
+    raise ValueError("Unkown test: "+test)
+
+# Generate the lines of C++ to output the
+# information about the allowed
+# values for a given test
+def gen_test_allowed(test, ws=""):
+    test = test.strip()
+     
+    if test == "any":
+        return ws + r'std::cout << "Any.\n";'+"\n";
+
+    if test == "positive":
+        return ws + r'std::cout << "Any positive value.\n";'+"\n";
+
+    if test.startswith("between"):
+        s = ws + r'std::cout << "Any value between {0} and {1} (inclusive).\n";'+"\n";
+        return s.format(test.split()[1], test.split()[2])
+
+    if test.startswith("strings"):
+        s = ws      + r'std::cout << "Any of:\n";'+"\n";
+        for stest in test.split()[1:]:
+            s += ws + r'std::cout << "    {0}\n";'.format(stest) + "\n";
         return s
 
     raise ValueError("Unkown test: "+test)
@@ -159,6 +184,8 @@ with open("../params.cpp","w") as f:
             default_line = r'std::cout << "Default value = {0}\n";' + '\n'
             description  = r'std::cout << "Description   = {0}\n";' + '\n'
             new_line     = r'std::cout << "                {0}\n";' + '\n'
+            allowed_line = r'std::cout << "Allowed value(s):\n";' + '\n'
+            blank_line   = r'std::cout << "\n";' + '\n'
 
             for p in params:
                 if not "in_name" in p: continue
@@ -184,6 +211,14 @@ with open("../params.cpp","w") as f:
                         else:
                             f.write(ws+new_line.format(des_line))
                         des_line = ""
+
+                f.write(ws+blank_line)
+                test = "any"
+                if "allowed" in p:
+                    test = p["allowed"]
+                f.write(ws+allowed_line)
+                f.write(gen_test_allowed(test, ws=ws))
+
             continue
             
         f.write(l+"\n")

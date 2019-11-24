@@ -20,7 +20,7 @@ params = [{
     "cpp_name"    : "dimensions",
     "default"     : "3",
     "allowed"     : "positive",
-    "description" : "The spatial dimension of the system.",
+    "description" : "Spatial dimensions of the system (i.e 1D, 2D, 3D etc..).",
 },{
     "in_name"     : "walkers",
     "type"        : "unsigned",
@@ -58,8 +58,8 @@ params = [{
     "allowed"     : "positive",
     "description" : ("The effective timestep used enforce fermionic antisymmetry. "
                      "Essentially corresponds to the range of influence of a single "
-                     "walker. Setting tau_nodes >> tau will combat bosonic collapse, "
-                     "but may introduce bias?")
+                     "walker. Setting tau_nodes >> tau will combat bosonic collapse  "
+                     "(but may introduce bias).")
 },{
     "in_name"     : "self_gf_strength",
     "type"        : "double",
@@ -83,7 +83,7 @@ params = [{
     "default"     : "0.0",
     "allowed"     : "between 0.0 1.0",
     "description" : ("The amount that the old trial energy is mixed back "
-                     "into the new trial energy each iteration. Should be in [0,1].")
+                     "into the new trial energy each iteration.")
 },{
     "in_name"     : "full_exchange",
     "type"        : "bool",
@@ -115,7 +115,12 @@ params = [{
     "default"     : "10",
     "allowed"     : "positive",
     "description" : ("The maximum allowed weight of any individual walker. "
-                     "If this is exceeded then the iteration is reverted. ")
+                     "If this is exceeded then the iteration is reverted. Smaller "
+                     "values combat population explosion, but introduce bias. Very "
+                     "small values may lead to excessive numbers of reverted "
+                     "iterations. If working with a system with coulomb interactions "
+                     "use max_weight in conjunction with coulomb_softening for best "
+                     "results.")
 },{
     "type"        : "int",
     "cpp_name"    : "np",
