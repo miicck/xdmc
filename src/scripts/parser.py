@@ -70,6 +70,55 @@ def call_on_walkers(func, skip_iter=lambda i: False):
         print(filename)
         call_on_walkers_single(func, skip_iter, filename)
 
+def bin_wavefunction():
+    # This will bin the wavefunction into an
+    # np array of size bins x bins x bins ...
+    # with the same dimensionality as the
+    # wavefunction (i.e bins^Nd).
+
+    # Convert coords to indicies
+    def indicies(c, bins, scale):
+        return [int(bins*(x+scale)/(2*scale)) for x in c]
+
+    # Will be called on every walker
+    def to_call(i, w, x, bins, scale, wfn):
+        c = indicies(np.array(x).flatten(), bins, scale)
+        try: wfn[tuple(c)] += w
+        except IndexError as e: return
+
+    # Get the iteration range etc.
+    print("Parsing wavefunction...")
+    start   = int(input("Start iteration: "))
+    end     = int(input("End iteration  : "))
+    scale = float(input("Scale          : "))
+    bins    = int(input("Bins           : "))
+
+    # Get the dimensionallity of the wavefunction
+    with open("wavefunction_0") as f:
+        for line in f:
+            if line.startswith("#"): continue
+            particle_count = len(line.split(";"))
+            spatial_dimensions = len(line.split(";")[0].split(","))
+            break
+    config_dimensions = particle_count * spatial_dimensions
+
+    # Initialize the wavefunction and accumulate it
+    wfn = np.zeros(shape=[bins for i in range(0, config_dimensions)])
+    f = lambda i,w,x : to_call(i,w,x,bins,scale,wfn)
+    call_on_walkers(f, skip_iter=lambda i: i < start or i > end)
+
+    # Normalize the wavefunction
+    norm = wfn
+    while True:
+        try: norm = np.trapz(norm)
+        except: break
+    wfn /= norm
+
+    return { 
+        "wavefunction" : wfn, 
+        "scale"        : scale,
+        }
+
 def parse_evolution():
     
         # Read in our data from the evolution file
