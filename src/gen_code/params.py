@@ -106,7 +106,7 @@ params = [{
     "cpp_name"    : "diffusion_scheme",
     "default"     : '"stochastic_nodes"',
     "allowed"     : ("strings exact_1d max_seperation stochastic_nodes "
-                     "exchange_diffuse bosonic"),
+                     "stochastic_nodes_mpi exchange_diffuse bosonic"),
     "description" : "The diffusion scheme used."
 },{
     "in_name"     : "max_weight",

@@ -49,6 +49,7 @@ public:
 
     walker* copy();
     walker* branch_copy();
+    static walker* mpi_copy(walker* to_copy, int root_pid);
 
     void write_coords(output_file& file);
     std::string summary();
@@ -66,13 +67,3 @@ private:
 };
 
 #endif
-
-
-
-
-
-
-
-
-
-

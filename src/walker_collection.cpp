@@ -24,6 +24,7 @@
 #include "dmc_math.h"
 #include "walker_collection.h"
 #include "params.h"
+#include "mpi_utils.h"
 
 bool walker_collection :: propagate(walker_collection* walkers_last)
 {
@@ -69,6 +70,8 @@ void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
         diffuse_max_seperation(walkers_last);
     else if (params::diffusion_scheme == "stochastic_nodes")
         diffuse_stochastic_nodes(walkers_last);
+    else if (params::diffusion_scheme == "stochastic_nodes_mpi")
+        diffuse_stochastic_nodes_mpi(walkers_last);
     else if (params::diffusion_scheme == "exchange_diffuse")
         exchange_diffuse(walkers_last);
     else if (params::diffusion_scheme == "bosonic")
@@ -93,7 +96,7 @@ double walker_collection :: diffused_wavefunction(
     double psi_d = 0;
     for (unsigned n=0; n < walkers.size(); ++n)
     {
-        walker* w   = walkers[n];
+        walker* w = walkers[n];
 
         // Treat my own contribution to the
         // greens function differently
@@ -344,6 +347,75 @@ void walker_collection :: diffuse_stochastic_nodes(walker_collection* walkers_la
     }
 }
 
+void walker_collection :: diffuse_stochastic_nodes_mpi(walker_collection* walkers_last)
+{
+    // Carry out diffusion of walkers, evaluating a stochastic nodal
+    // surface using all the walkers across processes
+
+    // Loop over processes
+    for (int pid=0; pid<params::np; ++pid)
+    {
+        // Get the number of walkers on this process
+        int walker_count = params::pid == pid ? walkers.size() : 0;
+        MPI_Bcast(&walker_count, 1, MPI_INT, pid, MPI_COMM_WORLD);
+        
+        // Propagate the walkers on this process
+        for (int n=0; n<walker_count; ++n)
+        {
+            // Get a copy of the i^th walker on the 
+            // pid^th process, before diffusion
+            walker* w = params::pid == pid ? walkers[n] : nullptr;
+            walker* w_before = walker::mpi_copy(w, pid);
+
+            // Compute the across-process wavefunction before diffusion
+            double psi_before_pid = walkers_last->
+                diffused_wavefunction(w_before, params::tau_nodes, -1); 
+            double psi_before;
+            MPI_Reduce(&psi_before_pid, &psi_before, 1, MPI_DOUBLE, MPI_SUM, pid, MPI_COMM_WORLD);
+
+            // On the pid^th process, diffuse the walker
+            if (params::pid == pid)
+                w->diffuse(params::tau);
+
+            // Get a copy of the i^th walker on the 
+            // pid^th process, after diffusion
+            walker* w_after = walker::mpi_copy(w, pid);
+
+            // Compute the across-process wavefunction after diffusion
+            double psi_after_pid = walkers_last->
+                diffused_wavefunction(w_after, params::tau_nodes, -1);
+            double psi_after;
+            MPI_Reduce(&psi_after_pid, &psi_after, 1, MPI_DOUBLE, MPI_SUM, pid, MPI_COMM_WORLD);
+
+            // On the pid^th process, kill the walker if it crossed the nodal surface
+            if (params::pid == pid)
+                if (sign(psi_before) != sign(psi_after))
+                {
+                    // Record the nodal surface
+                    if (params::write_nodal_surface)
+                        w->write_coords(params::nodal_surface_file);
+
+                    // Kill the walker
+                    w->weight = 0;
+                    params::nodal_deaths += 1;
+                }
+
+            // Free memory
+            delete w_before;
+            delete w_after;
+        }
+    }
+
+    // Apply the potential part of the greens function
+    // (which is independent of the other processes)
+    for (unsigned n=0; n < walkers.size(); ++n)
+    {
+        double pot_before   = walkers_last->walkers[n]->potential();
+        double pot_after    = walkers[n]->potential();
+        walkers[n]->weight *= potential_greens_function(pot_before, pot_after);
+    }
+}
+
 void walker_collection :: apply_renormalization()
 {
     // Apply the selected renormalization scheme
@@ -518,23 +590,6 @@ double walker_collection :: average_potential()
     }
     pot /= weight;
     return pot;
-}
-
-double mpi_average(double val)
-{
-    // Get the average of val across proccesses on pid 0
-    double res;
-    MPI_Reduce(&val, &res, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    res /= double(params::np);
-    return res;
-}
-
-double mpi_sum(double val)
-{
-    // Get the sum of val across proccesses on pid 0
-    double res;
-    MPI_Reduce(&val, &res, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
-    return res;
 }
 
 void walker_collection :: write_output(bool reverted)

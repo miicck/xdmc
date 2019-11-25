@@ -18,6 +18,7 @@
 */
 
 #include <sstream>
+#include <mpi.h>
 
 #include "constants.h"
 #include "random.h"
@@ -78,6 +79,33 @@ walker* walker :: branch_copy()
     walker* bcopy = this->copy();
     bcopy->weight = sign(bcopy->weight);
     return bcopy;
+}
+
+walker* walker :: mpi_copy(walker* to_copy, int root_pid)
+{
+    // Create a copy of a given walker across mpi 
+    // processes (i.e copy a walker from the given
+    // root process).
+    //
+    // to_copy 
+    //         = the walker to copy (on the root process)
+    //         = nullptr (all other processes)
+
+    walker* copy;
+    if (params::pid == root_pid)
+        // Simply copy the walker
+        copy = to_copy->copy();
+    else
+        // Create a new walker
+        copy = new walker();
+
+    // Distribute the walker coordinates across processes
+    for (unsigned i=0; i<copy->particles.size(); ++i)
+        MPI_Bcast(copy->particles[i]->coords, params::dimensions, MPI_DOUBLE, root_pid, MPI_COMM_WORLD);
+
+    // Distribute the walker weight across processes
+    MPI_Bcast(&copy->weight, 1, MPI_DOUBLE, root_pid, MPI_COMM_WORLD);
+    return copy;
 }
 
 std::string walker :: summary()
