@@ -611,20 +611,19 @@ void walker_collection :: write_output(bool reverted)
 
     // Output iteration information
     params::progress_file << "\nIteration " << params::dmc_iteration 
-                          << "/"  << params::dmc_iterations
-                          << " (" << percent_complete << "%" 
-                          << " imaginary time = "     
-                          << params::tau*params::dmc_iteration << ")\n";
-    params::progress_file << "    Time running       : " << params::time()
-                          << "s (" << time_per_iter << "s/iter)\n";
-    params::progress_file << "    ETA                : " << secs_remain    << "s \n";
-    params::progress_file << "    Trial energy       : " << triale_red     << " Hartree\n";
-    params::progress_file << "    Population         : " << population_red
-                          << " (" << population_red/params::np << " per process) "<< "\n";
-    params::progress_file << "    Nodal deaths       : " << nodal_deaths_red
-                          << " (" << nodal_death_perc << "% of the total population)\n";
-    params::progress_file << "    Reverted on        : " << reverted_red << "/"
-                          << params::np << " processes\n";
+        << "/"                              << params::dmc_iterations
+        << " ("                             << percent_complete
+        << "% imaginary time = "       << params::tau*params::dmc_iteration << ")\n"
+        << "    Time running       : " << params::time()
+        << "s ("                       << time_per_iter             << "s/iter)\n"
+        << "    ETA                : " << secs_remain               << "s \n"
+        << "    Trial energy       : " << triale_red                << " Hartree\n"
+        << "    Population         : " << population_red
+        << " ("                        << population_red/params::np << " per process) \n"
+        << "    Nodal deaths       : " << nodal_deaths_red
+        << " ("                        << nodal_death_perc          << "% of the total population)\n"
+        << "    Reverted on        : " << reverted_red 
+        << "/"                         << params::np                << " processes\n";
 
     if (params::dmc_iteration == 1)
     {

@@ -22,6 +22,7 @@
 #include <sstream>
 #include <iterator>
 #include <iostream>
+#include <ctime>
 
 #include "params.h"
 #include "particle.h"
@@ -269,6 +270,10 @@ void output_sim_details()
     vanity += "  (c) 2019 Michael Hutcheon        \n";
     vanity += "      mjh261@cam.ac.uk             \n";
     progress_file << vanity << "\n";
+
+    // Output the run start time
+    time_t now = std::time(0);
+    progress_file << "Run started " << std::ctime(&now) << "\n";
 
     // Output a summary of the parameter values used
     progress_file << "Parameter values\n";

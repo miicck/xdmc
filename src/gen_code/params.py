@@ -104,7 +104,7 @@ params = [{
     "in_name"     : "diffusion_scheme",
     "type"        : "std::string",
     "cpp_name"    : "diffusion_scheme",
-    "default"     : '"stochastic_nodes"',
+    "default"     : '"stochastic_nodes_mpi"',
     "allowed"     : ("strings exact_1d max_seperation stochastic_nodes "
                      "stochastic_nodes_mpi exchange_diffuse bosonic"),
     "description" : "The diffusion scheme used."
