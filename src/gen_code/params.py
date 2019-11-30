@@ -15,6 +15,11 @@
 #     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 # 
 params = [{
+    "type"        : "std::string",
+    "cpp_name"    : "run_mode",
+    "default"     : '"calculation"',
+    "description" : "The type of execution running.",
+},{
     "in_name"     : "dimensions",
     "type"        : "unsigned",
     "cpp_name"    : "dimensions",
@@ -190,4 +195,14 @@ params = [{
     "cpp_name"    : "dmc_start_clock",
     "default"     : "0",
     "description" : "The result of clock() called just before first DMC iteration."
+},{
+    "type"        : "int",
+    "cpp_name"    : "argc",
+    "default"     : "0",
+    "description" : "The number of arguments passed to the program."
+},{
+    "type"        : "char**",
+    "cpp_name"    : "argv",
+    "default"     : "nullptr",
+    "description" : "The arguments passed to the program."
 }]

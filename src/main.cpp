@@ -17,6 +17,8 @@
 
 */
 
+#define CATCH_CONFIG_RUNNER
+#include "catch.h"
 #include "params.h"
 #include "particle.h"
 #include "walker_collection.h"
@@ -75,26 +77,55 @@ bool is_help_arg(std::string arg)
     return false;
 }
 
+// Check if arg is requesting tests
+bool is_test_arg(std::string arg)
+{
+    if (arg == "-t") return true;
+    if (arg == "--t") return true;
+    if (arg == "-test") return true;
+    if (arg == "--test") return true;
+    return false;
+}
+
 // Program entrypoint
 int main(int argc, char** argv)
 {
-    // Check for help request
+    // Check command line arguments for run mode
     for (int i=0; i<argc; ++i)
     {
         std::string arg = argv[i];
         if (is_help_arg(arg))
-        {
-            params::print_usage_info();
-            return 0;
-        }
+            params::run_mode = "help";
+        else if (is_test_arg(arg))
+            params::run_mode = "test";
     }
 
-    // Used for timing info
-    params::start_clock = clock();
+    // Initialize MPI etc.
+    params::initialize();
 
-    // Read input files, ready output files, initialize MPI etc.
-    if (params::load(argc, argv))
-        run_dmc(); // Run the DMC simulation
+    // Print usage info
+    if (params::run_mode == "help")
+        params::print_usage_info();
+
+    // Run tests
+    else if (params::run_mode == "test")
+        for (int i=0; i<argc; ++i)
+        {
+            std::string arg = argv[i];
+            if (is_test_arg(arg))
+            {
+                // Run tests, passing all other command
+                // line argumenst to test session.
+                char** new_argv = new char*[argc-1];
+                for (int j=0; j<argc-1; ++j)
+                    new_argv[j] = j < i ? argv[j] : argv[j+1];
+                Catch::Session().run(argc-1, new_argv);
+                delete[] new_argv;
+            }
+        }
+
+    // Run the DMC simulation
+    else if (params::load(argc, argv)) run_dmc();
 
     // Free memory used in the simulation specification
     params::free_memory();

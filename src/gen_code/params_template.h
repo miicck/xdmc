@@ -80,7 +80,10 @@ namespace params
     // Print information about the usage of parameters etc.
     void print_usage_info();
 
-    // Loads system from input, initializes MPI, opens output files etc.
+    // Initialize MPI etc.
+    void initialize();
+
+    // Loads system from input, opens output files etc.
     bool load(int argc, char** argv);
 
     // Closes output files and frees template_system and potentials
@@ -97,8 +100,3 @@ namespace params
 };
 
 #endif
-
-
-
-
-

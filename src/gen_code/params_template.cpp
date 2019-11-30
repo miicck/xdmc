@@ -316,8 +316,11 @@ void output_sim_details()
     progress_file << "\n\n";
 }
 
-bool params::load(int argc, char** argv)
+void params::initialize()
 {
+    // Used for timing info
+    start_clock = clock();
+
     // Initialize mpi
     if (MPI_Init(&argc, &argv) != 0) exit(MPI_ERROR);
 
@@ -327,7 +330,10 @@ bool params::load(int argc, char** argv)
 
     // Seed random number generator
     srand(pid*clock());
+}
 
+bool params::load(int argc, char** argv)
+{
     // Open various output files
     if (pid == 0)
     {
@@ -390,7 +396,7 @@ void params::free_memory()
 
     // Output info on objects that werent deconstructed properly
     if (walker::constructed_count != 0 || particle::constructed_count != 0)
-    error_file << "PID: " << pid << " un-deleted objects:\n"
+    error_file << "PID: "          << pid << " un-deleted objects:\n"
                << "  Walkers   : " << walker::constructed_count   << "\n"
                << "  Particles : " << particle::constructed_count << "\n";
 
@@ -419,6 +425,3 @@ double params :: dmc_time()
     // been running (excluding setup time)
     return double(clock()-dmc_start_clock)/double(CLOCKS_PER_SEC);
 }
-
-
-
