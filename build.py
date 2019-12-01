@@ -3,7 +3,7 @@ import src.gen_code.gen_params # This will generate code
 import os
 
 # Flags controlling build
-COMPILERS     = "mpic++"
+COMPILER      = "mpic++"
 COMPILE_FLAGS = "-c -Wall -g -O3"
 LINK_FLAGS    = "-o xdmc"
 LIBS          = "-lstdc++ -lm"
