@@ -1,6 +1,6 @@
 # Ignore build files
 xdmc
-src/build
+build
 
 # Ignore these filetypes
 *.swp
