@@ -1,5 +1,6 @@
 #!/usr/bin/python
-import src.gen_code.gen_params # This will generate code
+import sys; sys.dont_write_bytecode = True # Dont generate .pyc files
+import shutil
 import os
 
 # Flags controlling build
@@ -7,6 +8,18 @@ COMPILER      = "mpic++"
 COMPILE_FLAGS = "-c -Wall -g -O3"
 LINK_FLAGS    = "-o xdmc"
 LIBS          = "-lstdc++ -lm"
+
+# Remove all build-related stuff
+# (including generated code)
+if "clean" in sys.argv:
+    shutil.rmtree("src/build")
+    os.remove("xdmc")
+    os.remove("src/params.cpp")
+    os.remove("src/params.h")
+    quit()
+
+# This will generate code
+import src.gen_code.gen_params
 
 try:
     # Attempt to import multiprocessing
