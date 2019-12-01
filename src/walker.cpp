@@ -20,6 +20,7 @@
 #include <sstream>
 #include <mpi.h>
 
+#include "catch.h"
 #include "constants.h"
 #include "random.h"
 #include "dmc_math.h"
@@ -131,7 +132,9 @@ void walker :: reflect_to_irreducible()
     while(true)
     {
         bool swap_made = false;
-        for (unsigned i=0; i<particles.size()-1; ++i)
+
+        // Cast to int in case particles.size() = 0
+        for (int i=0; i<int(particles.size())-1; ++i)
         {
             particle* p1 = particles[i];
             particle* p2 = particles[i+1];
@@ -380,12 +383,42 @@ void walker :: write_coords(output_file& file)
     file << "\n";
 }
 
+unsigned walker :: particle_count()
+{
+    // Return the number of particles
+    return particles.size();
+}
 
+bool walker :: compare(walker* other)
+{
+    // Returns false if these walkers are not identical
+    // in some way (for testing purposes)
+    if (this->sq_distance_to(other) != 0) return false;
+    if (this->weight != other->weight) return false;
+    if (this->particle_count() != other->particle_count()) return false;
+    return true;
+}
 
+TEST_CASE("Basic walker tests", "[walker]")
+{
+    // Create some walkers to test
+    walker* w1 = new walker();
+    walker* w2 = new walker();
 
+    SECTION("Copy method")
+    {
+        walker* w = w1->copy();
+        REQUIRE(w->compare(w1));
+        delete w;
+    }
 
+    SECTION("MPI copy method")
+    {
+        walker* w = params::pid == 0 ? w1 : nullptr;
+        walker* wc = walker::mpi_copy(w, 0);
+        REQUIRE(wc->compare(w1));
+    }
 
-
-
-
-
+    delete w1;
+    delete w2;
+}

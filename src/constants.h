@@ -21,8 +21,10 @@
 #define __CONSTANTS__
 
 // Physical constants (we work in atomic units)
-const double PI  = 3.141592653589793; // You should know this one
-const double AMU = 1822.88486193;     // Unified atomic mass unit / electron mass
+const double PI  = 3.141592653589793;      // You should know this one
+const double AMU = 1822.88486193;          // Unified atomic mass unit / electron mass
+const double PROTON_MASS  = 1.007276 *AMU; // Proton mass / electron mass
+const double NEUTRON_MASS = 1.0086654*AMU; // Neutron mass / electron mass
 
 // Finite difference amounts
 const double EPS_X = 0.01;  // Epsilon for distances
@@ -31,15 +33,3 @@ const double EPS_X = 0.01;  // Epsilon for distances
 const int MPI_ERROR = 1;    // Thrown when an MPI call fails
 
 #endif
-
-
-
-
-
-
-
-
-
-
-
-

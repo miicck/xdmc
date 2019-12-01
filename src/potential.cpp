@@ -21,6 +21,8 @@
 #include <string>
 #include <sstream>
 #include <fstream>
+
+#include "catch.h"
 #include "dmc_math.h"
 #include "params.h"
 #include "potential.h"
@@ -125,12 +127,34 @@ double atomic_potential :: potential(particle* p)
     return coulomb(this->charge, p->charge, r);
 }
 
+TEST_CASE("Basic potential tests", "[potentials]") 
+{
+    // Create potentials and particles to put in them
+    double* coords = new double[params::dimensions];
+    for (unsigned i=0; i<params::dimensions; ++i)
+        coords[i] = 0;
+    atomic_potential* ap = new atomic_potential(1.0, coords);
 
+    harmonic_well* hw = new harmonic_well(1.0);
 
+    particle* electron   = new particle();
+    electron->charge     = -1;
+    electron->mass       = 1;
+    electron->half_spins = 1;
+    electron->coords[0]  = 1;
 
+    particle* uncharged  = new particle();
+    uncharged->charge    = 0;
+    uncharged->coords[0] = 1;
 
+    REQUIRE(ap->potential(electron)  == -1);
+    REQUIRE(ap->potential(uncharged) ==  0);
+    REQUIRE(hw->potential(electron)  ==  0.5);
+    REQUIRE(hw->potential(uncharged) ==  0.5);
 
-
-
-
-
+    // Free memory
+    delete ap;
+    delete hw;
+    delete electron;
+    delete uncharged;
+}

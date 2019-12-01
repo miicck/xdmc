@@ -35,6 +35,7 @@ public:
     static int constructed_count;
 
     double weight = 1.0;
+    unsigned particle_count();
 
     double potential();
     double sq_distance_to(walker* other);
@@ -42,6 +43,7 @@ public:
     double* exchange_diffusive_gf(walker* other, double tau=params::tau);
 
     bool crossed_nodal_surface(walker* other);
+    bool compare(walker* other);
 
     void diffuse(double tau);
     void exchange();

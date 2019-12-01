@@ -31,6 +31,7 @@ public:
     walker_collection* copy();
 
     bool propagate(walker_collection* walkers_last);
+    bool compare(walker_collection* other_walkers);
     void write_output(bool reverted);
 
     double average_weight();

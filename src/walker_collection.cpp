@@ -20,6 +20,7 @@
 #include <sstream>
 #include <mpi.h>
 
+#include "catch.h"
 #include "random.h"
 #include "dmc_math.h"
 #include "walker_collection.h"
@@ -655,12 +656,34 @@ void walker_collection :: write_output(bool reverted)
     params::flush();
 }
 
+bool walker_collection :: compare(walker_collection* other_walkers)
+{
+    // Compare two collections of walkers, returns false if 
+    // they differ in any way (for testing purposes)
+    for (unsigned i=0; i<walkers.size(); ++i)
+    {
+        walker* w1 = walkers[i];
+        walker* w2 = other_walkers->walkers[i];
+        if (!w1->compare(w2))
+            return false;
+    }
 
+    return true;
+}
 
+TEST_CASE("Walker collection tests", "[walker_collection]")
+{
+    // Create collection of walkers
+    walker_collection* c = new walker_collection();
 
+    SECTION("Copy method")
+    {
+        // Test the copy method
+        walker_collection* c_copy = c->copy();
+        REQUIRE(c->compare(c_copy));
+        delete c_copy;
+    }
 
-
-
-
-
-
+    // Free memory
+    delete c;
+}

@@ -20,6 +20,7 @@
 #include <string>
 #include <sstream>
 
+#include "catch.h"
 #include "params.h"
 #include "particle.h"
 #include "random.h"
@@ -32,6 +33,8 @@ particle::particle()
     // Track the number of particles that have been constructed
     ++ constructed_count;
     coords = new double[params::dimensions];
+    for (unsigned i=0; i<params::dimensions; ++i)
+        coords[i] = 0;
 }
 
 particle::~particle()
@@ -164,12 +167,51 @@ void particle :: sample_wavefunction()
     params::wavefunction_file << ";";
 }
 
+// Particle exchange unit tests
+TEST_CASE("Basic particle tests", "[particle]")
+{
+    // Create some electrons
+    particle* electron_1   = new particle();
+    electron_1->charge     = -1;
+    electron_1->mass       = 1;
+    electron_1->half_spins = 1;
+    electron_1->coords[0]  = 1;
 
+    particle* electron_2   = new particle();
+    electron_2->charge     = -1;
+    electron_2->mass       = 1;
+    electron_2->half_spins = 1;
 
+    // Create some protons
+    particle* proton_1   = new particle();
+    proton_1->charge     = 1;
+    proton_1->mass       = PROTON_MASS;
+    proton_1->half_spins = 2;
+    proton_1->coords[0]  = 1;
 
+    particle* proton_2   = new particle();
+    proton_2->charge     = 1;
+    proton_2->mass       = PROTON_MASS;
+    proton_2->half_spins = 2;
 
+    // Test exchange symmetries
+    SECTION("Exchange symmetry")
+    {
+        REQUIRE(electron_1->exchange_symmetry(electron_2) == -1);
+        REQUIRE(proton_1->exchange_symmetry(proton_2) == 1);
+        REQUIRE(proton_1->exchange_symmetry(electron_1) == 0);
+    }
 
+    // Test particle interactions
+    SECTION("Particle interactions")
+    {
+        REQUIRE(electron_1->interaction(electron_2) == 1.0);
+        REQUIRE(electron_1->interaction(proton_2) == -1.0);
+    }
 
-
-
-
+    // Free memory
+    delete electron_1;
+    delete electron_2;
+    delete proton_1;
+    delete proton_2;
+}

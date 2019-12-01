@@ -17,6 +17,7 @@
 
 */
 
+#include "catch.h"
 #include "dmc_math.h"
 #include "params.h"
 
@@ -41,12 +42,24 @@ unsigned factorial(unsigned n)
     return n * factorial(n-1);
 }
 
+TEST_CASE("Basic math functions", "[math]")
+{
+    // Test the coulomb interaction
+    REQUIRE(coulomb(1,1,1)  == 1.0 );
+    REQUIRE(coulomb(-1,1,1) == -1.0);
+    REQUIRE(coulomb(1,-1,1) == -1.0);
+    REQUIRE(coulomb(1,1,2)  == 0.5 );
+    REQUIRE(coulomb(-1,1,2) == -0.5);
+    REQUIRE(coulomb(1,-1,2) == -0.5);
 
+    // Test the sign function
+    REQUIRE(sign(0)  == 0 );
+    REQUIRE(sign(1)  == 1 );
+    REQUIRE(sign(-1) == -1);
 
-
-
-
-
-
-
-
+    // Test the factiorial function
+    REQUIRE(factorial(0) == 1  );
+    REQUIRE(factorial(1) == 1  );
+    REQUIRE(factorial(2) == 2  );
+    REQUIRE(factorial(5) == 120);
+}
