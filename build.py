@@ -32,7 +32,7 @@ def compile_cpp(cpp):
 
     # Get the relative paths to the .cpp file and
     # the .o file we want to create/update
-    ofile = "build/"+cpp.replace(".cpp",".o")
+    ofile = "src/build/"+cpp.replace(".cpp",".o")
     cfile = "src/"+cpp
 
     # Check if we need to compile this file
@@ -53,7 +53,7 @@ def compile_cpp(cpp):
 print("\nCompiling on {0} cores...".format(cpu_count()))
 
 # Create the build directory
-if not os.path.exists("build"): os.mkdir("build")
+if not os.path.exists("src/build"): os.mkdir("src/build")
     
 # Get the cpp files to compile
 cpp_files = [f for f in os.listdir("src/") if f.endswith(".cpp")]
@@ -78,7 +78,7 @@ for cpp in cpp_files:
 for p in procs: p.join()
 
 # Check if we need to re-link the executables
-o_files = ["build/"+f for f in os.listdir("build/") if f.endswith(".o")]
+o_files = ["src/build/"+f for f in os.listdir("src/build/") if f.endswith(".o")]
 link_exe = True
 if os.path.isfile("xdmc"):
     link_exe = False
