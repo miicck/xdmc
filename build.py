@@ -22,7 +22,8 @@ if "clean" in sys.argv:
 # Find a compiler that works
 import subprocess
 for c in COMPILERS.split():
-    found = subprocess.check_output(["which", c])
+    try:    found = subprocess.check_output(["which", c])
+    except: found = ""
     if len(found.strip()) > 0:
         COMPILER = c
         break
