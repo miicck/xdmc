@@ -4,19 +4,28 @@ import shutil
 import os
 
 # Flags controlling build
-COMPILER      = "mpicc"
+COMPILERS     = "mpic++ mpic++.openmpi mpicc mpicpc"
 COMPILE_FLAGS = "-c -Wall -g -O3"
 LINK_FLAGS    = "-o xdmc"
 LIBS          = "-lstdc++ -lm"
 
-# Remove all build-related stuff
-# (including generated code)
+# Check if clean requested
 if "clean" in sys.argv:
+    # Remove all build-related stuff
+    # (including generated code)
     if os.path.isdir("src/build"): shutil.rmtree("src/build")
     if os.path.isfile("xdmc"): os.remove("xdmc")
     if os.path.isfile("src/params.cpp"): os.remove("src/params.cpp")
     if os.path.isfile("src/params.h"): os.remove("src/params.h")
     quit()
+
+# Find a compiler that works
+import subprocess
+for c in COMPILERS.split():
+    found = subprocess.check_output(["which", c])
+    if len(found.strip()) > 0:
+        COMPILER = c
+        break
 
 # This will generate code
 import src.gen_code.gen_params
@@ -27,18 +36,8 @@ try:
     from time import sleep
 
 except ImportError:
-    # Fallback to spoof serial case
+    # Fallback to serial case
     cpu_count = lambda : 1
-    sleep = lambda t : 0
-    class Process:
-        def __init__(self, target=None, args=None):
-            target(*args)
-        def start(self):
-            return 0
-        def join(self):
-            return 0
-        def is_alive(self):
-            return False
 
 def compile_cpp(cpp):
     global COMPILER, COMPILE_FLAGS
@@ -55,6 +54,8 @@ def compile_cpp(cpp):
             # => don't need to recompile
             print(ofile+" already up-to-date")
             return
+        else:
+            os.remove(ofile)
 
     # Compile a cpp file with the given filename in src/
     # to an object file in build/
@@ -62,6 +63,8 @@ def compile_cpp(cpp):
     cmd = cmd.format(cfile, ofile)
     print(cmd)
     os.system(cmd)
+    if not os.path.isfile(ofile):
+        raise RuntimeError("Object file {0} was not generated!".format(ofile))
 
 print("\nCompiling on {0} cores...".format(cpu_count()))
 
@@ -83,15 +86,23 @@ for cpp in cpp_files:
         # Wait before checking procs again
         sleep(0.01) 
 
-    p = Process(target=compile_cpp, args=(cpp,))
-    p.start()
-    procs.append(p)
+    if cpu_count() > 1:
+        p = Process(target=compile_cpp, args=(cpp,))
+        p.start()
+        procs.append(p)
+    else:
+        compile_cpp(cpp)
 
 # Finish the compilation
 for p in procs: p.join()
 
-# Check if we need to re-link the executables
-o_files = ["src/build/"+f for f in os.listdir("src/build/") if f.endswith(".o")]
+# Check if .o files were created succesfully
+o_files = ["src/build/"+cpp.replace(".cpp",".o") for cpp in cpp_files]
+for ofile in o_files:
+    if not os.path.isfile(ofile):
+        raise RuntimeError("Not all object files were generated successfully!")
+
+# Check if we need to re-link the executable
 link_exe = True
 if os.path.isfile("xdmc"):
     link_exe = False
