@@ -4,7 +4,7 @@ import shutil
 import os
 
 # Flags controlling build
-COMPILER      = "mpic++"
+COMPILER      = "mpicc"
 COMPILE_FLAGS = "-c -Wall -g -O3"
 LINK_FLAGS    = "-o xdmc"
 LIBS          = "-lstdc++ -lm"
@@ -12,10 +12,10 @@ LIBS          = "-lstdc++ -lm"
 # Remove all build-related stuff
 # (including generated code)
 if "clean" in sys.argv:
-    shutil.rmtree("src/build")
-    os.remove("xdmc")
-    os.remove("src/params.cpp")
-    os.remove("src/params.h")
+    if os.path.isdir("src/build"): shutil.rmtree("src/build")
+    if os.path.isfile("xdmc"): os.remove("xdmc")
+    if os.path.isfile("src/params.cpp"): os.remove("src/params.cpp")
+    if os.path.isfile("src/params.h"): os.remove("src/params.h")
     quit()
 
 # This will generate code
