@@ -144,9 +144,6 @@ bool read_input()
                        << line << "'\n";
     }
 
-    // Divide target population across processes
-    params::target_population /= params::np;
-
     input.close();
 
     // Record exchange groups within the system

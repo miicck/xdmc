@@ -16,7 +16,6 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 
 */
-
 #include <sstream>
 #include <mpi.h>
 
@@ -440,10 +439,10 @@ void walker_collection :: renormalize_potential()
 {
     // Set the trial energy with reference to the
     // potential energy
-    params::trial_energy = average_potential();
+    params::trial_energy = mpi_average(average_potential());
 
     // Bias towards target population
-    params::trial_energy -= log(sum_mod_weight() / params::target_population);
+    params::trial_energy -= log(mpi_sum(sum_mod_weight()) / params::target_population);
 
     // Apply normalization greens function
     double gn = fexp(params::trial_energy * params::tau);
@@ -459,12 +458,12 @@ void walker_collection :: renormalize_growth()
     // growth estimator of the energy
 
     // The population at the start of the iteration
-    double pop_before_propagation = double(walkers.size());
+    double pop_before_propagation = mpi_sum(double(walkers.size()));
 
     // The effective population now, after the cumulative
     // effect of this iterations greens functions
     // (i.e cancellation, diffusion, potential etc...)
-    double pop_after_propagation  = sum_mod_weight();
+    double pop_after_propagation  = mpi_sum(sum_mod_weight());
 
     // Set trial energy to minimize fluctuations
     double new_trial_energy = log(pop_before_propagation / pop_after_propagation)/params::tau;
@@ -518,13 +517,15 @@ void walker_collection :: branch()
 
 walker_collection :: walker_collection()
 {
+    // Per-process target population
+    unsigned per_process_pop = params::target_population / params::np;
+
     // Reserve a reasonable amount of space to deal efficiently
     // with the fact that the population can fluctuate.
-    walkers.reserve(2*int(params::target_population));
+    walkers.reserve(2*int(per_process_pop));
 
-    // Initialize the set of walkers to the target
-    // population size.
-    for (unsigned i=0; i<params::target_population; ++i)
+    // Initialize the set of walkers to the target population size.
+    for (unsigned i=0; i<per_process_pop; ++i)
     {
         walker* w = new walker();
         w->diffuse(params::pre_diffusion);
