@@ -608,8 +608,20 @@ void walker_collection :: write_output(bool reverted)
 
     // Calculate timing information
     double time_per_iter     = params::dmc_time()/params::dmc_iteration;
-    double secs_remain       = time_per_iter * (params::dmc_iterations - params::dmc_iteration);
     double percent_complete  = double(100*params::dmc_iteration)/params::dmc_iterations;
+    int secs_remain = int(time_per_iter * (params::dmc_iterations - params::dmc_iteration));
+    int mins_remain = secs_remain / 60;
+    int hrs_remain  = mins_remain / 60;
+    int days_remain = hrs_remain  / 24;
+    hrs_remain  -=   days_remain * 24;
+    mins_remain -=  (days_remain * 24 + hrs_remain) * 60;
+    secs_remain -= ((days_remain * 24 + hrs_remain) * 60 + mins_remain) * 60;
+
+    std::stringstream ss;
+    ss << days_remain << "d ";
+    ss << hrs_remain  << "h ";
+    ss << mins_remain << "m ";
+    ss << secs_remain << "s ";
 
     // Output iteration information
     params::progress_file << "\nIteration " << params::dmc_iteration 
@@ -618,7 +630,7 @@ void walker_collection :: write_output(bool reverted)
         << "% imaginary time = "       << params::tau*params::dmc_iteration << ")\n"
         << "    Time running       : " << params::time()
         << "s ("                       << time_per_iter             << "s/iter)\n"
-        << "    ETA                : " << secs_remain               << "s \n"
+        << "    ETA                : " << ss.str()                  << "\n"
         << "    Trial energy       : " << triale_red                << " Hartree\n"
         << "    Population         : " << population_red
         << " ("                        << population_red/params::np << " per process) \n"
