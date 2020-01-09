@@ -29,15 +29,13 @@ of which will be sampled. An example input file for a lithium atom is shown belo
         # Algorithm settings
         dimensions          3
         walkers             10000
-        iterations          200000
+        iterations          10000
         tau                 0.001
         tau_nodes           1.0
         diffusion_scheme    stochastic_nodes_mpi
         pre_diffusion       0.5
         coulomb_softening   0.00001
         max_weight          4
-        write_nodal_surface 0
-        write_wavefunction  0
 
         # Atomic potential with charge 3 at x=0, y=0, z=0
         atomic_potential 3 0 0 0
@@ -48,3 +46,5 @@ of which will be sampled. An example input file for a lithium atom is shown belo
         particle electron  1     -1       1    0 0 0
         particle electron  1     -1       1    0 0 0
         particle electron  1     -1      -1    0 0 0
+        
+Running this input file will produce a variety of outputs.
