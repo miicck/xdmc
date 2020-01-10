@@ -47,4 +47,11 @@ of which will be sampled. An example input file for a lithium atom is shown belo
         particle electron  1     -1       1    0 0 0
         particle electron  1     -1      -1    0 0 0
         
-Running this input file will produce a variety of outputs.
+Running this input file will produce a variety of output files, listed below. Some types of output will be distributed to different files for each process. These have the PID of the process appended (e.g wavefunction_0 is the wavefunction file for the root process). <br>
+- **progress** File updated with a high-level report of the progress of the calculation (human readable). <br>
+- **evolution** File containing the evaluation of expectation values for each DMC iteration. <br>
+- **wavefunction_n** File containing all of the walker configurations for each iteration (large). <br>
+- **nodal_surface_n** File containint the configurations of walkers that were killed due to crossing a nodal surface. <br>
+
+<h3>Analysis</h3>
+Various analysis scripts can be found in the /src/scripts directory. The simplest of these is the plot_evolution.py script, which will plot the expectation values calculated (including the energy/walker population) vs. DMC timestep.
