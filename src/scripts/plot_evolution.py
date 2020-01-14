@@ -29,6 +29,7 @@ for arg in sys.argv:
     if arg.startswith("-e="):
         val = arg.split("=")[-1]
         if val == "lithium": e_targ = -7.47807
+        if val == "beryllium": e_targ = -14.667353
         else: e_targ = float(val)
         break
 

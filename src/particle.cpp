@@ -149,9 +149,9 @@ void particle :: diffuse(double tau)
 {
     // Diffuse the particle by moving each
     // coordinate by an amount sampled from
-    // a normal distribution with variance tau.
+    // a normal distribution with variance tau/mass.
     for (unsigned i=0; i<params::dimensions; ++i)
-        this->coords[i] += rand_normal(tau);
+        this->coords[i] += rand_normal(tau/this->mass);
 }
 
 void particle :: sample_wavefunction()
