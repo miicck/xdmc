@@ -2,10 +2,14 @@
 XDMC is a code that implements eXchange-Diffusion Monte Carlo, as described here: https://arxiv.org/abs/2001.02215
 
 <h2>Compiling</h2>
-To build the executable, run build.py (which can be found in the root directory). 
+To build the executable, run build.py (which can be found in the root directory).
 This will generate code, compile and link to an executable (called xdmc)
 in the root directory. This will detect the number of cores on your system and
-use them all to speed up parallelization.
+use them all to speed up parallelization. Unit tests can be ran (in a few seconds), either in
+serial or parallel, in the following manner:
+
+        $ xdmc -t # serial
+        $ mpirun xdmc -t # parallel
 
 <h2>Example usage</h2>
 The xdmc executable requires a single input file, called simply "input". The program must
