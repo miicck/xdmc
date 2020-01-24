@@ -58,6 +58,9 @@ namespace params
 
     PYTHON_GEN_PARAMS_HERE
 
+    extern unsigned periodicity; // The number of lattice vectors (= periodic dimensions)
+    extern double **lattice;     // The lattice vectors
+
     // The external potentials applied to the system (additive)
     extern std::vector<external_potential*> potentials;
 

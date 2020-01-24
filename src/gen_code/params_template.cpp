@@ -36,6 +36,8 @@ int start_clock;
 PYTHON_GEN_PARAMS_HERE
 
 // Global param:: variables
+unsigned params::periodicity = 0;
+double** params::lattice     = nullptr;
 std::vector<external_potential*> params::potentials;
 std::vector<particle*>           params::template_system;
 std::vector<exchange_group*>     params::exchange_groups;
@@ -125,6 +127,43 @@ bool read_input()
         // Parse a particle input line
         if (tag == "particle")
             parse_particle(split);
+
+        else if (tag == "lattice")
+        {
+            // Parse the periodic lattice
+            unsigned vecs_parsed = 0;
+            while(true)
+            {
+                std::string lat_line;
+                if (!getline(input, lat_line))
+                {
+                    params::error_file << "End of file encountered whilst parsing lattice!\n";
+                    return false;
+                }
+
+                // Split the lattice vector x y z into x, y, z
+                std::vector<std::string> lat_vec = split_whitespace(lat_line);
+
+                if (vecs_parsed == 0)
+                {
+                    // Set the periodicity of the system
+                    params::periodicity = lat_vec.size();
+
+                    // Allocate space for the lattice
+                    params::lattice = new double*[params::periodicity];
+                    for (unsigned i=0; i<params::periodicity; ++i)
+                        params::lattice[i] = new double[params::periodicity];
+                }
+
+                // Read in the vecs_parsed^th lattice vector
+                for (unsigned i=0; i<params::periodicity; ++i)
+                    params::lattice[vecs_parsed][i] = std::stod(lat_vec[i]);
+
+                ++ vecs_parsed;
+                if (vecs_parsed == lat_vec.size())
+                    break; // We've parsed the whole lattice
+            }
+        }
     
         // Add a potential from a grid to the system
         else if (tag == "grid_potential")
@@ -276,10 +315,26 @@ void output_sim_details()
     progress_file << "Parameter values\n";
     PYTHON_OUTPUT_PARAMS_HERE
 
-    // Output a summary of potentials to the progress file
-    progress_file << "\nPotentials\n";
-    for (unsigned i=0; i<potentials.size(); ++i)
-        progress_file << "    " << potentials[i]->one_line_description() << "\n";
+    if (params::periodicity > 0)
+    {
+        // Output a summary of the periodic lattice to the progress file
+        progress_file << "\nLattice (periodicity " << params::periodicity << ")";
+        for (unsigned i=0; i<params::periodicity; ++i)
+        {
+            progress_file << "\n    ";
+            for (unsigned j=0; j<params::periodicity; ++j)
+                progress_file << params::lattice[i][j] << " ";
+        }
+        progress_file << "\n";
+    }
+
+    if (potentials.size() > 0)
+    {
+        // Output a summary of potentials to the progress file
+        progress_file << "\nPotentials\n";
+        for (unsigned i=0; i<potentials.size(); ++i)
+            progress_file << "    " << potentials[i]->one_line_description() << "\n";
+    }
 
     // Output a summary of particles to the progress file
     progress_file << "\nParticles\n";
