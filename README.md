@@ -18,7 +18,7 @@ be executed in the same directory as this file. It can be invoked in serial, or 
         $ xdmc # serial
         $ mpirun xdmc # parallel with MPI
         
-The input file contains a list of keywords, which are listed by invoking xdmc with the -h option
+The input file contains a list of keywords, information about which can be obtained by invoking xdmc with the -h option
 
         $ xdmc -h
         ... info about input parameters
