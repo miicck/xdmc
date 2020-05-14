@@ -103,6 +103,58 @@ def average():
             plt.axhline(np.mean(energies), color="black")
             plt.show()
 
+def reblocked():
+    es = None
+    for name, energies in zip(*parse_evolution()):
+        if not "Trial energy" in name: continue
+        es = energies
+    if es is None: raise Exception("Could not find the trial energies!")
+    start = int(sys.argv[2])
+
+    # Get the energies after the provided 
+    # start iteration, and their mean
+    es = es[start:]
+    energy = np.mean(es)
+
+    # Init arrays
+    block_errors = []
+    block_error_errors = []
+
+    # Loop over blocking transformation number
+    blocking_transform = 0
+    while True:
+
+        # Work out the block length, if it is greater than
+        # the total length, break
+        block_length = 2 ** blocking_transform 
+        blocking_transform += 1
+        if block_length > len(es):
+            break
+
+        # Work out the energies of each block
+        block_energies = []
+        offset = 0
+        while offset < len(es):
+            block_energies.append(np.mean(es[offset:offset+block_length]))
+            offset += block_length
+
+        # Work out the reblocked error + the error on that
+        block_err = np.std(block_energies) / np.sqrt(len(block_energies))
+        block_errors.append(block_err)
+        block_err_err = block_err / np.sqrt(2 * (len(block_energies) - 1))
+        block_error_errors.append(block_err_err)
+
+    # Plot vs blocking number if requested
+    if "plot" in sys.argv:
+        import matplotlib.pyplot as plt
+
+        plt.errorbar(range(len(block_errors)), block_errors, yerr=block_error_errors)
+        plt.xlabel("Blocking transformation number")
+        plt.ylabel("Reblocked errror (Ha)")
+        plt.show()
+
+    print(energy)
+
 def pi_weighted():
     for name, energies in zip(*parse_evolution()):
         if not "Trial energy" in name: continue
@@ -166,14 +218,16 @@ methods = {
 "exp_fit"       : exp_fit,
 "multi_exp_fit" : multi_exp_fit,
 "average"       : average,
+"reblock"       : reblocked,
 "pi_weighted"   : pi_weighted,
 "pop_correct"   : pop_correction
 }
 
 if len(sys.argv) < 2 or not sys.argv[1] in methods:
-        new_argv = [sys.argv[0], "exp_fit"]
-        new_argv.extend(sys.argv[1:])
-        sys.argv = new_argv
+    err = "The first argument should be one of:"
+    for m in methods:
+        err += "\n    "+m
+    raise Exception(err)
+
 
 methods[sys.argv[1]]()
-

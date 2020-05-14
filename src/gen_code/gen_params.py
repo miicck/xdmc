@@ -14,8 +14,14 @@
 # 
 #     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 # 
-from params import params
 import os
+import sys
+
+# Add the directory with this file in to PHYTHONPATH
+# and import the parameters from the params.py file
+sys.path.append(os.path.dirname(os.path.realpath(__file__))) 
+from params import params
+
 # Will generate the params.h and params.cpp files from 
 # params_template.h and params_template.cpp respectively
 
