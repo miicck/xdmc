@@ -153,7 +153,7 @@ def reblocked():
         plt.ylabel("Reblocked errror (Ha)")
         plt.show()
 
-    print(energy)
+    print("{0} +/- {1}".format(energy, max(block_errors)))
 
 def pi_weighted():
     for name, energies in zip(*parse_evolution()):
