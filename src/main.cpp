@@ -58,6 +58,9 @@ void run_dmc()
             delete walkers_last;
 
         walkers->write_output(revert);
+
+        // Estimate the new value for tau_nodes
+        params::tau_nodes = walkers->tau_nodes_estimate();
     }
 
     // Output success message

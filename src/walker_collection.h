@@ -38,6 +38,7 @@ public:
     double average_mod_weight();
     double average_potential();
     double sum_mod_weight();
+    double tau_nodes_estimate();
 
 private:
     walker_collection(std::vector<walker*> walkers_in) : walkers(walkers_in) {}
@@ -45,6 +46,8 @@ private:
     double diffused_wavefunction(walker* w, double tau, int self_index);
     double* diffused_wavefunction_signed(walker* w, double tau, int self_index);
     double* exchange_diffused_wfn_signed(walker* w, double tau, int self_index);
+
+    double distance_to_nearest_opposite(walker* w);
 
     void make_exchange_moves();
     void branch();

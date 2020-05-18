@@ -416,6 +416,65 @@ void walker_collection :: diffuse_stochastic_nodes_mpi(walker_collection* walker
     }
 }
 
+double walker_collection :: distance_to_nearest_opposite(walker* w)
+{
+    double min_dis = -1;
+
+    // Returns the distance to the nearest walker in
+    // this collection to w, which has opposite sign to w
+    for (unsigned n=0; n < walkers.size(); ++n)
+    {
+        // These walkers are the same sign
+        if (sign(walkers[n]->weight) == sign(w->weight))
+            continue;
+
+        // Record the distnace if this is the closest so far
+        double dis = w->sq_distance_to(walkers[n]);
+        if (min_dis < 0 || dis < min_dis)
+            min_dis = dis;
+    }
+
+    return sqrt(min_dis);
+}
+
+double walker_collection :: tau_nodes_estimate()
+{
+    double average_min_dis = 0;
+    int population = 0;
+
+    // Loop over processes
+    for (int pid=0; pid<params::np; ++pid)
+    {
+        // Get the number of walkers on this process
+        int walker_count = params::pid == pid ? walkers.size() : 0;
+        MPI_Bcast(&walker_count, 1, MPI_INT, pid, MPI_COMM_WORLD);
+
+        population += walker_count;
+        
+        // For each walker on process pid
+        for (int n=0; n<walker_count; ++n)
+        {
+            // Get a copy of the i^th walker on the pid^th process
+            walker* w = params::pid == pid ? walkers[n] : nullptr;
+            walker* w_copy = walker::mpi_copy(w, pid);
+
+            // Get the minimum distance between w and any walker of the
+            // opposite sign, across processes
+            double min_dis_this = distance_to_nearest_opposite(w_copy);
+            double min_dis;
+            MPI_Allreduce(&min_dis_this, &min_dis, 1, MPI_DOUBLE, MPI_MIN, MPI_COMM_WORLD);
+
+            // Accumulate the average minimum-distance
+            average_min_dis += min_dis;
+
+            delete w_copy;
+        }
+    }
+
+    average_min_dis /= double(population);
+    return average_min_dis / 2.0;
+}
+
 void walker_collection :: apply_renormalization()
 {
     // Apply the selected renormalization scheme
@@ -637,7 +696,8 @@ void walker_collection :: write_output(bool reverted)
         << "    Nodal deaths       : " << nodal_deaths_red
         << " ("                        << nodal_death_perc          << "% of the total population)\n"
         << "    Reverted on        : " << reverted_red 
-        << "/"                         << params::np                << " processes\n";
+        << "/"                         << params::np                << " processes\n"
+        << "    Nodal timestep     : " << params::tau_nodes         << " a.u\n";
 
     if (params::dmc_iteration == 1)
     {
