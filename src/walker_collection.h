@@ -38,7 +38,7 @@ public:
     double average_mod_weight();
     double average_potential();
     double sum_mod_weight();
-    double tau_nodes_estimate();
+    double tau_nodes_min_sep();
 
 private:
     walker_collection(std::vector<walker*> walkers_in) : walkers(walkers_in) {}

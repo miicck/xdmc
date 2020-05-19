@@ -57,10 +57,13 @@ void run_dmc()
             // Keep the new walkers
             delete walkers_last;
 
-        walkers->write_output(revert);
-
         // Estimate the new value for tau_nodes
-        params::tau_nodes = walkers->tau_nodes_estimate();
+        if (params::tau_nodes_estimator == "min_sep")
+            params::tau_nodes = walkers->tau_nodes_min_sep();
+        else if (params::tau_nodes_estimator != "none")
+            throw "Unkown tau_nodes estimator!";
+
+        walkers->write_output(revert);
     }
 
     // Output success message

@@ -66,6 +66,13 @@ params = [{
                      "walker. Setting tau_nodes >> tau will combat bosonic collapse  "
                      "(but may introduce bias).")
 },{
+    "in_name"     : "tau_nodes_estimator",
+    "type"        : "std::string",
+    "cpp_name"    : "tau_nodes_estimator",
+    "default"     : '"none"',
+    "allowed"     : "strings none min_sep",
+    "description" : "Method used to estimate tau_nodes during runtime."
+},{
     "in_name"     : "self_gf_strength",
     "type"        : "double",
     "cpp_name"    : "self_gf_strength",

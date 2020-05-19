@@ -437,8 +437,10 @@ double walker_collection :: distance_to_nearest_opposite(walker* w)
     return sqrt(min_dis);
 }
 
-double walker_collection :: tau_nodes_estimate()
+double walker_collection :: tau_nodes_min_sep()
 {
+    // Estimate tau_nodes from the minimum seperation
+    // between any +ve and any -ve walker
     double average_min_dis = 0;
     int population = 0;
 
