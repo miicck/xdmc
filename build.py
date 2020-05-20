@@ -19,6 +19,10 @@ if "clean" in sys.argv:
     if os.path.isfile("src/params.h"): os.remove("src/params.h")
     quit()
 
+# Check if this is a debug build
+if "debug" in sys.argv:
+    COMPILE_FLAGS = "-c -Wall -g"
+
 # Find a compiler that works
 import subprocess
 for c in COMPILERS.split():

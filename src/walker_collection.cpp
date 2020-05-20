@@ -68,6 +68,8 @@ void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
         diffuse_exact_1d();
     else if (params::diffusion_scheme == "max_seperation")
         diffuse_max_seperation(walkers_last);
+    else if (params::diffusion_scheme == "max_seperation_mpi")
+        diffuse_max_seperation_mpi(walkers_last);
     else if (params::diffusion_scheme == "stochastic_nodes")
         diffuse_stochastic_nodes(walkers_last);
     else if (params::diffusion_scheme == "stochastic_nodes_mpi")
@@ -266,7 +268,7 @@ void walker_collection :: diffuse_max_seperation(walker_collection* walkers_last
             w->weight *= 1 - psi[1]/psi[0];
 
         // Free memory
-        delete psi;
+        delete[] psi;
 
         // Apply potential part of greens function
         double pot_before = walkers_last->walkers[n]->potential();
@@ -274,6 +276,75 @@ void walker_collection :: diffuse_max_seperation(walker_collection* walkers_last
         w->weight        *= potential_greens_function(pot_before, pot_after);
     }
 }
+
+void walker_collection :: diffuse_max_seperation_mpi(walker_collection* walkers_last)
+{
+    // Carry out diffusion of walkers, evaluating a stochastic nodal
+    // surface using all the walkers across processes
+
+    // Loop over processes
+    for (int pid=0; pid<params::np; ++pid)
+    {
+        // Get the number of walkers on this process
+        int walker_count = params::pid == pid ? walkers.size() : 0;
+        MPI_Bcast(&walker_count, 1, MPI_INT, pid, MPI_COMM_WORLD);
+        
+        // Propagate the walkers on this process
+        for (int n=0; n<walker_count; ++n)
+        {
+            // w is the n^th walker on the pid^th process
+            walker* w = params::pid == pid ? walkers[n] : nullptr;
+
+            // On the pid^th process, diffuse the walker
+            if (params::pid == pid)
+                w->diffuse(params::tau);
+
+            // Get a copy of the n^th walker on the 
+            // pid^th process, after diffusion.
+            // (the copy will be valid on all processes)
+            walker* w_after = walker::mpi_copy(w, pid);
+
+            // Compute the across-process wavefunction after diffusion
+            double* psi_after_pid = walkers_last->
+                diffused_wavefunction_signed(w_after, params::tau_nodes, -1);
+            double* psi_after = new double[2];
+            MPI_Reduce(psi_after_pid, psi_after, 2, MPI_DOUBLE, MPI_SUM, pid, MPI_COMM_WORLD);
+
+            // On the pid^th process, apply the cancellation function
+            // w -> w * f_+/-
+            if (params::pid == pid)
+            {
+                if (psi_after[0] < psi_after[1])
+                {
+                    // Record the nodal surface
+                    if (params::write_nodal_surface)
+                        w->write_coords(params::nodal_surface_file);
+
+                    // Kill the walker
+                    w->weight = 0;
+                    params::nodal_deaths += 1;
+                }
+                else
+                    w->weight *= 1 - psi_after[1]/psi_after[0];
+            }
+
+            // Free memory
+            delete w_after;
+            delete[] psi_after_pid;
+            delete[] psi_after;
+        }
+    }
+
+    // Apply the potential part of the greens function
+    // (which is independent of the other processes)
+    for (unsigned n=0; n < walkers.size(); ++n)
+    {
+        double pot_before   = walkers_last->walkers[n]->potential();
+        double pot_after    = walkers[n]->potential();
+        walkers[n]->weight *= potential_greens_function(pot_before, pot_after);
+    }
+}
+
 
 void walker_collection :: exchange_diffuse(walker_collection* walkers_last)
 {
@@ -450,7 +521,6 @@ double walker_collection :: tau_nodes_min_sep()
         // Get the number of walkers on this process
         int walker_count = params::pid == pid ? walkers.size() : 0;
         MPI_Bcast(&walker_count, 1, MPI_INT, pid, MPI_COMM_WORLD);
-
         population += walker_count;
         
         // For each walker on process pid
@@ -709,7 +779,8 @@ void walker_collection :: write_output(bool reverted)
                 << "Population,"
                 << "Trial energy,"
                 << "Average weight,"
-                << "Nodal deaths\n";
+                << "Nodal deaths,"
+                << "Tau_nodes\n";
     }
 
     // Output evolution information to file
@@ -717,7 +788,8 @@ void walker_collection :: write_output(bool reverted)
         << population_red    << ","
         << triale_red        << ","
         << av_weight_red     << ","
-        << nodal_deaths_red  << "\n";
+        << nodal_deaths_red  << ","
+        << params::tau_nodes << "\n";
 
     // Write the wavefunction to file
     if (params::write_wavefunction)
