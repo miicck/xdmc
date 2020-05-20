@@ -1,6 +1,6 @@
 # 
 #     XDMC
-#     Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
+#     Copyright (C) Michael Hutcheon (email mjh261@cam.ac.uk)
 # 
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
@@ -118,4 +118,5 @@ for i, d in enumerate(data):
 AV_ITER = int(DMC_ITERS/2)
 print(np.mean(data[0][AV_ITER:]))
 plt.show()
+
 

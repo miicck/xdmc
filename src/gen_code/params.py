@@ -1,6 +1,6 @@
 # 
 #     XDMC
-#     Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
+#     Copyright (C) Michael Hutcheon (email mjh261@cam.ac.uk)
 # 
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
@@ -154,14 +154,10 @@ params = [{
                      "fluctuate during runtime. After equilibriation, it will "
                      "fluctuate around the ground state energy of the system."),
 },{
-    "type"        : "int",
-    "cpp_name"    : "nodal_deaths",
-    "default"     : "0",
-    "description" : ("The number of walkers that died to crossing the nodal "
-                     "surface last iteration. Depending on diffusion scheme "
-                     "this may or may not be all of the deaths due to exchange "
-                     "(some schemes also apply partial cancellations which are "
-                     "not counted by this number). ")
+    "type"        : "double",
+    "cpp_name"    : "cancelled_weight",
+    "default"     : "0.0",
+    "description" : ("The total amount of weight cancelled in the last iteration.")
 },{
     "in_name"     : "pre_diffusion",
     "type"        : "double",
@@ -214,3 +210,4 @@ params = [{
     "default"     : "nullptr",
     "description" : "The arguments passed to the program."
 }]
+

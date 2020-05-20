@@ -1,7 +1,7 @@
 /*
 
     XDMC
-    Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
+    Copyright (C) Michael Hutcheon (email mjh261@cam.ac.uk)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -63,3 +63,4 @@ TEST_CASE("Basic math functions", "[math]")
     REQUIRE(factorial(2) == 2  );
     REQUIRE(factorial(5) == 120);
 }
+

@@ -1,7 +1,7 @@
 /*
 
     XDMC
-    Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
+    Copyright (C) Michael Hutcheon (email mjh261@cam.ac.uk)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -16,6 +16,7 @@
     For a copy of the GNU General Public License see <https://www.gnu.org/licenses/>.
 
 */
+
 #include <sstream>
 #include <mpi.h>
 
@@ -61,7 +62,7 @@ void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
     // Reset things
     if (params::write_nodal_surface)
         params::nodal_surface_file << "# Iteration " << params::dmc_iteration << "\n";
-    params::nodal_deaths = 0;
+    params::cancelled_weight = 0.0;
     
     // Carry out the specified diffusion scheme
     if (params::diffusion_scheme == "exact_1d")
@@ -213,7 +214,7 @@ void walker_collection :: diffuse_exact_1d()
 
             // Kill the walker
             w->weight = 0;
-            params::nodal_deaths += 1;
+            params::cancelled_weight += 1;
         }
 
         // Apply potential part of greens function
@@ -261,11 +262,14 @@ void walker_collection :: diffuse_max_seperation(walker_collection* walkers_last
 
             // w has strayed into the wrong neighbourhood, kill them
             w->weight = 0;
-            params::nodal_deaths += 1;
+            params::cancelled_weight += 1;
         }
         else
+        {
             // Account for cancellations
+            params::cancelled_weight += fabs(w->weight * psi[1]/psi[0]);
             w->weight *= 1 - psi[1]/psi[0];
+        }
 
         // Free memory
         delete[] psi;
@@ -322,10 +326,13 @@ void walker_collection :: diffuse_max_seperation_mpi(walker_collection* walkers_
 
                     // Kill the walker
                     w->weight = 0;
-                    params::nodal_deaths += 1;
+                    params::cancelled_weight += 1;
                 }
                 else
+                {
+                    params::cancelled_weight += fabs(w->weight * psi_after[1]/psi_after[0]);
                     w->weight *= 1 - psi_after[1]/psi_after[0];
+                }
             }
 
             // Free memory
@@ -368,11 +375,14 @@ void walker_collection :: exchange_diffuse(walker_collection* walkers_last)
 
             // Kill the walker
             w->weight = 0;
-            params::nodal_deaths += 1;
+            params::cancelled_weight += 1;
         }
         else
+        {
             // Account for cancellations
+            params::cancelled_weight += fabs(w->weight * psi[1]/psi[0]);
             w->weight *= 1 - psi[1]/psi[0];
+        }
 
         // Free memory
         delete psi;
@@ -408,7 +418,7 @@ void walker_collection :: diffuse_stochastic_nodes(walker_collection* walkers_la
 
             // w has strayed into the wrong neighbourhood, kill them
             w->weight = 0;
-            params::nodal_deaths += 1;
+            params::cancelled_weight += 1;
         }
 
         // Apply potential part of greens function
@@ -468,7 +478,7 @@ void walker_collection :: diffuse_stochastic_nodes_mpi(walker_collection* walker
 
                     // Kill the walker
                     w->weight = 0;
-                    params::nodal_deaths += 1;
+                    params::cancelled_weight += 1;
                 }
 
             // Free memory
@@ -729,9 +739,9 @@ void walker_collection :: write_output(bool reverted)
 {
     // Sum various things across processes
     double population_red    = mpi_sum(double(walkers.size()));
-    int    nodal_deaths_red  = mpi_sum(params::nodal_deaths);
+    double canc_weight_red   = mpi_sum(params::cancelled_weight);
     int    reverted_red      = mpi_sum(int(reverted));
-    double nodal_death_perc  = 100.0*double(nodal_deaths_red)/double(population_red);
+    double canc_weight_perc  = 100.0*canc_weight_red/double(population_red);
 
     // Average various things across processes
     double triale_red        = mpi_average(params::trial_energy);
@@ -765,8 +775,8 @@ void walker_collection :: write_output(bool reverted)
         << "    Trial energy       : " << triale_red                << " Hartree\n"
         << "    Population         : " << population_red
         << " ("                        << population_red/params::np << " per process) \n"
-        << "    Nodal deaths       : " << nodal_deaths_red
-        << " ("                        << nodal_death_perc          << "% of the total population)\n"
+        << "    Cancelled weight   : " << canc_weight_red
+        << " ("                        << canc_weight_perc          << "% of the total weight)\n"
         << "    Reverted on        : " << reverted_red 
         << "/"                         << params::np                << " processes\n"
         << "    Nodal timestep     : " << params::tau_nodes         << " a.u\n";
@@ -779,17 +789,17 @@ void walker_collection :: write_output(bool reverted)
                 << "Population,"
                 << "Trial energy,"
                 << "Average weight,"
-                << "Nodal deaths,"
+                << "Cancelled weight,"
                 << "Tau_nodes\n";
     }
 
     // Output evolution information to file
     params::evolution_file
-        << population_red    << ","
-        << triale_red        << ","
-        << av_weight_red     << ","
-        << nodal_deaths_red  << ","
-        << params::tau_nodes << "\n";
+        << population_red           << ","
+        << triale_red               << ","
+        << av_weight_red            << ","
+        << params::cancelled_weight << ","
+        << params::tau_nodes        << "\n";
 
     // Write the wavefunction to file
     if (params::write_wavefunction)
@@ -834,3 +844,4 @@ TEST_CASE("Walker collection tests", "[walker_collection]")
     // Free memory
     delete c;
 }
+

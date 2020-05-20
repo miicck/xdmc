@@ -1,7 +1,7 @@
 /*
 
     XDMC
-    Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
+    Copyright (C) Michael Hutcheon (email mjh261@cam.ac.uk)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -303,7 +303,7 @@ void output_sim_details()
     vanity += "  \\/   \\/___/ \\_|  |_/\\____/   \n";
     vanity += "                                   \n";
     vanity += "eXchange Diffusion Monte Carlo     \n";
-    vanity += "  (c) 2019 Michael Hutcheon        \n";
+    vanity += "    (c) Michael Hutcheon           \n";
     vanity += "      mjh261@cam.ac.uk             \n";
     progress_file << vanity << "\n";
 
@@ -477,3 +477,4 @@ double params :: dmc_time()
     // been running (excluding setup time)
     return double(clock()-dmc_start_clock)/double(CLOCKS_PER_SEC);
 }
+

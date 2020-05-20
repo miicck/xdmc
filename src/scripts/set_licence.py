@@ -1,6 +1,6 @@
 # 
 #     XDMC
-#     Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
+#     Copyright (C) Michael Hutcheon (email mjh261@cam.ac.uk)
 # 
 #     This program is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published by
@@ -16,7 +16,7 @@
 # 
 licence = """
     XDMC
-    Copyright (C) 2019 Michael Hutcheon (email mjh261@cam.ac.uk)
+    Copyright (C) Michael Hutcheon (email mjh261@cam.ac.uk)
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -34,6 +34,10 @@ licence = """
 import os
 
 def set_licence_cpp_h(f):
+
+    # Don't modify the catch.h file
+    if "catch.h" in f:
+        return
     
     # Read the lines from the source
     with open(f) as read:
@@ -100,4 +104,5 @@ for f in os.listdir(base+"/gen_code"):
 
 for f in os.listdir(base+"/scripts"):
     set_licence(base+"/scripts/"+f)
+
 
