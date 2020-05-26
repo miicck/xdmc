@@ -24,6 +24,7 @@
 #include "walker_collection.h"
 #include "random.h"
 #include "constants.h"
+#include "utils.h"
 
 #include <iostream>
 
@@ -67,7 +68,7 @@ void run_dmc()
     }
 
     // Output success message
-    params::progress_file << "\nDone, total time: " << params::time() << "s.\n";
+    params::progress_file << "\nDone, total time: " << seconds_to_human(params::time()) << "\n";
     
     // Free memory
     delete walkers;

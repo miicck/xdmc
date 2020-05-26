@@ -26,6 +26,7 @@
 #include "walker_collection.h"
 #include "params.h"
 #include "mpi_utils.h"
+#include "utils.h"
 
 bool walker_collection :: propagate(walker_collection* walkers_last)
 {
@@ -751,18 +752,6 @@ void walker_collection :: write_output(bool reverted)
     double time_per_iter     = params::dmc_time()/params::dmc_iteration;
     double percent_complete  = double(100*params::dmc_iteration)/params::dmc_iterations;
     int secs_remain = int(time_per_iter * (params::dmc_iterations - params::dmc_iteration));
-    int mins_remain = secs_remain / 60;
-    int hrs_remain  = mins_remain / 60;
-    int days_remain = hrs_remain  / 24;
-    hrs_remain  -=   days_remain * 24;
-    mins_remain -=  (days_remain * 24 + hrs_remain) * 60;
-    secs_remain -= ((days_remain * 24 + hrs_remain) * 60 + mins_remain) * 60;
-
-    std::stringstream ss;
-    ss << days_remain << "d ";
-    ss << hrs_remain  << "h ";
-    ss << mins_remain << "m ";
-    ss << secs_remain << "s ";
 
     // Output iteration information
     params::progress_file << "\nIteration " << params::dmc_iteration 
@@ -770,16 +759,16 @@ void walker_collection :: write_output(bool reverted)
         << " ("                             << percent_complete
         << "% imaginary time = "       << params::tau*params::dmc_iteration << ")\n"
         << "    Time running       : " << params::time()
-        << "s ("                       << time_per_iter             << "s/iter)\n"
-        << "    ETA                : " << ss.str()                  << "\n"
-        << "    Trial energy       : " << triale_red                << " Hartree\n"
+        << "s ("                       << time_per_iter                 << "s/iter)\n"
+        << "    ETA                : " << seconds_to_human(secs_remain) << "\n"
+        << "    Trial energy       : " << triale_red                    << " Hartree\n"
         << "    Population         : " << population_red
-        << " ("                        << population_red/params::np << " per process) \n"
+        << " ("                        << population_red/params::np     << " per process) \n"
         << "    Cancelled weight   : " << canc_weight_red
-        << " ("                        << canc_weight_perc          << "% of the total weight)\n"
+        << " ("                        << canc_weight_perc              << "% of the total weight)\n"
         << "    Reverted on        : " << reverted_red 
-        << "/"                         << params::np                << " processes\n"
-        << "    Nodal timestep     : " << params::tau_nodes         << " a.u\n";
+        << "/"                         << params::np                    << " processes\n"
+        << "    Nodal timestep     : " << params::tau_nodes             << " a.u\n";
 
     if (params::dmc_iteration == 1)
     {
@@ -798,7 +787,7 @@ void walker_collection :: write_output(bool reverted)
         << population_red           << ","
         << triale_red               << ","
         << av_weight_red            << ","
-        << params::cancelled_weight << ","
+        << canc_weight_red          << ","
         << params::tau_nodes        << "\n";
 
     // Write the wavefunction to file

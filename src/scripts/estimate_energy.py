@@ -144,6 +144,9 @@ def reblocked():
         block_err_err = block_err / np.sqrt(2 * (len(block_energies) - 1))
         block_error_errors.append(block_err_err)
 
+    if len(block_errors) == 0:
+        return
+
     # Plot vs blocking number if requested
     if "plot" in sys.argv:
         import matplotlib.pyplot as plt
