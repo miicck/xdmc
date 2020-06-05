@@ -74,6 +74,8 @@ void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
         diffuse_max_seperation_mpi(walkers_last);
     else if (params::diffusion_scheme == "stochastic_nodes")
         diffuse_stochastic_nodes(walkers_last);
+    else if (params::diffusion_scheme == "stochastic_nodes_permutations")
+        diffuse_stochastic_nodes_permutations(walkers_last);
     else if (params::diffusion_scheme == "stochastic_nodes_mpi")
         diffuse_stochastic_nodes_mpi(walkers_last);
     else if (params::diffusion_scheme == "exchange_diffuse")
@@ -495,6 +497,39 @@ void walker_collection :: diffuse_stochastic_nodes_mpi(walker_collection* walker
         double pot_before   = walkers_last->walkers[n]->potential();
         double pot_after    = walkers[n]->potential();
         walkers[n]->weight *= potential_greens_function(pot_before, pot_after);
+    }
+}
+
+void walker_collection :: diffuse_stochastic_nodes_permutations(walker_collection* walkers_last)
+{
+    // Carry out diffusion of walkers, killing any that cross the
+    // stochastic nodal surface set up last iteration
+    for (unsigned n=0; n < walkers.size(); ++n)
+    {
+        walker* w = walkers[n];
+
+        w->diffuse(params::tau);
+
+        double* psi_after  = walkers_last->
+            exchange_diffused_wfn_signed(w, params::tau_nodes, int(n));
+
+        if (psi_after[0] < psi_after[1])
+        {
+            // Record the nodal surface
+            if (params::write_nodal_surface)
+                w->write_coords(params::nodal_surface_file);
+
+            // w has strayed into the wrong neighbourhood, kill them
+            w->weight = 0;
+            params::cancelled_weight += 1;
+        }
+
+        delete[] psi_after;
+
+        // Apply potential part of greens function
+        double pot_before = walkers_last->walkers[n]->potential();
+        double pot_after  = w->potential();
+        w->weight        *= potential_greens_function(pot_before, pot_after);
     }
 }
 

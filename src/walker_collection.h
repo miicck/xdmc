@@ -57,6 +57,7 @@ private:
     void diffuse_max_seperation(walker_collection* walkers_last);
     void diffuse_max_seperation_mpi(walker_collection* walkers_last);
     void diffuse_stochastic_nodes(walker_collection* walkers_last);
+    void diffuse_stochastic_nodes_permutations(walker_collection* walkers_last);
     void diffuse_stochastic_nodes_mpi(walker_collection* walkers_last);
     void diffuse_bosonic(walker_collection* walkers_last);
     void exchange_diffuse(walker_collection* walkers_last);
