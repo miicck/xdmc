@@ -42,9 +42,28 @@ for arg in sys.argv:
 # Read in the evolution data
 y_axes, data = parse_evolution()
 
+i_include=[]
+for a in sys.argv:
+    try:
+        i_include.append(int(a))
+    except:
+        pass
+
+if len(i_include) > 0:
+    new_data  = []
+    new_yaxes = []
+    for i in range(0, len(data)):
+        if not i in i_include: continue
+        new_data.append(data[i])
+        new_yaxes.append(y_axes[i])
+    y_axes = new_yaxes
+    data   = new_data
+
+print("Plotting {0} variables.".format(len(data)))
+
 log_scales = ["Cancelled weight"]
 
-fig, axes = plt.subplots(len(data),2, gridspec_kw = {"width_ratios":[8,1]})
+fig, axes = plt.subplots(len(data), 2, gridspec_kw = {"width_ratios":[8,1]})
 
 # Plot each dataseries on its own subplot
 for i, d in enumerate(data):

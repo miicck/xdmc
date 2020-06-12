@@ -86,6 +86,17 @@ void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
         throw "Unkown diffusion scheme";
 }
 
+void walker_collection :: estimate_tau_nodes()
+{
+    // Estimate the new value for tau_nodes
+    if (params::tau_nodes_estimator == "min_sep")
+        params::tau_nodes = tau_nodes_min_sep();
+    else if (params::tau_nodes_estimator == "min_sep_mpi")
+        params::tau_nodes = tau_nodes_min_sep_mpi();
+    else if (params::tau_nodes_estimator != "none")
+        throw "Unkown tau_nodes estimator!";
+}
+
 void walker_collection :: make_exchange_moves()
 {
     // Apply exchange moves to each of the walkers
@@ -554,7 +565,7 @@ double walker_collection :: distance_to_nearest_opposite(walker* w)
     return sqrt(min_dis);
 }
 
-double walker_collection :: tau_nodes_min_sep()
+double walker_collection :: tau_nodes_min_sep_mpi()
 {
     // Estimate tau_nodes from the minimum seperation
     // between any +ve and any -ve walker
@@ -590,6 +601,20 @@ double walker_collection :: tau_nodes_min_sep()
     }
 
     average_min_dis /= double(population);
+    return average_min_dis / 2.0;
+}
+
+double walker_collection :: tau_nodes_min_sep()
+{
+    double average_min_dis = 0;
+
+    for (unsigned n=0; n<walkers.size(); ++n)
+    {
+        walker* w = walkers[n];
+        average_min_dis += distance_to_nearest_opposite(w);
+    }
+
+    average_min_dis /= double(walkers.size());
     return average_min_dis / 2.0;
 }
 
@@ -782,6 +807,7 @@ void walker_collection :: write_output(bool reverted)
     // Average various things across processes
     double triale_red        = mpi_average(params::trial_energy);
     double av_weight_red     = mpi_average(average_weight());
+    double tau_nodes_red     = mpi_average(params::tau_nodes);
 
     // Calculate timing information
     double time_per_iter     = params::dmc_time()/params::dmc_iteration;
@@ -803,7 +829,7 @@ void walker_collection :: write_output(bool reverted)
         << " ("                        << canc_weight_perc              << "% of the total weight)\n"
         << "    Reverted on        : " << reverted_red 
         << "/"                         << params::np                    << " processes\n"
-        << "    Nodal timestep     : " << params::tau_nodes             << " a.u\n";
+        << "    Nodal timestep     : " << tau_nodes_red                 << " a.u\n";
 
     if (params::dmc_iteration == 1)
     {

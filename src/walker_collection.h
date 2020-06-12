@@ -33,12 +33,12 @@ public:
     bool propagate(walker_collection* walkers_last);
     bool compare(walker_collection* other_walkers);
     void write_output(bool reverted);
+    void estimate_tau_nodes();
 
     double average_weight();
     double average_mod_weight();
     double average_potential();
     double sum_mod_weight();
-    double tau_nodes_min_sep();
 
 private:
     walker_collection(std::vector<walker*> walkers_in) : walkers(walkers_in) {}
@@ -48,6 +48,8 @@ private:
     double* exchange_diffused_wfn_signed(walker* w, double tau, int self_index);
 
     double distance_to_nearest_opposite(walker* w);
+    double tau_nodes_min_sep();
+    double tau_nodes_min_sep_mpi();
 
     void make_exchange_moves();
     void branch();

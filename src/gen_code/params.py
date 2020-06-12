@@ -70,7 +70,7 @@ params = [{
     "type"        : "std::string",
     "cpp_name"    : "tau_nodes_estimator",
     "default"     : '"none"',
-    "allowed"     : "strings none min_sep",
+    "allowed"     : "strings none min_sep min_sep_mpi",
     "description" : "Method used to estimate tau_nodes during runtime."
 },{
     "in_name"     : "self_gf_strength",
