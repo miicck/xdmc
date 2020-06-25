@@ -30,6 +30,7 @@ for arg in sys.argv:
         val = arg.split("=")[-1]
         if   val == "lithium":   e_targ = -7.47807
         elif val == "beryllium": e_targ = -14.667353
+        elif val == "boron":     e_targ = −24.65386608
         else: e_targ = float(val)
         break
 

@@ -36,6 +36,16 @@ params = [{
                      "dmc walkers will fluctuate during runtime, but will be bias "
                      "towards this value."),
 },{
+    "in_name"     : "walkers_end",
+    "type"        : "unsigned",
+    "cpp_name"    : "end_target_population",
+    "default"     : "0",
+    "allowed"     : "positive",
+    "description" : ("The target number of walkers at the end of the simulation. "
+                     "The target will decrease linearly from the initial value "
+                     "specified by the walkers keyword to this value. A value of "
+                     "0 will lead to a constant population. ")
+},{
     "in_name"     : "iterations",
     "type"        : "unsigned",
     "cpp_name"    : "dmc_iterations",

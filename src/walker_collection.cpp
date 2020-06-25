@@ -18,6 +18,7 @@
 */
 
 #include <sstream>
+#include <cmath>
 #include <mpi.h>
 
 #include "catch.h"
@@ -89,12 +90,14 @@ void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
 void walker_collection :: estimate_tau_nodes()
 {
     // Estimate the new value for tau_nodes
-    if (params::tau_nodes_estimator == "min_sep")
-        params::tau_nodes = tau_nodes_min_sep();
-    else if (params::tau_nodes_estimator == "min_sep_mpi")
-        params::tau_nodes = tau_nodes_min_sep_mpi();
-    else if (params::tau_nodes_estimator != "none")
-        throw "Unkown tau_nodes estimator!";
+    double new_tau = params::tau_nodes;
+    if (params::tau_nodes_estimator == "min_sep") new_tau = tau_nodes_min_sep();
+    else if (params::tau_nodes_estimator == "min_sep_mpi") new_tau = tau_nodes_min_sep_mpi();
+    else if (params::tau_nodes_estimator != "none") throw "Unkown tau_nodes estimator!";
+
+    // Don't propagate NaN, or Inf values
+    if (std::isfinite(new_tau))
+        params::tau_nodes = new_tau;
 }
 
 void walker_collection :: make_exchange_moves()
@@ -266,9 +269,10 @@ void walker_collection :: diffuse_max_seperation(walker_collection* walkers_last
     {
         walker* w = walkers[n];
         w->diffuse(params::tau);
-        double* psi = walkers_last->diffused_wavefunction_signed(w, params::tau_nodes, int(n));
+        double* psi = walkers_last->diffused_wavefunction_signed(w, params::tau, int(n));
+        double* psi_nodes = walkers_last->diffused_wavefunction_signed(w, params::tau_nodes, int(n));
 
-        if (psi[0] < psi[1])
+        if (psi[0] < psi[1] || psi_nodes[0] < psi_nodes[1])
         {
             // Record the nodal surface
             if (params::write_nodal_surface)
@@ -287,6 +291,7 @@ void walker_collection :: diffuse_max_seperation(walker_collection* walkers_last
 
         // Free memory
         delete[] psi;
+        delete[] psi_nodes;
 
         // Apply potential part of greens function
         double pot_before = walkers_last->walkers[n]->potential();
@@ -600,8 +605,7 @@ double walker_collection :: tau_nodes_min_sep_mpi()
         }
     }
 
-    average_min_dis /= double(population);
-    return average_min_dis / 2.0;
+    return average_min_dis / (2.0 * double(population));
 }
 
 double walker_collection :: tau_nodes_min_sep()
@@ -637,6 +641,19 @@ void walker_collection :: apply_renormalization()
         last_non_nan = params::trial_energy;
 }
 
+unsigned target_population()
+{
+    // Get the target population, which potentially varies with iteration
+    unsigned target_population = params::target_population;
+    if (params::end_target_population > 0)
+    {
+        double frac = params::dmc_iteration / double(params::dmc_iterations);
+        double pop  = params::target_population * (1-frac) + params::end_target_population * frac;
+        target_population = int(pop);
+    }
+    return target_population;
+}
+
 void walker_collection :: renormalize_potential()
 {
     // Set the trial energy with reference to the
@@ -644,7 +661,7 @@ void walker_collection :: renormalize_potential()
     params::trial_energy = mpi_average(average_potential());
 
     // Bias towards target population
-    params::trial_energy -= log(mpi_sum(sum_mod_weight()) / params::target_population);
+    params::trial_energy -= log(mpi_sum(sum_mod_weight()) / target_population());
 
     // Apply normalization greens function
     double gn = fexp(params::trial_energy * params::tau);
@@ -671,7 +688,7 @@ void walker_collection :: renormalize_growth()
     double new_trial_energy = log(pop_before_propagation / pop_after_propagation)/params::tau;
 
     // Bias towards target population
-    new_trial_energy -= log(pop_before_propagation / params::target_population);
+    new_trial_energy -= log(pop_before_propagation / target_population());
 
     params::trial_energy = params::trial_energy * params::growth_mixing_factor
                          + new_trial_energy * (1.0 - params::growth_mixing_factor);
