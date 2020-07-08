@@ -5,7 +5,7 @@ import os
 
 # Flags controlling build
 COMPILERS     = "mpic++ mpic++.openmpi mpicc mpicpc"
-COMPILE_FLAGS = "-c -Wall -g -O3"
+COMPILE_FLAGS = "-c -Wall -g -O3 -std=c++11"
 LINK_FLAGS    = "-o xdmc"
 LIBS          = "-lstdc++ -lm"
 
@@ -71,7 +71,8 @@ def compile_cpp(cpp):
     if not os.path.isfile(ofile):
         raise RuntimeError("Object file {0} was not generated!".format(ofile))
 
-print("\nCompiling on {0} cores...".format(cpu_count()))
+cpus = min(cpu_count(), 4)
+print("\nCompiling on {0} cores...".format(cpus))
 
 # Create the build directory
 if not os.path.exists("src/build"): os.mkdir("src/build")
@@ -84,14 +85,14 @@ procs = []
 for cpp in cpp_files:
 
     # Wait for a process to become available
-    while len(procs) >= cpu_count():
+    while len(procs) >= cpus:
         for p in procs:
             if not p.is_alive():
                 procs.remove(p)
         # Wait before checking procs again
         sleep(0.01) 
 
-    if cpu_count() > 1:
+    if cpus > 1:
         p = Process(target=compile_cpp, args=(cpp,))
         p.start()
         procs.append(p)
