@@ -35,8 +35,8 @@ public:
     void write_output(bool reverted);
     void estimate_tau_nodes();
 
-    double average_weight();
-    double average_mod_weight();
+    double positive_weight();
+    double negative_weight();
     double average_potential();
     double sum_mod_weight();
 

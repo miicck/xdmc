@@ -114,6 +114,13 @@ params = [{
     "description" : ("If true, sample exchange moves from permutations, "
                      "rather than permutation operators.")
 },{
+    "in_name"     : "correct_average_weight",
+    "type"        : "bool",
+    "cpp_name"    : "correct_average_weight",
+    "default"     : "false",
+    "description" : ("If true, additional exchange moves will be made in an "
+                     "attempt to keep the average walker weight = 0.")
+},{
     "in_name"     : "coulomb_softening",
     "type"        : "double",
     "cpp_name"    : "coulomb_softening",

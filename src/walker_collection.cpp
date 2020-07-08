@@ -19,6 +19,7 @@
 
 #include <sstream>
 #include <cmath>
+#include <iostream>
 #include <mpi.h>
 
 #include "catch.h"
@@ -98,10 +99,46 @@ void walker_collection :: estimate_tau_nodes()
     // Don't propagate NaN, or Inf values
     if (std::isfinite(new_tau))
         params::tau_nodes = new_tau;
+
+    params::tau_nodes = mpi_average(params::tau_nodes);
 }
 
 void walker_collection :: make_exchange_moves()
 {
+    if (params::correct_average_weight)
+    {
+        // Work out the probability for +ve and -ve walkers
+        // to change sign respectively, in order to keep the
+        // average sign close to 0
+        double positive_weight = 0;
+        double negative_weight = 0;
+        for (unsigned n=0; n<walkers.size(); ++n)
+        {
+            walker* w = walkers[n];
+            if (w->weight > 0) positive_weight += w->weight;
+            else negative_weight -= w->weight;
+        }
+
+        double positive_exchange_prob = (positive_weight - negative_weight)/positive_weight;
+        double negative_exchange_prob = (negative_weight - positive_weight)/negative_weight;
+        if (positive_exchange_prob < 0) positive_exchange_prob = 0;
+        if (negative_exchange_prob < 0) negative_exchange_prob = 0;
+
+        // Damp the rate of correction, so we don't end up
+        // in an oscillatory regime
+        positive_exchange_prob *= 0.9;
+        negative_exchange_prob *= 0.9;
+
+        // Apply exchange moves with the above probabilities
+        for (unsigned n=0; n<walkers.size(); ++n)
+        {
+            walker* w = walkers[n];
+            double prob = w->weight < 0 ? negative_exchange_prob : positive_exchange_prob;
+            if (rand_uniform() < prob)
+                w->change_sign();
+        }
+    }
+
     // Apply exchange moves to each of the walkers
     for (unsigned n=0; n<walkers.size(); ++n)
         walkers[n]->exchange();
@@ -639,6 +676,8 @@ void walker_collection :: apply_renormalization()
         params::trial_energy = last_non_nan;
     else
         last_non_nan = params::trial_energy;
+
+    params::trial_energy = mpi_average(params::trial_energy);
 }
 
 unsigned target_population()
@@ -780,20 +819,24 @@ double walker_collection :: sum_mod_weight()
     return sum;
 }
 
-double walker_collection :: average_mod_weight()
+double walker_collection :: positive_weight()
 {
-    // Returns (1/N) * sum_i |w_i|
-    return sum_mod_weight()/double(walkers.size());
+    // Returns the sum of all positive weights
+    double positive_weight = 0;
+    for (unsigned n=0; n<walkers.size(); ++n)
+        if (walkers[n]->weight > 0)
+            positive_weight += walkers[n]->weight;
+    return positive_weight;
 }
 
-double walker_collection :: average_weight()
+double walker_collection :: negative_weight()
 {
-    // Returns (1/N) * sum_i w_i
-    double av_weight = 0;
+    // Returns the modulus of the sum of all negative weights
+    double negative_weight = 0;
     for (unsigned n=0; n<walkers.size(); ++n)
-        av_weight += walkers[n]->weight;
-    av_weight /= double(walkers.size());
-    return av_weight;
+        if (walkers[n]->weight < 0)
+            negative_weight -= walkers[n]->weight;
+    return negative_weight;
 }
 
 double walker_collection :: average_potential()
@@ -820,10 +863,14 @@ void walker_collection :: write_output(bool reverted)
     double canc_weight_red   = mpi_sum(params::cancelled_weight);
     int    reverted_red      = mpi_sum(int(reverted));
     double canc_weight_perc  = 100.0*canc_weight_red/double(population_red);
+    double pos_weight_red    = mpi_sum(positive_weight());
+    double neg_weight_red    = mpi_sum(negative_weight());
+    double total_weight_red  = pos_weight_red - neg_weight_red;
+    double av_weight_red     = total_weight_red / population_red;
+    double total_mod_weight  = pos_weight_red + neg_weight_red;
 
     // Average various things across processes
     double triale_red        = mpi_average(params::trial_energy);
-    double av_weight_red     = mpi_average(average_weight());
     double tau_nodes_red     = mpi_average(params::tau_nodes);
 
     // Calculate timing information
@@ -840,7 +887,7 @@ void walker_collection :: write_output(bool reverted)
         << "s ("                       << time_per_iter                 << "s/iter)\n"
         << "    ETA                : " << seconds_to_human(secs_remain) << "\n"
         << "    Trial energy       : " << triale_red                    << " Hartree\n"
-        << "    Population         : " << population_red
+        << "    Population         : " << population_red                
         << " ("                        << population_red/params::np     << " per process) \n"
         << "    Cancelled weight   : " << canc_weight_red
         << " ("                        << canc_weight_perc              << "% of the total weight)\n"
@@ -855,6 +902,8 @@ void walker_collection :: write_output(bool reverted)
         params::evolution_file
                 << "Population,"
                 << "Trial energy,"
+                << "Positive weight,"
+                << "Negative weight,"
                 << "Average weight,"
                 << "Cancelled weight,"
                 << "Tau_nodes\n";
@@ -862,11 +911,13 @@ void walker_collection :: write_output(bool reverted)
 
     // Output evolution information to file
     params::evolution_file
-        << population_red           << ","
-        << triale_red               << ","
-        << av_weight_red            << ","
-        << canc_weight_red          << ","
-        << params::tau_nodes        << "\n";
+        << population_red                  << ","
+        << triale_red                      << ","
+        << pos_weight_red                  << ","
+        << neg_weight_red                  << ","
+        << av_weight_red                   << ","
+        << canc_weight_red                 << ","
+        << tau_nodes_red                   << "\n";
 
     // Write the wavefunction to file
     if (params::write_wavefunction)
@@ -911,4 +962,3 @@ TEST_CASE("Walker collection tests", "[walker_collection]")
     // Free memory
     delete c;
 }
-

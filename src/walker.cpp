@@ -289,6 +289,23 @@ void walker :: exchange()
     }
 }
 
+void walker :: change_sign()
+{
+    // Pick a random exchange group with negative sign
+    unsigned group = rand() % params::exchange_groups.size();
+    exchange_group* eg = params::exchange_groups[group];
+    if (eg->sign >= 0) throw "Not implemented!";
+
+    // Pick a random pair of particles from that exchange group
+    unsigned pair = rand() % eg->pairs.size();
+    particle* p1  = particles[eg->pairs[pair].first];
+    particle* p2  = particles[eg->pairs[pair].second];
+
+    // Make the corresponding exchange move
+    this->weight *= double(eg->sign);
+    p1->exchange(p2);
+}
+
 double walker :: sq_distance_to(walker* other)
 {
     // Return the squared distance in configuration space

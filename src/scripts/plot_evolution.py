@@ -28,9 +28,11 @@ e_targ = None
 for arg in sys.argv:
     if arg.startswith("-e="):
         val = arg.split("=")[-1]
-        if   val == "lithium":   e_targ = -7.47807
-        elif val == "beryllium": e_targ = -14.667353
-        elif val == "boron":     e_targ = −24.65386608
+        if   val == "lithium":        e_targ = -7.47807
+        elif val == "beryllium":      e_targ = -14.667353
+        elif val == "boron":          e_targ = -24.65386608
+        elif val == "helium_triplet": e_targ = -2.1753
+        elif val == "helium_gs":      e_targ = -2.9037
         else: e_targ = float(val)
         break
 

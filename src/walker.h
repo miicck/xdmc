@@ -47,6 +47,7 @@ public:
 
     void diffuse(double tau);
     void exchange();
+    void change_sign();
     void reflect_to_irreducible();
 
     walker* copy();
