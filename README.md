@@ -1,8 +1,8 @@
 <h1>XDMC</h1>
-XDMC is a code that implements eXchange-Diffusion Monte Carlo, as described here:
-https://link.aps.org/doi/10.1103/PhysRevE.102.042105
-An open access version is available here:
-https://arxiv.org/abs/2001.02215
+XDMC is a code that implements eXchange-Diffusion Monte Carlo, as described here: <br/>
+https://link.aps.org/doi/10.1103/PhysRevE.102.042105 <br/>
+An open access version is available here: <br/>
+https://arxiv.org/abs/2001.02215 <br/>
 
 <h2>Compiling</h2>
 To build the executable, run build.py (which can be found in the root directory).
