@@ -48,7 +48,7 @@ of which will be sampled. An example input file for a lithium atom is shown belo
         atomic_potential 3 0 0 0
 
         # Quantum particles to treat with monte carlo, described by
-        # a mass, charge and spin (the name is just a label).
+        # a mass, charge and spin (spin is in units of 1/2. The name is just a label).
         #        name      mass  charge  spin  Initial position
         particle electron  1     -1       1    0 0 0
         particle electron  1     -1       1    0 0 0
