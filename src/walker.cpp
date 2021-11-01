@@ -124,46 +124,56 @@ std::string walker :: summary()
     return ss.str();
 }
 
-void walker :: reflect_to_irreducible()
+int walker :: reflect_to_irreducible()
 {
     // Reflect this walker using exchange symmetry until
     // we're in the irreducible section of configuration space
     // doesn't change the weight at all (even for fermionic exchanges)
+    // Returns the number of exchanges made
+
+    int exchanges_made = 0;
+
     while(true)
     {
         bool swap_made = false;
 
         // Cast to int in case particles.size() = 0
-        for (int i=0; i<int(particles.size())-1; ++i)
+        for (unsigned i=1; i<particles.size(); ++i)
         {
-            particle* p1 = particles[i];
-            particle* p2 = particles[i+1];
-            if (p1->exchange_symmetry(p2) == 0)
-                continue;
+            particle* p1 = particles[i-1];
+            particle* p2 = particles[i];
 
             // These particles should be swapped if they're
             // in the wrong order (sort by increasing coordinates)
-            bool swap = true;
-            for (unsigned j=0; j < params::dimensions; ++j)
-                if (p1->coords[j] < p2->coords[j])
-                {
-                    // These are in the right order
-                    swap = false;
-                    break;
-                }
-
-            if (swap)
+            if (!p1->in_coord_order(p2))
             {
                 // Swap these particles
-                particles[i]   = p2;
-                particles[i+1] = p1;
+                particles[i-1] = p2;
+                particles[i]   = p1;
                 swap_made = true;
+                ++exchanges_made;
             }
         }
 
         // No swaps => particles in correct order
         if (!swap_made) break;
     }
+
+    return exchanges_made;
+}
+
+bool walker :: is_irreducible()
+{
+    // Returns true if the walker is in the 
+    // irreducible wedge of configuration space.
+    for (unsigned i=1; i<particles.size(); ++i)
+    {
+        particle* p1 = particles[i-1];
+        particle* p2 = particles[i];
+        if (!p1->in_coord_order(p2))
+            return false;
+    }
+    return true;
 }
 
 bool walker :: crossed_nodal_surface(walker* other)
@@ -440,3 +450,24 @@ TEST_CASE("Basic walker tests", "[walker]")
     delete w2;
 }
 
+TEST_CASE("Irreducible wedge", "[walker]")
+{
+    SECTION("Reflect to irreducible")
+    {
+        // Test several random configs
+        for (int n=0; n<10; ++n)
+        {
+            // Create a walker to test
+            walker* w1 = new walker();
+            
+            // Put it in a pseudo-random config
+            w1->diffuse(1.0);
+
+            // Check reflect_to_irreducible works
+            w1->reflect_to_irreducible();
+            REQUIRE(w1->is_irreducible());
+
+            delete w1;
+        }
+    }
+}

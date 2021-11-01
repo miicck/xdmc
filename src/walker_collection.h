@@ -62,6 +62,7 @@ private:
     void diffuse_stochastic_nodes_permutations(walker_collection* walkers_last);
     void diffuse_stochastic_nodes_mpi(walker_collection* walkers_last);
     void diffuse_bosonic(walker_collection* walkers_last);
+    void diffuse_in_irreducible(walker_collection* walkers_last);
     void exchange_diffuse(walker_collection* walkers_last);
 
     void apply_renormalization();

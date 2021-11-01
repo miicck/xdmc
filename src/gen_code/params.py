@@ -137,7 +137,8 @@ params = [{
     "allowed"     : ("strings exact_1d bosonic exchange_diffuse "
                      "max_seperation max_seperation_mpi "
                      "stochastic_nodes stochastic_nodes_mpi "
-                     "stochastic_nodes_permutations"),
+                     "stochastic_nodes_permutations "
+                     "stay_irreducible"),
     "description" : "The diffusion scheme used."
 },{
     "in_name"     : "max_weight",

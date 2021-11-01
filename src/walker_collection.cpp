@@ -84,6 +84,8 @@ void walker_collection :: make_diffusive_moves(walker_collection* walkers_last)
         exchange_diffuse(walkers_last);
     else if (params::diffusion_scheme == "bosonic")
         diffuse_bosonic(walkers_last);
+    else if (params::diffusion_scheme == "stay_irreducible")
+        diffuse_in_irreducible(walkers_last);
     else
         throw "Unkown diffusion scheme";
 }
@@ -586,6 +588,27 @@ void walker_collection :: diffuse_stochastic_nodes_permutations(walker_collectio
     }
 }
 
+void walker_collection :: diffuse_in_irreducible(walker_collection* walkers_last)
+{
+    // Carry out diffusion of walkers, killing any that leave 
+    // the irreducible wedge of configuration space
+    for (unsigned n=0; n < walkers.size(); ++n)
+    {
+        walker* w = walkers[n];
+        w->diffuse(params::tau);
+
+        if (w->is_irreducible())
+        {
+            // Apply potential part of greens function
+            double pot_before = walkers_last->walkers[n]->potential();
+            double pot_after  = w->potential();
+            w->weight        *= potential_greens_function(pot_before, pot_after);
+        }
+        else
+            w->weight = 0;
+    }
+}
+
 double walker_collection :: distance_to_nearest_opposite(walker* w)
 {
     double min_dis = -1;
@@ -867,7 +890,6 @@ void walker_collection :: write_output(bool reverted)
     double neg_weight_red    = mpi_sum(negative_weight());
     double total_weight_red  = pos_weight_red - neg_weight_red;
     double av_weight_red     = total_weight_red / population_red;
-    double total_mod_weight  = pos_weight_red + neg_weight_red;
 
     // Average various things across processes
     double triale_red        = mpi_average(params::trial_energy);

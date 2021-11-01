@@ -48,7 +48,8 @@ public:
     void diffuse(double tau);
     void exchange();
     void change_sign();
-    void reflect_to_irreducible();
+    int reflect_to_irreducible();
+    bool is_irreducible();
 
     walker* copy();
     walker* branch_copy();

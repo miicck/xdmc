@@ -103,6 +103,20 @@ void particle :: exchange(particle* other)
     }
 }
 
+bool particle :: in_coord_order(particle* other)
+{
+    // Returns true if this particle comes
+    // before the other particle in 
+    // increasing-coordinate order
+    for (unsigned i=0; i<params::dimensions; ++i)
+    {
+        double diff = other->coords[i] - this->coords[i];
+        if (diff > 0) return true;
+        else if (diff < 0) return false;
+    }
+    return true;
+}
+
 double particle :: sq_distance_to(particle* other)
 {
     // Unpacking for speed
