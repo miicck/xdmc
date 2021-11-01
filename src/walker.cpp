@@ -137,26 +137,29 @@ int walker :: reflect_to_irreducible()
     {
         bool swap_made = false;
 
-        // Cast to int in case particles.size() = 0
-        for (unsigned i=1; i<particles.size(); ++i)
+        for (unsigned i=0; i<params::exchange_groups.size(); ++i)
         {
-            particle* p1 = particles[i-1];
-            particle* p2 = particles[i];
-
-            // These particles should be swapped if they're
-            // in the wrong order (sort by increasing coordinates)
-            if (!p1->in_coord_order(p2))
+            exchange_group* group = params::exchange_groups[i];
+            for (unsigned j=1; j<group->particles.size(); ++j)
             {
-                // Swap these particles
-                particles[i-1] = p2;
-                particles[i]   = p1;
-                swap_made = true;
-                ++exchanges_made;
+                particle* p1 = particles[group->particles[j-1]];
+                particle* p2 = particles[group->particles[j]];
+
+                // If particles in the exchange group
+                // are in the wrong order, swap them
+                if (!p1->in_coord_order(p2))
+                {
+                    particles[group->particles[j-1]] = p2;
+                    particles[group->particles[j]]   = p1;
+                    swap_made = true;
+                    ++exchanges_made;
+                }
             }
         }
 
-        // No swaps => particles in correct order
-        if (!swap_made) break;
+        // No swaps => we're in the irreducible wedge
+        if (!swap_made)
+            break;
     }
 
     return exchanges_made;
@@ -166,12 +169,20 @@ bool walker :: is_irreducible()
 {
     // Returns true if the walker is in the 
     // irreducible wedge of configuration space.
-    for (unsigned i=1; i<particles.size(); ++i)
+    for (unsigned i=0; i<params::exchange_groups.size(); ++i)
     {
-        particle* p1 = particles[i-1];
-        particle* p2 = particles[i];
-        if (!p1->in_coord_order(p2))
-            return false;
+        exchange_group* group = params::exchange_groups[i];
+        for (unsigned j=1; j<group->particles.size(); ++j)
+        {
+            particle* p1 = particles[group->particles[j-1]];
+            particle* p2 = particles[group->particles[j]];
+
+            // If particles in the exchange group
+            // are in the wrong order => we're not
+            // in the irreducible wedge.
+            if (!p1->in_coord_order(p2))
+                return false;
+        }
     }
     return true;
 }
